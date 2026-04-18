@@ -74,7 +74,7 @@ const ShinyText = ({
     directionRef.current = direction === 'left' ? 1 : -1;
     elapsedRef.current = 0;
     progress.set(0);
-  }, [direction]);
+  }, [direction, progress]); 
 
   const backgroundPosition = useTransform(progress, p => `${150 - p * 2}% center`);
 
