@@ -1,0 +1,28 @@
+1. Корінь Проєкту (Root):
+- .github/workflows/{name_of_ci_file}.yml - основний файл сценарію CI, який визначає кроки та умови для виконання CI процесу.
+- docker-compose.yml - інструкція для зборки та запуску всіх сервісів разом для проведення тестування.
+- .gitignore - файл для визначення файлів та папок, які не повинні знаходитися у репозиторії проєкту.
+
+2. Backend (backend/ directory):
+- Dockerfile - інструкція для створення образу Docker для backend-сервісу (встановлення Python, системних бібліотек libpq-dev та копіювання коду).
+- requirements.txt - список залежностей Python, необхідних для роботи backend-сервісу (мінімум: django, psycopg2-binary, dj-database-url, djangorestframework, django-cors-headers).
+- config/settings/dev.py - налаштування для розробки:
+    - Підключення до БД postgresql через DATABASE_URL (приклад можна подивитися за наступним шляхом: docs/images/dev_database_connection_example.png).
+    - ALLOWED_HOSTS = ['*'] (або конкретно вказані хости).
+    - Налаштований CORS (для доступу frontend-сервісу до backend-сервісу).
+- Health-check endpoint - функція у файлі views.py та шлях вказаний у urls.py, яка буде повертати {"status": "ok"} (приклад можна подивитися за наступним шляхом: docs/images/health_check_example_views.png, та docs/images/health_check_example_urls.png).
+- Міграції - хоча б одна пуста папка migrations/ з файлом __init__.py для того, щоб Django розпізнавало її як пакет та команда migrate не впала.
+- Тести - хоча б один тест за шляхом tests/test_***.py, для того щоб CI Job test-and-lint не завершився з помилкою через відсутність тестів.
+
+3. Frontend (frontend/ directory):
+- Dockerfile - двухетапний build (спочатку node для build, потім nginx для сервування статичних файлів).
+- package.json - з прописаними скриптами "build" "lint".
+- package-lock.json - є обов'язковим для команди npm ci, яка використовується для встановлення залежностей у CI процесі.
+- Конфігурація збірки - повинен бути налаштован так, щоб build складувався у папку dist/ (або іншу, яка вказана у Dockerfile).
+
+4. Налаштування GitHub Secrets:
+- DOCKER_USERNAME - ім'я користувача для Docker Hub.
+- DOCKER_PASSWORD - пароль для Docker Hub.
+
+5. Структура папок (важливо для шляхів у Docker):
+- Код повинен фізично знаходиться так, як прописано у Dockerfile. Якщо у Dockerfile написано COPY . /app/, це означає, що він очікує побачити код backend в тій же папці, де знаходиться сам Dockerfile.
