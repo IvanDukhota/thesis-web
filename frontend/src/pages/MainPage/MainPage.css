@@ -1,3 +1,21 @@
+::-webkit-scrollbar {
+    width: 4px;
+}
+
+::-webkit-scrollbar-track {
+    background: black;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: #333;
+    border-radius: 6px;
+    border: 3px solid #333;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: #aaa;
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -16,8 +34,109 @@
     flex-direction: column;
 }
 
-.test-text {
-    font-size: 3rem;
-    color: white;
-    margin-top: 50px;
+.mainpage-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.welcome-container {
+    position: relative;
+    z-index: 1;
+    height: 550px;
+    width: 1200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    margin-top: 60px;
+}
+
+.text-type1 {
+    font-size: 42px;
+    margin: 0;
+    color: #fff;
+    font-weight: normal;
+    width: 400px;
+    text-align: center;
+}
+
+.text-type2 {
+    font-size: 21px;
+    margin: 0;
+    margin-top: 25px;
+    color: #555;
+    width: 800px;
+    text-align: center;
+}
+
+.button-block {
+    width: 550px;
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 40px;
+    margin-top: 10px;
+}
+
+.button-class1 {
+    width: 220px;
+    height: 50px;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    border-radius: 8px;
+    color: whitesmoke;
+    background: linear-gradient(90deg, #1c1c1e, #121214, #1c1c1e);
+    background-size: 300% 300%;
+    animation: gradientShift 4s ease infinite;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.15), inset 0 -1px 0 rgba(255, 255, 255, 0.05);
+    font-size: 16px;
+    transition: transform 0.2s;
+}
+
+.button-class1:hover {
+    transform: scale(1.05);
+}
+
+.button-class2 {
+    width: 220px;
+    height: 50px;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    border-radius: 8px;
+    color: whitesmoke;
+    background: linear-gradient(90deg, #6b21a8, #5b21b6, #7e22ce, #6b21a8);
+    background-size: 300% 300%;
+    animation: gradientShift 4s ease infinite;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.15), inset 0 -1px 0 rgba(255, 255, 255, 0.05);
+    font-size: 16px;
+    transition: transform 0.2s;
+}
+
+.button-class2:hover {
+    transform: scale(1.05);
+}
+
+@keyframes gradientShift {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
 }
