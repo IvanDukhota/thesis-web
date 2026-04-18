@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  # Database (PostgreSQL)
+  db:
+    image: postgres:15
+    container_name: teamhub-db
+    environment:
+      POSTGRES_DB: teamhub_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d teamhub_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Backend (Django)
+  backend:
+    build: ./backend
+    container_name: teamhub-backend
+    volumes:
+      - ./backend:/app
+    environment:
+      - DATABASE_URL=postgres://user:password@db:5432/teamhub_db
+      - DJANGO_SETTINGS_MODULE=config.settings.dev
+      - PYTHONUNBUFFERED=1
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
+
+  # Frontend (React)
+  frontend:
+    build: ./frontend
+    container_name: teamhub-frontend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "3000:80"
+    environment:
+      - VITE_API_URL=http://localhost:8000/api/v1
+    depends_on:
+      - backend

@@ -61,7 +61,7 @@ jobs:
           cd frontend
           npm ci
           npm run lint
-          npm run build # Проверяем, что билд фронта в принципе собирается
+          npm run build
 
   # Stage 2: Docker Integration Smoke Test (only for develop and main branches)
   integration-smoke-test:
@@ -74,7 +74,6 @@ jobs:
 
       - name: Build and Up via Docker Compose
         run: |
-          # Собираем образы и запускаем контейнеры в фоновом режиме
           docker compose up -d --build
 
       - name: Wait for Services (Warm-up)
