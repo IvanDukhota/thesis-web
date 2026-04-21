@@ -54,7 +54,7 @@
 }
 
 .text-type1 {
-    font-size: 42px;
+    font-size: 40px;
     margin: 0;
     color: #fff;
     font-weight: normal;
@@ -63,9 +63,9 @@
 }
 
 .text-type2 {
-    font-size: 21px;
+    font-size: 19px;
     margin: 0;
-    margin-top: 25px;
+    margin-top: 45px;
     color: #555;
     width: 800px;
     text-align: center;
@@ -78,7 +78,7 @@
     align-items: center;
     justify-content: center;
     gap: 40px;
-    margin-top: 10px;
+    margin-top: 15px;
 }
 
 .button-class1 {
@@ -139,4 +139,34 @@
     100% {
         background-position: 0% 50%;
     }
+}
+
+.information-container {
+    width: 1200px;
+    height: 650px;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+}
+
+.desktop-container {
+    width: 1200px;
+    height: 650px;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: 60% 40%;
+    border: 1px solid white;
+    margin-top: 60px;
+    margin-bottom: 60px;
+}
+
+.desktop-container-left {
+    display: flex;
+    border-right: 1px solid white;
+}
+
+.desktop-container-right {
+    display: flex;
 }

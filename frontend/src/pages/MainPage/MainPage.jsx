@@ -5,7 +5,8 @@ import Header from '../../components/Header/Header';
 import DarkVeil from '../../components/DarkVeil/DarkVeil';
 import AnimatedContent from '../../components/AnimatedContent/AnimatedContent';
 import ShinyText from '../../components/ShinyText/ShinyText';
-import { darkVeilConfig, shinyTextConfig, firstAnimation, secondAnimation, thirdAnimation } from './MainPageConfig.js';
+import MagicBento from '../../components/MagicBento/MagicBento';
+import { darkVeilConfig, shinyTextConfig, firstAnimation, secondAnimation, thirdAnimation, MagicBentoConfig } from './MainPageConfig.js';
 
 function MainPage() {
 
@@ -28,10 +29,17 @@ function MainPage() {
                 </AnimatedContent>
                 <AnimatedContent {...thirdAnimation}>
                     <div className='button-block'>
-                        <button className='button-class1'>Learn More 🛈</button>
+                        <button className='button-class1'>Download IDE 🛈</button>
                         <button className='button-class2'>Get Started ↗</button>
                     </div>
                 </AnimatedContent>
+            </div>
+            <AnimatedContent {...thirdAnimation}>
+                <MagicBento {...MagicBentoConfig} />
+            </AnimatedContent>
+            <div className='desktop-container'>
+                <div className='desktop-container-left'></div>
+                <div className='desktop-container-right'></div>
             </div>
         </div>
     );

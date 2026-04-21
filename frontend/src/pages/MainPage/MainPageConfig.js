@@ -60,3 +60,17 @@ export const thirdAnimation = {
   threshold: 0.1,
   delay: 1.5,
 };
+
+export const MagicBentoConfig = {
+  textAutoHide: false,
+  enableStars: true,
+  enableSpotlight: true,
+  enableBorderGlow: true,
+  enableTilt: false,
+  enableMagnetism: false,
+  clickEffect: true,
+  spotlightRadius: 400,
+  particleCount: 12,
+  glowColor: "132, 0, 255",
+  disableAnimations: false
+}
