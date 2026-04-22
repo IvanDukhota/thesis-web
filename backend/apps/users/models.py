@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.db import models
@@ -46,7 +47,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     REQUIRED_FIELDS = []
 
     class Meta:
-        ordering = ["-created_at"]
+        ordering = ["first_name", "last_name", "email"]
 
     def __str__(self):
         return self.email
@@ -55,3 +56,23 @@ class User(AbstractBaseUser, PermissionsMixin):
     def full_name(self):
         full_name = f"{self.first_name} {self.last_name}".strip()
         return full_name or self.email
+
+class UserContact(models.Model):
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="contacts",
+    )
+    contact = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="in_contacts_of",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("owner", "contact")
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.owner.email} -> {self.contact.email}"

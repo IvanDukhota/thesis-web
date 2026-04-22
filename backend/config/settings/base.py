@@ -7,7 +7,7 @@ SECRET_KEY = 'django-insecure-^)2p3mz991q1^clrump#c!+9n#4(idz94n5*a$4pwb+=-&4j0+
 
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
 
 
 
@@ -24,6 +24,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt",
 
     "apps.users",
+    "apps.chats",
 ]
 
 MIDDLEWARE = [
@@ -110,7 +111,6 @@ USE_TZ = True
 
 
 STATIC_URL = 'static/'
-
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
