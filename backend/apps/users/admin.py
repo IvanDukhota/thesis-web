@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
-from .models import User
+from .models import User, UserContact
 
 
 @admin.register(User)
@@ -28,3 +28,8 @@ class UserAdmin(BaseUserAdmin):
             },
         ),
     )
+
+@admin.register(UserContact)
+class UserContactAdmin(admin.ModelAdmin):
+    list_display = ("id", "owner", "contact", "created_at")
+    search_fields = ("owner__email", "contact__email", "owner__first_name", "contact__first_name")
