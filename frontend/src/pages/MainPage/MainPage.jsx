@@ -1,12 +1,25 @@
 import './MainPage.css';
+import { useEffect, useRef } from 'react';
+
 import Header from '../../components/Header/Header';
 import DarkVeil from '../../components/DarkVeil/DarkVeil';
-import { darkVeilConfig } from './MainPageConfig.js';
 import CodeWindow from '../../components/CodeWindow/CodeWindow';
 import IdeSection from '../../components/Features/IdeSection.jsx';
+
+import { darkVeilConfig } from './MainPageConfig.js';
 import { FEATURES } from '../../components/Features/FeaturesData.jsx';
 
 function MainPage() {
+    const ideRef = useRef(null);
+
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, []);
+
+    const scrollToIde = () => {
+        ideRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+
     return (
         <div className="mainpage">
             <div className="mainpage-bg">
@@ -16,18 +29,20 @@ function MainPage() {
 
             <div className='welcome-container'>
                 <div className='welcome-container-text'>
-                    <p className='text-type-1'>TeamHub: Build, collaborate, and grow — in one place.</p>
-                    <p className='text-type-2'>
+                    <p className='text-type-1 hero-anim hero-anim--1'>
+                        Build, collaborate, and grow — in one place.
+                    </p>
+                    <p className='text-type-2 hero-anim hero-anim--2'>
                         TeamHub is a complete platform for developers: a professional IDE,
                         a talent marketplace, project management, and team collaboration —
                         everything connected under one account.
                     </p>
-                    <div className='button-container-1'>
-                        <button className='button-class-1'>Download IDE</button>
+                    <div className='button-container-1 hero-anim hero-anim--3'>
+                        <button className='button-class-1' onClick={scrollToIde}>Download IDE</button>
                         <button className='button-class-2'>Get Started</button>
                     </div>
                 </div>
-                <div className='welcome-container-media'>
+                <div className='welcome-container-media hero-anim hero-anim--4'>
                     <CodeWindow />
                 </div>
             </div>
@@ -57,7 +72,9 @@ function MainPage() {
                 ))}
             </div>
 
-            <IdeSection />
+            <div ref={ideRef} style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
+                <IdeSection />
+            </div>
         </div>
     );
 }
