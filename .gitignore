@@ -20,6 +20,7 @@ node_modules/
 frontend/dist/
 frontend/dist-ssr/
 frontend/.eslintcache
+frontend/src/assets/
 
 # --- Environment & Local Configs ---
 *.local
