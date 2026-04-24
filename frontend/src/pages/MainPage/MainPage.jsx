@@ -26,7 +26,6 @@ function MainPage() {
                 <DarkVeil {...darkVeilConfig} />
             </div>
             <Header />
-
             <div className='welcome-container'>
                 <div className='welcome-container-text'>
                     <p className='text-type-1 hero-anim hero-anim--1'>
