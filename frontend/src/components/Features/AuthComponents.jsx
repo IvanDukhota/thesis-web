@@ -3,8 +3,7 @@ import { createPortal } from 'react-dom';
 import Stepper, { Step } from '../../components/Stepper/Stepper';
 import { RiEyeLine, RiEyeOffLine, RiGoogleFill, RiFacebookFill, RiArrowUpSLine, RiArrowDownSLine } from 'react-icons/ri';
 import { VscChevronDown } from 'react-icons/vsc';
-
-export const onlyLetters = (v) => v.replace(/[0-9]/g, '');
+import { onlyLetters, GENDERS, REGIONS, validateStep } from './authHelpers';
 
 export function Field({ label, type = 'text', value, onChange, error, placeholder, rightSlot, filter }) {
     const handle = (v) => onChange(filter ? filter(v) : v);
@@ -142,14 +141,11 @@ export function LoginForm() {
         return e;
     };
 
-    const handleSubmit = () => setErrors(validate());
-
     return (
         <div className="auth-form">
             <Field label="Email" type="email" value={email} onChange={setEmail} placeholder="you@example.com" error={errors.email} />
             <Field
-                label="Password"
-                type={showPw ? 'text' : 'password'}
+                label="Password" type={showPw ? 'text' : 'password'}
                 value={password} onChange={setPassword}
                 placeholder="••••••••" error={errors.password}
                 rightSlot={
@@ -158,7 +154,7 @@ export function LoginForm() {
                     </button>
                 }
             />
-            <button className="auth-submit-btn" onClick={handleSubmit}>Sign in</button>
+            <button className="auth-submit-btn" onClick={() => setErrors(validate())}>Sign in</button>
             <div className="auth-divider"><span>or continue with</span></div>
             <div className="auth-social">
                 <button className="auth-social-btn"><RiGoogleFill size={15} /> Google</button>
@@ -168,22 +164,6 @@ export function LoginForm() {
     );
 }
 
-export const GENDERS = [
-    { value: 'male', label: 'Male' },
-    { value: 'female', label: 'Female' },
-    { value: 'other', label: 'Other' },
-];
-
-export const REGIONS = [
-    { value: 'north_america', label: 'North America' },
-    { value: 'south_america', label: 'South America' },
-    { value: 'europe', label: 'Europe' },
-    { value: 'asia', label: 'Asia' },
-    { value: 'africa', label: 'Africa' },
-    { value: 'oceania', label: 'Oceania' },
-    { value: 'middle_east', label: 'Middle East' },
-];
-
 export function StepOne({ data, onChange, errors }) {
     return (
         <div className="step-fields">
@@ -191,7 +171,7 @@ export function StepOne({ data, onChange, errors }) {
                 <Field label="First name" value={data.firstName} onChange={v => onChange('firstName', onlyLetters(v))} placeholder="Alex" error={errors.firstName} />
                 <Field label="Last name" value={data.lastName} onChange={v => onChange('lastName', onlyLetters(v))} placeholder="Kovalenko" error={errors.lastName} />
             </div>
-            <Field label="Display name (nickname)" value={data.nick} onChange={v => onChange('nick', v)} placeholder="@alexkv" error={errors.nick} />
+            <Field label="Display name (nickname)" value={data.nick} onChange={v => onChange('nick', v)} placeholder="alexkv" error={errors.nick} />
         </div>
     );
 }
@@ -228,39 +208,14 @@ export function StepThree({ data, onChange, errors }) {
     );
 }
 
-export function validateStep(s, data) {
-    const e = {};
-    if (s === 1) {
-        if (!data.firstName.trim()) e.firstName = 'First name is required.';
-        else if (/\d/.test(data.firstName)) e.firstName = 'No numbers allowed.';
-        if (!data.lastName.trim()) e.lastName = 'Last name is required.';
-        else if (/\d/.test(data.lastName)) e.lastName = 'No numbers allowed.';
-        if (!data.nick.trim()) e.nick = 'Display name is required.';
-    }
-    if (s === 2) {
-        if (!data.gender) e.gender = 'Please select a gender.';
-        const age = Number(data.age);
-        if (!data.age || isNaN(age) || age < 13 || age > 120) e.age = 'Enter a valid age (13–120).';
-        if (!data.region) e.region = 'Please select a region.';
-    }
-    if (s === 3) {
-        if (!data.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) e.email = 'Enter a valid email.';
-        if (data.password.length < 8) e.password = 'Minimum 8 characters.';
-        if (data.password !== data.password2) e.password2 = 'Passwords do not match.';
-    }
-    return e;
-}
-
 export function RegisterStepper({ registerState, setRegisterState }) {
     const { data, errors, done } = registerState;
 
-    const change = (key, val) => {
-        setRegisterState(s => ({
-            ...s,
-            data: { ...s.data, [key]: val },
-            errors: { ...s.errors, [key]: undefined },
-        }));
-    };
+    const change = (key, val) => setRegisterState(s => ({
+        ...s,
+        data: { ...s.data, [key]: val },
+        errors: { ...s.errors, [key]: undefined },
+    }));
 
     const handleBeforeNext = (currentStep) => {
         const e = validateStep(currentStep, data);
