@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import Stepper, { Step } from '../../components/Stepper/Stepper';
 import { RiEyeLine, RiEyeOffLine, RiGoogleFill, RiFacebookFill, RiArrowUpSLine, RiArrowDownSLine } from 'react-icons/ri';
 import { VscChevronDown } from 'react-icons/vsc';
-import { onlyLetters, GENDERS, REGIONS, validateStep } from './authHelpers';
+import { onlyLetters, GENDERS, REGIONS, validateStep } from './AuthHelpers';
 
 export function Field({ label, type = 'text', value, onChange, error, placeholder, rightSlot, filter }) {
     const handle = (v) => onChange(filter ? filter(v) : v);
