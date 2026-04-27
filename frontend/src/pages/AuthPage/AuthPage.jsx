@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DarkVeil from '../../components/DarkVeil/DarkVeil';
 import { darkVeilConfig } from './AuthPageConfig';
-import { LoginForm, RegisterStepper } from '../../components/Features/authComponents';
+import { LoginForm, RegisterStepper } from '../../components/Features/AuthComponents';
 
 const EMPTY_REGISTER_STATE = {
     data: { nick: '', email: '', password: '', password2: '', firstName: '', lastName: '', gender: '', age: '', region: '' },
