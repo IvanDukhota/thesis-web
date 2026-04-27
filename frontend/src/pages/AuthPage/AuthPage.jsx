@@ -3,12 +3,14 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DarkVeil from '../../components/DarkVeil/DarkVeil';
 import { darkVeilConfig } from './AuthPageConfig';
-import { LoginForm, RegisterStepper } from '../../components/Features/AuthComponents';
+import { LoginForm, RegisterStepper } from '../../components/Features/authComponents';
 
 const EMPTY_REGISTER_STATE = {
-    data: { firstName: '', lastName: '', nick: '', gender: '', age: '', region: '', email: '', password: '', password2: '' },
+    data: { nick: '', email: '', password: '', password2: '', firstName: '', lastName: '', gender: '', age: '', region: '' },
     errors: {},
     done: false,
+    showSkipModal: false,
+    stepperActive: false,
 };
 
 export default function AuthPage() {

@@ -1,9 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import Stepper, { Step } from '../../components/Stepper/Stepper';
-import { RiEyeLine, RiEyeOffLine, RiGoogleFill, RiFacebookFill, RiArrowUpSLine, RiArrowDownSLine } from 'react-icons/ri';
+import {
+    RiEyeLine, RiEyeOffLine,
+    RiGoogleFill, RiFacebookFill,
+    RiArrowUpSLine, RiArrowDownSLine,
+} from 'react-icons/ri';
 import { VscChevronDown } from 'react-icons/vsc';
-import { onlyLetters, GENDERS, REGIONS, validateStep } from './AuthHelpers';
+import { onlyLetters, GENDERS, REGIONS, validateStepOne, validateStepTwo, validateStepThree } from './AuthHelpers';
 
 export function Field({ label, type = 'text', value, onChange, error, placeholder, rightSlot, filter }) {
     const handle = (v) => onChange(filter ? filter(v) : v);
@@ -70,7 +74,6 @@ export function CustomSelect({ label, value, onChange, error, options, placehold
                 </button>
             </div>
             {error && <span className="auth-field-error">{error}</span>}
-
             {open && createPortal(
                 <div
                     ref={dropdownRef}
@@ -96,12 +99,11 @@ export function CustomSelect({ label, value, onChange, error, options, placehold
 
 export function AgeCounter({ value, onChange, error }) {
     const num = parseInt(value);
-    const step = (delta) => {
+    const stepAge = (delta) => {
         const base = isNaN(num) ? 18 : num;
         const next = base + delta;
         if (next >= 13 && next <= 120) onChange(String(next));
     };
-
     return (
         <div className="auth-field">
             <label className="auth-field-label">Age</label>
@@ -115,16 +117,34 @@ export function AgeCounter({ value, onChange, error }) {
                     onChange={e => onChange(e.target.value.replace(/\D/g, ''))}
                 />
                 <div className="auth-age-btns">
-                    <button type="button" className="auth-age-btn" onClick={() => step(1)}>
-                        <RiArrowUpSLine size={14} />
-                    </button>
-                    <button type="button" className="auth-age-btn" onClick={() => step(-1)}>
-                        <RiArrowDownSLine size={14} />
-                    </button>
+                    <button type="button" className="auth-age-btn" onClick={() => stepAge(1)}><RiArrowUpSLine size={14} /></button>
+                    <button type="button" className="auth-age-btn" onClick={() => stepAge(-1)}><RiArrowDownSLine size={14} /></button>
                 </div>
             </div>
             {error && <span className="auth-field-error">{error}</span>}
         </div>
+    );
+}
+
+export function SkipModal({ onContinue, onSkip }) {
+    return createPortal(
+        <div className="skip-modal-overlay">
+            <div className="skip-modal">
+                <p className="skip-modal-title">Fill in your profile?</p>
+                <p className="skip-modal-sub">
+                    You can complete your profile now, or skip and fill it in later from your profile page.
+                </p>
+                <div className="skip-modal-actions">
+                    <button className="skip-modal-btn skip-modal-btn--skip" onClick={onSkip}>
+                        Skip for now
+                    </button>
+                    <button className="skip-modal-btn skip-modal-btn--continue" onClick={onContinue}>
+                        Fill in now
+                    </button>
+                </div>
+            </div>
+        </div>,
+        document.body
     );
 }
 
@@ -165,33 +185,18 @@ export function LoginForm() {
 }
 
 export function StepOne({ data, onChange, errors }) {
-    return (
-        <div className="step-fields">
-            <div className="auth-row">
-                <Field label="First name" value={data.firstName} onChange={v => onChange('firstName', onlyLetters(v))} placeholder="Alex" error={errors.firstName} />
-                <Field label="Last name" value={data.lastName} onChange={v => onChange('lastName', onlyLetters(v))} placeholder="Kovalenko" error={errors.lastName} />
-            </div>
-            <Field label="Display name (nickname)" value={data.nick} onChange={v => onChange('nick', v)} placeholder="alexkv" error={errors.nick} />
-        </div>
-    );
-}
-
-export function StepTwo({ data, onChange, errors }) {
-    return (
-        <div className="step-fields">
-            <CustomSelect label="Gender" value={data.gender} onChange={v => onChange('gender', v)} placeholder="Select gender" options={GENDERS} error={errors.gender} />
-            <AgeCounter value={data.age} onChange={v => onChange('age', v)} error={errors.age} />
-            <CustomSelect label="Region" value={data.region} onChange={v => onChange('region', v)} placeholder="Select region" options={REGIONS} error={errors.region} />
-        </div>
-    );
-}
-
-export function StepThree({ data, onChange, errors }) {
     const [showPw, setShowPw] = useState(false);
     const [showPw2, setShowPw2] = useState(false);
     return (
         <div className="step-fields">
-            <Field label="Email" type="email" value={data.email} onChange={v => onChange('email', v)} placeholder="you@example.com" error={errors.email} />
+            <Field
+                label="Display name (nickname)" value={data.nick}
+                onChange={v => onChange('nick', v)} placeholder="alexkv" error={errors.nick}
+            />
+            <Field
+                label="Email" type="email" value={data.email}
+                onChange={v => onChange('email', v)} placeholder="you@example.com" error={errors.email}
+            />
             <Field
                 label="Password" type={showPw ? 'text' : 'password'}
                 value={data.password} onChange={v => onChange('password', v)}
@@ -208,8 +213,30 @@ export function StepThree({ data, onChange, errors }) {
     );
 }
 
+export function StepTwo({ data, onChange, errors }) {
+    return (
+        <div className="step-fields">
+            <div className="auth-row">
+                <Field label="First name" value={data.firstName} onChange={v => onChange('firstName', onlyLetters(v))} placeholder="Alex" error={errors.firstName} />
+                <Field label="Last name" value={data.lastName} onChange={v => onChange('lastName', onlyLetters(v))} placeholder="Kovalenko" error={errors.lastName} />
+            </div>
+            <CustomSelect label="Gender" value={data.gender} onChange={v => onChange('gender', v)} placeholder="Select gender (optional)" options={GENDERS} error={errors.gender} />
+        </div>
+    );
+}
+
+export function StepThree({ data, onChange, errors }) {
+    return (
+        <div className="step-fields">
+            <AgeCounter value={data.age} onChange={v => onChange('age', v)} error={errors.age} />
+            <CustomSelect label="Region" value={data.region} onChange={v => onChange('region', v)} placeholder="Select region (optional)" options={REGIONS} error={errors.region} />
+        </div>
+    );
+}
+
 export function RegisterStepper({ registerState, setRegisterState }) {
-    const { data, errors, done } = registerState;
+    const { data, errors, done, showSkipModal } = registerState;
+    const [stepperKey, setStepperKey] = useState(0);
 
     const change = (key, val) => setRegisterState(s => ({
         ...s,
@@ -218,13 +245,40 @@ export function RegisterStepper({ registerState, setRegisterState }) {
     }));
 
     const handleBeforeNext = (currentStep) => {
-        const e = validateStep(currentStep, data);
-        if (Object.keys(e).length) {
-            setRegisterState(s => ({ ...s, errors: e }));
+        if (currentStep === 1) {
+            const e = validateStepOne(data);
+            if (Object.keys(e).length) {
+                setRegisterState(s => ({ ...s, errors: e }));
+                return false;
+            }
+            setRegisterState(s => ({ ...s, errors: {}, showSkipModal: true }));
             return false;
+        }
+        if (currentStep === 2) {
+            const e = validateStepTwo(data);
+            if (Object.keys(e).length) {
+                setRegisterState(s => ({ ...s, errors: e }));
+                return false;
+            }
+        }
+        if (currentStep === 3) {
+            const e = validateStepThree(data);
+            if (Object.keys(e).length) {
+                setRegisterState(s => ({ ...s, errors: e }));
+                return false;
+            }
         }
         setRegisterState(s => ({ ...s, errors: {} }));
         return true;
+    };
+
+    const handleSkip = () => {
+        setRegisterState(s => ({ ...s, showSkipModal: false, done: true }));
+    };
+
+    const handleContinue = () => {
+        setRegisterState(s => ({ ...s, showSkipModal: false }));
+        setStepperKey(k => k + 1);
     };
 
     if (done) {
@@ -232,22 +286,27 @@ export function RegisterStepper({ registerState, setRegisterState }) {
             <div className="auth-done">
                 <div className="auth-done-icon">✓</div>
                 <p className="auth-done-title">Account created</p>
-                <p className="auth-done-sub">Welcome to TeamHub, {data.firstName}.</p>
+                <p className="auth-done-sub">Welcome to TeamHub, {data.nick || 'there'}.</p>
             </div>
         );
     }
 
     return (
-        <Stepper
-            onBeforeNext={handleBeforeNext}
-            onFinalStepCompleted={() => setRegisterState(s => ({ ...s, done: true }))}
-            disableStepIndicators
-            backButtonText="Back"
-            nextButtonText="Continue"
-        >
-            <Step><StepOne data={data} onChange={change} errors={errors} /></Step>
-            <Step><StepTwo data={data} onChange={change} errors={errors} /></Step>
-            <Step><StepThree data={data} onChange={change} errors={errors} /></Step>
-        </Stepper>
+        <>
+            {showSkipModal && <SkipModal onContinue={handleContinue} onSkip={handleSkip} />}
+            <Stepper
+                key={stepperKey}
+                initialStep={stepperKey > 0 ? 2 : 1}
+                onBeforeNext={handleBeforeNext}
+                onFinalStepCompleted={() => setRegisterState(s => ({ ...s, done: true }))}
+                disableStepIndicators
+                backButtonText="Back"
+                nextButtonText="Continue"
+            >
+                <Step><StepOne data={data} onChange={change} errors={errors} /></Step>
+                <Step><StepTwo data={data} onChange={change} errors={errors} /></Step>
+                <Step><StepThree data={data} onChange={change} errors={errors} /></Step>
+            </Stepper>
+        </>
     );
 }

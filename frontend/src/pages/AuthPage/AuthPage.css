@@ -553,3 +553,101 @@
     font-size: 13.5px;
     color: #71717a;
 }
+
+.skip-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.15s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.skip-modal {
+    width: 360px;
+    background: #0f0f11;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 32px 28px 28px;
+    box-shadow: 0 32px 64px rgba(0, 0, 0, 0.9),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    animation: modalIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalIn {
+    from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.97);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.skip-modal-title {
+    font-size: 16px;
+    font-weight: 500;
+    color: #e4e4e7;
+    letter-spacing: -0.01em;
+    margin-bottom: 10px;
+}
+
+.skip-modal-sub {
+    font-size: 13.5px;
+    color: #71717a;
+    line-height: 1.65;
+    margin-bottom: 28px;
+}
+
+.skip-modal-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.skip-modal-btn {
+    flex: 1;
+    height: 40px;
+    border-radius: 8px;
+    font-size: 13.5px;
+    cursor: pointer;
+    letter-spacing: 0.01em;
+    transition: opacity 0.15s, background 0.15s, border-color 0.15s;
+}
+
+.skip-modal-btn--skip {
+    background: none;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    color: #71717a;
+}
+
+.skip-modal-btn--skip:hover {
+    border-color: rgba(255, 255, 255, 0.14);
+    color: #a1a1aa;
+}
+
+.skip-modal-btn--continue {
+    background: linear-gradient(90deg, #4c1d95, #5b21b6);
+    border: 1px solid rgba(139, 92, 246, 0.25);
+    color: rgba(255, 255, 255, 0.88);
+    font-weight: 500;
+}
+
+.skip-modal-btn--continue:hover {
+    opacity: 0.85;
+}
