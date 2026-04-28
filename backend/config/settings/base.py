@@ -12,6 +12,8 @@ ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
 
 
 INSTALLED_APPS = [
+    "daphne",
+
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -22,9 +24,11 @@ INSTALLED_APPS = [
     "corsheaders",
     "rest_framework",
     "rest_framework_simplejwt",
+    "channels",
 
     "apps.users",
     "apps.chats",
+    "apps.realtime",
 ]
 
 MIDDLEWARE = [
@@ -135,4 +139,10 @@ SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
     "AUTH_HEADER_TYPES": ("Bearer",),
+}
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
+    }
 }
