@@ -1,9 +1,10 @@
 import './AuthPage.css';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import DarkVeil from '../../components/DarkVeil/DarkVeil';
-import { darkVeilConfig } from './AuthPageConfig';
-import { LoginForm, RegisterStepper } from '../../components/Features/AuthComponents';
+
+import DarkVeil from '../../components/layout/DarkVeil/DarkVeil.jsx';
+import { darkVeilConfig } from '../../components/config/PagesConfig.js';
+import { LoginForm, RegisterStepper } from '../../components/features/auth/AuthComponents.jsx';
 
 const EMPTY_REGISTER_STATE = {
     data: { nick: '', email: '', password: '', password2: '', firstName: '', lastName: '', gender: '', age: '', region: '' },

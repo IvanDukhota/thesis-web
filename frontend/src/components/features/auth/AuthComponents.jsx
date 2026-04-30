@@ -1,13 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import Stepper, { Step } from '../../components/Stepper/Stepper';
 import {
     RiEyeLine, RiEyeOffLine,
     RiGoogleFill, RiFacebookFill,
     RiArrowUpSLine, RiArrowDownSLine,
 } from 'react-icons/ri';
 import { VscChevronDown } from 'react-icons/vsc';
-import { onlyLetters, GENDERS, REGIONS, validateStepOne, validateStepTwo, validateStepThree } from './AuthHelpers';
+
+import Stepper, { Step } from '../../features/auth/Stepper/Stepper.jsx';
+import { onlyLetters, GENDERS, REGIONS, validateStepOne, validateStepTwo, validateStepThree } from '../../config/AuthHelpers.js';
 
 export function Field({ label, type = 'text', value, onChange, error, placeholder, rightSlot, filter }) {
     const handle = (v) => onChange(filter ? filter(v) : v);
