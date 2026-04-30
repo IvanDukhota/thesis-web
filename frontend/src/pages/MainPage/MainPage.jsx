@@ -1,13 +1,13 @@
 import './MainPage.css';
 import { useEffect, useRef } from 'react';
 
-import Header from '../../components/Header/Header';
-import DarkVeil from '../../components/DarkVeil/DarkVeil';
-import CodeWindow from '../../components/CodeWindow/CodeWindow';
-import IdeSection from '../../components/Features/IdeSection.jsx';
+import Header from '../../components/layout/Header/Header.jsx';
+import DarkVeil from '../../components/layout/DarkVeil/DarkVeil.jsx';
+import CodeWindow from '../../components/features/main/CodeWindow/CodeWindow.jsx';
+import IdeSection from '../../components/features/main/IdeSection/IdeSection.jsx';
 
-import { darkVeilConfig } from './MainPageConfig.js';
-import { FEATURES } from '../../components/Features/FeaturesData.jsx';
+import { darkVeilConfig } from '../../components/config/PagesConfig.js';
+import { FEATURES } from '../../components/config/FeaturesData.jsx';
 
 function MainPage() {
     const ideRef = useRef(null);
