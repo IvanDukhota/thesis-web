@@ -1,4 +1,13 @@
+from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
+from django.contrib.auth import get_user_model
+
+from apps.chats.models import Chat
+from apps.chats.services import get_direct_chat_between, get_or_create_direct_chat
+from apps.messages.serializers import MessageSerializer
+from apps.messages.services import create_text_message
+
+User = get_user_model()
 
 
 class AppConsumer(AsyncJsonWebsocketConsumer):
@@ -6,7 +15,7 @@ class AppConsumer(AsyncJsonWebsocketConsumer):
         user = self.scope.get("user")
 
         await self.accept()
-        
+
         if not user or not user.is_authenticated:
             await self.send_json(
                 {
@@ -22,6 +31,9 @@ class AppConsumer(AsyncJsonWebsocketConsumer):
 
         self.active_chat_group_name = None
         self.active_chat_id = None
+
+        self.active_chat_type = None
+        self.active_recipient_id = None
 
         await self.channel_layer.group_add(self.user_group_name, self.channel_name)
 
@@ -50,7 +62,7 @@ class AppConsumer(AsyncJsonWebsocketConsumer):
         if event_type == "ping":
             await self.send_json({"type": "pong"})
             return
-        
+
         if event_type == "chat.open":
             await self.open_chat(content)
             return
@@ -60,15 +72,17 @@ class AppConsumer(AsyncJsonWebsocketConsumer):
             return
 
         if event_type == "message.send":
-            await self.send_message_to_active_chat(content)
+            await self.send_message(content)
             return
 
     async def open_chat(self, content):
         chat_type = content.get("chat_type")
-        recipient_id = content.get("recipient_id")
-        chat_id = content.get("chat_id")
+
+        await self.close_active_chat(send_event=False)
 
         if chat_type == "direct":
+            recipient_id = content.get("recipient_id")
+
             if not recipient_id:
                 await self.send_json(
                     {
@@ -78,11 +92,38 @@ class AppConsumer(AsyncJsonWebsocketConsumer):
                 )
                 return
 
-            first_id = min(int(self.user.id), int(recipient_id))
-            second_id = max(int(self.user.id), int(recipient_id))
-            chat_id = f"direct_{first_id}_{second_id}"
+            result = await self.get_existing_direct_chat(recipient_id)
 
-        elif chat_type == "group":
+            self.active_chat_type = Chat.ChatType.DIRECT
+            self.active_recipient_id = int(recipient_id)
+
+            if result:
+                chat_id = str(result["id"])
+                await self.subscribe_to_chat(chat_id)
+
+                await self.send_json(
+                    {
+                        "type": "chat.opened",
+                        "exists": True,
+                        "chat_id": chat_id,
+                        "chat_type": "direct",
+                    }
+                )
+            else:
+                await self.send_json(
+                    {
+                        "type": "chat.opened",
+                        "exists": False,
+                        "chat_id": None,
+                        "chat_type": "direct",
+                    }
+                )
+
+            return
+
+        if chat_type == "group":
+            chat_id = content.get("chat_id")
+
             if not chat_id:
                 await self.send_json(
                     {
@@ -92,59 +133,47 @@ class AppConsumer(AsyncJsonWebsocketConsumer):
                 )
                 return
 
-            chat_id = f"group_{chat_id}"
+            self.active_chat_type = Chat.ChatType.GROUP
+            self.active_chat_id = str(chat_id)
+            await self.subscribe_to_chat(str(chat_id))
 
-        else:
             await self.send_json(
                 {
-                    "type": "chat.error",
-                    "message": "Unsupported chat_type.",
+                    "type": "chat.opened",
+                    "exists": True,
+                    "chat_id": str(chat_id),
+                    "chat_type": "group",
                 }
             )
-            return
 
-        await self.subscribe_to_chat(chat_id)
+            return
 
         await self.send_json(
             {
-                "type": "chat.opened",
-                "chat_id": chat_id,
-                "chat_type": chat_type,
+                "type": "chat.error",
+                "message": "Unsupported chat_type.",
             }
         )
 
     async def subscribe_to_chat(self, chat_id):
-        if self.active_chat_group_name:
-            await self.channel_layer.group_discard(self.active_chat_group_name, self.channel_name)
-
-        self.active_chat_id = chat_id
+        self.active_chat_id = str(chat_id)
         self.active_chat_group_name = f"chat_{chat_id}"
 
         await self.channel_layer.group_add(self.active_chat_group_name, self.channel_name)
 
-    async def close_active_chat(self):
+    async def close_active_chat(self, send_event=True):
         if self.active_chat_group_name:
             await self.channel_layer.group_discard(self.active_chat_group_name, self.channel_name)
 
-        self.active_chat_id = None
         self.active_chat_group_name = None
+        self.active_chat_id = None
+        self.active_chat_type = None
+        self.active_recipient_id = None
 
-        await self.send_json(
-            {
-                "type": "chat.closed",
-            }
-        )
+        if send_event:
+            await self.send_json({"type": "chat.closed"})
 
-    async def send_message_to_active_chat(self, content):
-        if not self.active_chat_group_name or not self.active_chat_id:
-            await self.send_json(
-                {
-                    "type": "message.error",
-                    "message": "No active chat selected.",
-                }
-            )
-            return
-
+    async def send_message(self, content):
         payload = content.get("payload", {})
         text = str(payload.get("text", "")).strip()
         client_id = payload.get("client_id")
@@ -158,30 +187,126 @@ class AppConsumer(AsyncJsonWebsocketConsumer):
             )
             return
 
-        event_payload = {
-            "type": "message.created",
-            "chat_id": self.active_chat_id,
-            "payload": {
-                "client_id": client_id,
-                "text": text,
-                "sender": {
-                    "id": self.user.id,
-                    "email": self.user.email,
-                    "full_name": self.user.full_name,
-                },
-            },
-        }
+        if self.active_chat_type == Chat.ChatType.DIRECT:
+            message_data = await self.create_direct_text_message(
+                recipient_id=self.active_recipient_id,
+                text=text,
+                client_id=client_id,
+            )
+        elif self.active_chat_type == Chat.ChatType.GROUP:
+            message_data = await self.create_group_text_message(
+                chat_id=self.active_chat_id,
+                text=text,
+                client_id=client_id,
+            )
+        else:
+            await self.send_json(
+                {
+                    "type": "message.error",
+                    "message": "No active chat selected.",
+                }
+            )
+            return
+
+        chat_id = str(message_data["chat"])
+        message_data["chat"] = chat_id
+
+        if not self.active_chat_group_name:
+            await self.subscribe_to_chat(chat_id)
 
         await self.channel_layer.group_send(
-            self.active_chat_group_name,
+            f"chat_{chat_id}",
             {
                 "type": "chat_message",
-                "payload": event_payload,
+                "payload": {
+                    "type": "message.created",
+                    "chat_id": chat_id,
+                    "payload": message_data,
+                },
             },
         )
 
+        await self.notify_chat_members_about_message(message_data)
+
     async def chat_message(self, event):
         await self.send_json(event["payload"])
-        
+
     async def app_event(self, event):
         await self.send_json(event["payload"])
+
+    @database_sync_to_async
+    def get_existing_direct_chat(self, recipient_id):
+        try:
+            recipient = User.objects.get(id=recipient_id)
+        except User.DoesNotExist:
+            return None
+
+        chat = get_direct_chat_between(self.user, recipient)
+
+        if not chat:
+            return None
+
+        return {"id": chat.id}
+
+    @database_sync_to_async
+    def create_direct_text_message(self, recipient_id, text, client_id):
+        recipient = User.objects.get(id=recipient_id)
+        chat, _ = get_or_create_direct_chat(self.user, recipient)
+
+        message = create_text_message(
+            chat=chat,
+            sender=self.user,
+            text=text,
+            client_id=client_id,
+        )
+
+        return MessageSerializer(message).data
+
+    @database_sync_to_async
+    def create_group_text_message(self, chat_id, text, client_id):
+        chat = Chat.objects.get(
+            id=chat_id,
+            members__user=self.user,
+            members__is_active=True,
+            is_active=True,
+        )
+
+        message = create_text_message(
+            chat=chat,
+            sender=self.user,
+            text=text,
+            client_id=client_id,
+        )
+
+        return MessageSerializer(message).data
+
+    async def notify_chat_members_about_message(self, message_data):
+        chat_id = str(message_data["chat"])
+        sender_id = message_data["sender"]["id"]
+
+        member_ids = await self.get_chat_member_ids(chat_id)
+
+        for member_id in member_ids:
+            if member_id == sender_id:
+                continue
+
+            await self.channel_layer.group_send(
+                f"user_{member_id}",
+                {
+                    "type": "app_event",
+                    "payload": {
+                        "type": "notification.new_message",
+                        "chat_id": chat_id,
+                        "message": f"Новое сообщение от {message_data['sender']['full_name']}",
+                        "payload": message_data,
+                    },
+                },
+            )
+
+    @database_sync_to_async
+    def get_chat_member_ids(self, chat_id):
+        chat = Chat.objects.get(id=chat_id)
+
+        return list(
+            chat.members.filter(is_active=True).values_list("user_id", flat=True)
+        )

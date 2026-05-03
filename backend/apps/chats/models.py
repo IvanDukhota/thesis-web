@@ -11,15 +11,19 @@ class Chat(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     type = models.CharField(max_length=20, choices=ChatType.choices)
+    
     title = models.CharField(max_length=255, blank=True)
     description = models.TextField(blank=True)
     avatar = models.URLField(blank=True)
+    
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
         related_name="created_chats",
     )
+    
     is_active = models.BooleanField(default=True)
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -39,6 +43,7 @@ class ChatMember(models.Model):
         MEMBER = "member", "Member"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
     chat = models.ForeignKey(
         Chat,
         on_delete=models.CASCADE,
@@ -49,7 +54,9 @@ class ChatMember(models.Model):
         on_delete=models.CASCADE,
         related_name="chat_memberships",
     )
+
     role = models.CharField(max_length=20, choices=Role.choices, default=Role.MEMBER)
+    
     joined_at = models.DateTimeField(auto_now_add=True)
     is_active = models.BooleanField(default=True)
     nickname = models.CharField(max_length=255, blank=True)
