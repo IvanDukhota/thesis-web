@@ -1,3 +1,6 @@
+import json
+from django.core.serializers.json import DjangoJSONEncoder
+
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from django.contrib.auth import get_user_model
@@ -11,6 +14,10 @@ User = get_user_model()
 
 
 class AppConsumer(AsyncJsonWebsocketConsumer):
+    @classmethod
+    async def encode_json(cls, content):
+        return json.dumps(content, cls=DjangoJSONEncoder)
+
     async def connect(self):
         user = self.scope.get("user")
 
@@ -31,7 +38,6 @@ class AppConsumer(AsyncJsonWebsocketConsumer):
 
         self.active_chat_group_name = None
         self.active_chat_id = None
-
         self.active_chat_type = None
         self.active_recipient_id = None
 
@@ -92,20 +98,20 @@ class AppConsumer(AsyncJsonWebsocketConsumer):
                 )
                 return
 
-            result = await self.get_existing_direct_chat(recipient_id)
-
             self.active_chat_type = Chat.ChatType.DIRECT
             self.active_recipient_id = int(recipient_id)
 
-            if result:
-                chat_id = str(result["id"])
-                await self.subscribe_to_chat(chat_id)
+            chat_data = await self.get_existing_direct_chat(recipient_id)
+
+            if chat_data:
+                self.active_chat_id = str(chat_data["id"])
+                await self.subscribe_to_chat(self.active_chat_id)
 
                 await self.send_json(
                     {
                         "type": "chat.opened",
                         "exists": True,
-                        "chat_id": chat_id,
+                        "chat_id": self.active_chat_id,
                         "chat_type": "direct",
                     }
                 )
@@ -135,13 +141,14 @@ class AppConsumer(AsyncJsonWebsocketConsumer):
 
             self.active_chat_type = Chat.ChatType.GROUP
             self.active_chat_id = str(chat_id)
-            await self.subscribe_to_chat(str(chat_id))
+
+            await self.subscribe_to_chat(self.active_chat_id)
 
             await self.send_json(
                 {
                     "type": "chat.opened",
                     "exists": True,
-                    "chat_id": str(chat_id),
+                    "chat_id": self.active_chat_id,
                     "chat_type": "group",
                 }
             )
@@ -156,6 +163,9 @@ class AppConsumer(AsyncJsonWebsocketConsumer):
         )
 
     async def subscribe_to_chat(self, chat_id):
+        if self.active_chat_group_name:
+            await self.channel_layer.group_discard(self.active_chat_group_name, self.channel_name)
+
         self.active_chat_id = str(chat_id)
         self.active_chat_group_name = f"chat_{chat_id}"
 
@@ -188,17 +198,37 @@ class AppConsumer(AsyncJsonWebsocketConsumer):
             return
 
         if self.active_chat_type == Chat.ChatType.DIRECT:
+            if not self.active_recipient_id:
+                await self.send_json(
+                    {
+                        "type": "message.error",
+                        "message": "No direct recipient selected.",
+                    }
+                )
+                return
+
             message_data = await self.create_direct_text_message(
                 recipient_id=self.active_recipient_id,
                 text=text,
                 client_id=client_id,
             )
+
         elif self.active_chat_type == Chat.ChatType.GROUP:
+            if not self.active_chat_id:
+                await self.send_json(
+                    {
+                        "type": "message.error",
+                        "message": "No group chat selected.",
+                    }
+                )
+                return
+
             message_data = await self.create_group_text_message(
                 chat_id=self.active_chat_id,
                 text=text,
                 client_id=client_id,
             )
+
         else:
             await self.send_json(
                 {
@@ -209,10 +239,18 @@ class AppConsumer(AsyncJsonWebsocketConsumer):
             return
 
         chat_id = str(message_data["chat"])
-        message_data["chat"] = chat_id
 
-        if not self.active_chat_group_name:
+        if self.active_chat_id != chat_id or not self.active_chat_group_name:
             await self.subscribe_to_chat(chat_id)
+
+        await self.send_json(
+            {
+                "type": "chat.opened",
+                "exists": True,
+                "chat_id": chat_id,
+                "chat_type": self.active_chat_type,
+            }
+        )
 
         await self.channel_layer.group_send(
             f"chat_{chat_id}",
@@ -251,6 +289,7 @@ class AppConsumer(AsyncJsonWebsocketConsumer):
     @database_sync_to_async
     def create_direct_text_message(self, recipient_id, text, client_id):
         recipient = User.objects.get(id=recipient_id)
+
         chat, _ = get_or_create_direct_chat(self.user, recipient)
 
         message = create_text_message(
@@ -282,12 +321,12 @@ class AppConsumer(AsyncJsonWebsocketConsumer):
 
     async def notify_chat_members_about_message(self, message_data):
         chat_id = str(message_data["chat"])
-        sender_id = message_data["sender"]["id"]
+        sender_id = int(message_data["sender"]["id"])
 
         member_ids = await self.get_chat_member_ids(chat_id)
 
         for member_id in member_ids:
-            if member_id == sender_id:
+            if int(member_id) == sender_id:
                 continue
 
             await self.channel_layer.group_send(
