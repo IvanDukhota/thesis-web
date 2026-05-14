@@ -18,6 +18,7 @@ class ChatMemberSerializer(serializers.ModelSerializer):
             "joined_at",
             "is_active",
             "nickname",
+            "last_read_position",
         ]
 
 
@@ -29,6 +30,7 @@ class ChatSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "type",
+            "direct_key",
             "title",
             "description",
             "avatar",

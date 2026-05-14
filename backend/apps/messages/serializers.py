@@ -34,6 +34,7 @@ class MessageSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "chat",
+            "position",
             "client_id",
             "sender",
             "type",

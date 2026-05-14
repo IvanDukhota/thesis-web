@@ -25,6 +25,7 @@ class Message(models.Model):
         related_name="sent_messages",
     )
 
+    position = models.PositiveBigIntegerField(db_index=True)
     client_id = models.UUIDField(db_index=True, null=True, blank=True)
 
     type = models.CharField(

@@ -62,7 +62,9 @@ class ChatMember(models.Model):
     joined_at = models.DateTimeField(auto_now_add=True)
     is_active = models.BooleanField(default=True)
     nickname = models.CharField(max_length=255, blank=True)
-
+    
+    last_read_position = models.PositiveBigIntegerField(default=0)
+    
     class Meta:
         unique_together = ("chat", "user")
         ordering = ["joined_at"]
