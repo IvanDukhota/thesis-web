@@ -1,0 +1,175 @@
+html {
+    overflow-y: scroll;
+    scrollbar-gutter: stable;
+}
+
+.teamspage {
+    min-height: 100vh;
+    width: 100%;
+    background: black;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.teamspage-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.teamspage-empty-wrap {
+    position: relative;
+    z-index: 1;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding-top: 100px;
+    padding-bottom: 60px;
+}
+
+.teamspage-empty {
+    width: 640px;
+    padding: 64px 56px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 16px;
+    box-shadow: 0 40px 80px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 0;
+}
+
+.teamspage-empty-icon {
+    font-size: 40px;
+    margin-bottom: 24px;
+    opacity: 0.15;
+    line-height: 1;
+}
+
+.teamspage-empty-title {
+    font-size: 20px;
+    font-weight: 500;
+    color: #e4e4e7;
+    letter-spacing: -0.02em;
+    margin-bottom: 14px;
+}
+
+.teamspage-empty-desc {
+    font-size: 14px;
+    color: #71717a;
+    line-height: 1.7;
+    max-width: 420px;
+    margin-bottom: 36px;
+}
+
+.teamspage-empty-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.teamspage-btn {
+    height: 44px;
+    padding: 0 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    cursor: pointer;
+    letter-spacing: 0.01em;
+    transition: opacity 0.15s, background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.teamspage-btn--secondary {
+    background: none;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #a1a1aa;
+}
+
+.teamspage-btn--secondary:hover {
+    color: #e4e4e7;
+    border-color: rgba(255, 255, 255, 0.16);
+}
+
+.teamspage-btn--primary {
+    background: linear-gradient(90deg, #4c1d95, #5b21b6);
+    border: 1px solid rgba(139, 92, 246, 0.25);
+    color: rgba(255, 255, 255, 0.88);
+    font-weight: 500;
+}
+
+.teamspage-btn--primary:hover {
+    opacity: 0.85;
+}
+
+.teamspage-board-wrap {
+    position: relative;
+    z-index: 1;
+    width: 1300px;
+    margin-top: 100px;
+    margin-bottom: 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.teamspage-board-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 250px;
+    height: 40px;
+    padding: 0 14px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.teamspage-board-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #e4e4e7;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.teamspage-board-gear {
+    background: none;
+    border: none;
+    color: #52525b;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    padding: 3px;
+    border-radius: 5px;
+    flex-shrink: 0;
+    transition: color 0.15s;
+}
+
+.teamspage-board-gear:hover {
+    color: #a1a1aa;
+}
+
+.teamspage-board {
+    display: grid;
+    grid-template-columns: 22% 28% 50%;
+    gap: 12px;
+    height: 560px;
+}
+
+.teamspage-col {
+    min-height: 0;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.015);
+}
+
+.teamspage-col--lg {
+    min-height: 0;
+}
