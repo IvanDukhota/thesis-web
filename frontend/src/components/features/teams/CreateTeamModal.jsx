@@ -58,7 +58,7 @@ export function CreateTeamModal({ onClose, onCreate }) {
     const removeRole = (id) => setRoles(r => r.filter(x => x.id !== id));
 
     const handleInvite = () => {
-        const nick = inviteInput.trim().replace(/^\@/, '');
+        const nick = inviteInput.trim().replace(/^@/, '');
         if (!nick) return;
         if (invited.find(i => i.nick === nick)) return;
         setInvited(v => [...v, { nick }]);

@@ -12,17 +12,23 @@ const COLORS = ['#7c3aed', '#a78bfa', '#4ade80', '#facc15'];
 
 function DonutChart({ members }) {
     const total = members.reduce((s, m) => s + m.done, 0);
-    let offset = 0;
     const R = 48, C = 2 * Math.PI * R;
+
+    const slices = members.reduce((acc, m, i) => {
+        const pct = m.done / total;
+        const offset = acc.offset;
+        acc.items.push({ m, i, pct, offset });
+        acc.offset += pct;
+        return acc;
+    }, { items: [], offset: 0 }).items;
 
     return (
         <div className="ts-donut-wrap">
             <svg width="120" height="120" viewBox="0 0 120 120">
-                {members.map((m, i) => {
-                    const pct = m.done / total;
+                {slices.map(({ m, i, pct, offset }) => {
                     const dash = pct * C;
                     const gap = C - dash;
-                    const el = (
+                    return (
                         <circle key={i} cx="60" cy="60" r={R} fill="none"
                             stroke={COLORS[i]} strokeWidth="13"
                             strokeDasharray={`${dash} ${gap}`}
@@ -30,8 +36,6 @@ function DonutChart({ members }) {
                             style={{ transform: 'rotate(-90deg)', transformOrigin: '60px 60px' }}
                         />
                     );
-                    offset += pct;
-                    return el;
                 })}
                 <text x="60" y="56" textAnchor="middle" fill="#e4e4e7" fontSize="15" fontWeight="600">{total}</text>
                 <text x="60" y="70" textAnchor="middle" fill="#52525b" fontSize="8">done</text>
