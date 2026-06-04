@@ -17,7 +17,7 @@ function DonutChart({ members }) {
     const slices = members.reduce((acc, m, i) => {
         const pct = m.done / total;
         const offset = acc.offset;
-        acc.items.push({ m, i, pct, offset });
+        acc.items.push({ i, pct, offset });
         acc.offset += pct;
         return acc;
     }, { items: [], offset: 0 }).items;
@@ -25,7 +25,7 @@ function DonutChart({ members }) {
     return (
         <div className="ts-donut-wrap">
             <svg width="120" height="120" viewBox="0 0 120 120">
-                {slices.map(({ m, i, pct, offset }) => {
+                {slices.map(({ i, pct, offset }) => {
                     const dash = pct * C;
                     const gap = C - dash;
                     return (
