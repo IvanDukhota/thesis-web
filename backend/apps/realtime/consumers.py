@@ -7,7 +7,7 @@ from django.contrib.auth import get_user_model
 
 from apps.chats.models import Chat, ChatMember
 from apps.chats.serializers import ChatSerializer
-from apps.chats.services import get_direct_chat_between, get_or_create_direct_chat
+from apps.chats.services import get_or_create_direct_chat
 from apps.messages.serializers import MessageSerializer
 from apps.messages.services import create_text_message
 
@@ -87,65 +87,26 @@ class AppConsumer(AsyncJsonWebsocketConsumer):
             return
 
     async def open_chat(self, content):
-        chat_type = content.get("chat_type")
+        chat_id = content.get("chat_id")
+        recipient_id = content.get("recipient_id")
 
         await self.close_active_chat(send_event=False)
 
-        if chat_type == "direct":
-            recipient_id = content.get("recipient_id")
-
-            if not recipient_id:
-                await self.send_json(
-                    {
-                        "type": "chat.error",
-                        "message": "recipient_id is required for direct chat.",
-                    }
-                )
-                return
-
-            self.active_chat_type = Chat.ChatType.DIRECT
-            self.active_recipient_id = int(recipient_id)
-
-            chat_data = await self.get_existing_direct_chat(recipient_id)
-
-            if chat_data:
-                self.active_chat_id = str(chat_data["id"])
-                await self.subscribe_to_chat(self.active_chat_id)
-
-                await self.send_json(
-                    {
-                        "type": "chat.opened",
-                        "exists": True,
-                        "chat_id": self.active_chat_id,
-                        "chat_type": "direct",
-                    }
-                )
-            else:
-                await self.send_json(
-                    {
-                        "type": "chat.opened",
-                        "exists": False,
-                        "chat_id": None,
-                        "chat_type": "direct",
-                    }
-                )
-
-            return
-
-        if chat_type == "group":
-            chat_id = content.get("chat_id")
-
-            if not chat_id:
-                await self.send_json(
-                    {
-                        "type": "chat.error",
-                        "message": "chat_id is required for group chat.",
-                    }
-                )
-                return
-
-            self.active_chat_type = Chat.ChatType.GROUP
+        if chat_id:
             self.active_chat_id = str(chat_id)
+
+            chat = await self.get_chat_by_id(chat_id)
+            if not chat:
+                await self.send_json(
+                    {
+                        "type": "chat.error",
+                        "message": "Chat not found.",
+                    }
+                )
+                return
+
+            self.active_chat_type = chat["type"]
+            self.active_recipient_id = chat.get("recipient_id")
 
             await self.subscribe_to_chat(self.active_chat_id)
 
@@ -154,13 +115,32 @@ class AppConsumer(AsyncJsonWebsocketConsumer):
                     "type": "chat.opened",
                     "exists": True,
                     "chat_id": self.active_chat_id,
-                    "chat_type": "group",
+                    "chat_type": self.active_chat_type,
                 }
             )
-
             return
 
-        await self.send_json({"type": "chat.error", "message": "Unsupported chat_type."})
+        if recipient_id:
+            self.active_chat_type = Chat.ChatType.DIRECT
+            self.active_recipient_id = int(recipient_id)
+            self.active_chat_id = None
+
+            await self.send_json(
+                {
+                    "type": "chat.opened",
+                    "exists": False,
+                    "chat_id": None,
+                    "chat_type": "direct",
+                }
+            )
+            return
+
+        await self.send_json(
+            {
+                "type": "chat.error",
+                "message": "Either chat_id or recipient_id is required.",
+            }
+        )
 
     async def subscribe_to_chat(self, chat_id):
         if self.active_chat_group_name:
@@ -256,6 +236,8 @@ class AppConsumer(AsyncJsonWebsocketConsumer):
 
         await self.notify_chat_members_about_message(message_data, chat_data)
 
+        await self.update_sender_read_position(chat_id, message_data["position"])
+
     async def mark_messages_read(self, content):
         chat_id = content.get("chat_id")
         position = content.get("position")
@@ -293,18 +275,28 @@ class AppConsumer(AsyncJsonWebsocketConsumer):
         await self.send_json(event["payload"])
 
     @database_sync_to_async
-    def get_existing_direct_chat(self, recipient_id):
+    def get_chat_by_id(self, chat_id):
         try:
-            recipient = User.objects.get(id=recipient_id)
-        except User.DoesNotExist:
+            chat = Chat.objects.get(
+                id=chat_id,
+                members__user=self.user,
+                members__is_active=True,
+                is_active=True,
+            )
+        except Chat.DoesNotExist:
             return None
 
-        chat = get_direct_chat_between(self.user, recipient)
+        result = {
+            "id": str(chat.id),
+            "type": chat.type,
+        }
 
-        if not chat:
-            return None
+        if chat.type == Chat.ChatType.DIRECT:
+            other_member = chat.members.exclude(user=self.user).first()
+            if other_member:
+                result["recipient_id"] = other_member.user_id
 
-        return {"id": chat.id}
+        return result
 
     @database_sync_to_async
     def create_direct_text_message(self, recipient_id, text, client_id):
@@ -386,3 +378,16 @@ class AppConsumer(AsyncJsonWebsocketConsumer):
         member.save(update_fields=["last_read_position"])
 
         return member.last_read_position
+
+    @database_sync_to_async
+    def update_sender_read_position(self, chat_id, position):
+        try:
+            member = ChatMember.objects.get(
+                chat_id=chat_id,
+                user=self.user,
+                is_active=True,
+            )
+            member.last_read_position = position
+            member.save(update_fields=["last_read_position"])
+        except ChatMember.DoesNotExist:
+            pass

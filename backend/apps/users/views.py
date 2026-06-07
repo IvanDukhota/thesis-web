@@ -107,3 +107,54 @@ class ContactCreateView(generics.CreateAPIView):
         user_data["is_contact"] = True
 
         return Response(user_data, status=status.HTTP_201_CREATED)
+
+
+class ContactListView(APIView):
+    """Gives list of all user's contacts"""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+
+        contacts = User.objects.filter(
+            id__in=user.contacts.values_list('contact_id', flat=True)
+        ).order_by("first_name", "last_name", "email")
+
+        return Response(UserSerializer(contacts, many=True).data)
+
+
+class ContactsWithoutChatsView(APIView):
+    """Gives list of contacts that don't have direct chat with the user yet"""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        from apps.chats.models import Chat
+        from apps.chats.services import build_direct_key
+
+        user = request.user
+
+        contacts = User.objects.filter(
+            id__in=user.contacts.values_list('contact_id', flat=True)
+        )
+
+        existing_direct_keys = set(
+            Chat.objects.filter(
+                type=Chat.ChatType.DIRECT,
+                members__user=user,
+                members__is_active=True,
+                is_active=True,
+            ).values_list('direct_key', flat=True)
+        )
+
+        contacts_without_chats = []
+        for contact in contacts:
+            direct_key = build_direct_key(user.id, contact.id)
+            if direct_key not in existing_direct_keys:
+                contacts_without_chats.append({
+                    "id": contact.id,
+                    "email": contact.email,
+                    "full_name": contact.full_name,
+                    "avatar": getattr(contact, 'avatar', ''),
+                })
+
+        return Response(contacts_without_chats)

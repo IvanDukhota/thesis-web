@@ -1,13 +1,9 @@
 from django.urls import path
-from rest_framework.routers import DefaultRouter
 
-from .views import ChatViewSet, DirectChatView
-
-router = DefaultRouter()
-router.register("", ChatViewSet, basename="chat")
+from .views import ChatDetailView, ChatListView, GroupChatCreateView
 
 urlpatterns = [
-    path("direct/", DirectChatView.as_view(), name="direct-chat"),
+    path("", ChatListView.as_view(), name="chat-list"),
+    path("groups/create/", GroupChatCreateView.as_view(), name="group-chat-create"),
+    path("<uuid:chat_id>/", ChatDetailView.as_view(), name="chat-detail"),
 ]
-
-urlpatterns += router.urls
