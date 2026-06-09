@@ -9,7 +9,7 @@ function DeleteConfirm({ teamName, onConfirm, onCancel }) {
         <div className="tsm-confirm-overlay">
             <div className="tsm-confirm">
                 <div className="tsm-confirm-icon"><RiErrorWarningLine size={24} /></div>
-                <p className="tsm-confirm-title">Delete "{teamName}"?</p>
+                <p className="tsm-confirm-title">Delete &quot;{teamName}&quot;?</p>
                 <p className="tsm-confirm-sub">
                     This action is permanent. All projects, members and data
                     associated with this team will be removed.

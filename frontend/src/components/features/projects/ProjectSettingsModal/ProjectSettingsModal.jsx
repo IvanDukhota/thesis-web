@@ -16,7 +16,7 @@ function DeleteConfirm({ name, onConfirm, onCancel }) {
         <div className="psm-confirm-overlay">
             <div className="psm-confirm">
                 <div className="psm-confirm-icon"><RiErrorWarningLine size={24} /></div>
-                <p className="psm-confirm-title">Delete "{name}"?</p>
+                <p className="psm-confirm-title">Delete &quot;{name}&quot;?</p>
                 <p className="psm-confirm-sub">All tasks, roles and data will be permanently removed.</p>
                 <div className="psm-confirm-actions">
                     <button className="psm-btn psm-btn--cancel" onClick={onCancel}>Cancel</button>
