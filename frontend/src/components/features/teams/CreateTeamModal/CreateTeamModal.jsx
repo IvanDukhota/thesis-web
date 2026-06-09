@@ -1,12 +1,19 @@
 import { useState, useEffect } from 'react';
-import { RiCloseLine, RiAddLine, RiDeleteBinLine, RiUserLine } from 'react-icons/ri';
+import { RiCloseLine, RiAddLine, RiDeleteBinLine, RiMailLine } from 'react-icons/ri';
 import './CreateTeamModal.css'
 
-const DEFAULT_ROLES = [
-    { id: 1, name: 'Developer', perms: ['read', 'write'] },
-    { id: 2, name: 'Designer', perms: ['read'] },
+const ALL_PERMS = [
+    'view',
+    'invite',
+    'create project',
+    'manage team',
+    'delete',
 ];
-const ALL_PERMS = ['read', 'write', 'delete', 'manage'];
+
+const DEFAULT_ROLES = [
+    { id: 1, name: 'Admin', perms: ['view', 'invite', 'create project', 'edit team', 'manage roles', 'delete'] },
+    { id: 2, name: 'Member', perms: ['view', 'invite', 'create project'] },
+];
 
 function RoleRow({ role, onChange, onRemove }) {
     const togglePerm = (p) => {
@@ -53,15 +60,15 @@ export function CreateTeamModal({ onClose, onCreate }) {
         return () => { document.body.style.overflow = ''; };
     }, []);
 
-    const addRole = () => setRoles(r => [...r, { id: Date.now(), name: '', perms: ['read'] }]);
+    const addRole = () => setRoles(r => [...r, { id: Date.now(), name: '', perms: ['view'] }]);
     const updateRole = (id, val) => setRoles(r => r.map(x => x.id === id ? val : x));
     const removeRole = (id) => setRoles(r => r.filter(x => x.id !== id));
 
     const handleInvite = () => {
-        const nick = inviteInput.trim().replace(/^@/, '');
-        if (!nick) return;
-        if (invited.find(i => i.nick === nick)) return;
-        setInvited(v => [...v, { nick }]);
+        const email = inviteInput.trim();
+        if (!email || !email.includes('@')) return;
+        if (invited.find(i => i.email === email)) return;
+        setInvited(v => [...v, { email, status: 'pending' }]);
         setInviteInput('');
     };
 
@@ -135,23 +142,23 @@ export function CreateTeamModal({ onClose, onCreate }) {
                         </div>
                         <div className="ctm-invite-row">
                             <div className="ctm-invite-input-wrap">
-                                <RiUserLine size={14} className="ctm-invite-icon" />
+                                <RiMailLine size={14} className="ctm-invite-icon" />
                                 <input
                                     className="ctm-input ctm-invite-input"
                                     value={inviteInput}
                                     onChange={e => setInviteInput(e.target.value)}
-                                    placeholder="nickname"
+                                    placeholder="colleague@example.com"
                                     onKeyDown={e => e.key === 'Enter' && handleInvite()}
                                 />
                             </div>
-                            <button className="ctm-invite-btn" onClick={handleInvite} type="button">Add</button>
+                            <button className="ctm-invite-btn" onClick={handleInvite} type="button">Invite</button>
                         </div>
                         {invited.length > 0 && (
                             <div className="ctm-invited-list">
                                 {invited.map(i => (
-                                    <div key={i.nick} className="ctm-invited-item">
-                                        <span className="ctm-invited-email">@{i.nick}</span>
-                                        <span className="ctm-invited-badge">Will be invited on create</span>
+                                    <div key={i.email} className="ctm-invited-item">
+                                        <span className="ctm-invited-email">{i.email}</span>
+                                        <span className="ctm-invited-badge">Invite sent</span>
                                     </div>
                                 ))}
                             </div>

@@ -32,28 +32,20 @@ html {
 }
 
 .teamspage-empty {
-    width: 640px;
-    padding: 64px 56px;
+    width: 800px;
+    height: 400px;
     background: rgba(255, 255, 255, 0.02);
     border: 1px solid rgba(255, 255, 255, 0.07);
     border-radius: 16px;
     box-shadow: 0 40px 80px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.06);
     display: flex;
-    flex-direction: column;
     align-items: center;
-    text-align: center;
-    gap: 0;
-}
-
-.teamspage-empty-icon {
-    font-size: 40px;
-    margin-bottom: 24px;
-    opacity: 0.15;
-    line-height: 1;
+    justify-content: center;
+    flex-direction: column;
 }
 
 .teamspage-empty-title {
-    font-size: 20px;
+    font-size: 22px;
     font-weight: 500;
     color: #e4e4e7;
     letter-spacing: -0.02em;
@@ -66,6 +58,7 @@ html {
     line-height: 1.7;
     max-width: 420px;
     margin-bottom: 36px;
+    text-align: center;
 }
 
 .teamspage-empty-actions {

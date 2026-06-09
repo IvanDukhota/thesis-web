@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { RiAddLine, RiShieldUserLine, RiSettings3Line } from 'react-icons/ri';
-import { InviteModal } from './InviteModal';
+import { InviteModal } from '../InviteModal';
 import './TeamMembers.css';
 
 export function TeamMembers({ members, onInvite }) {

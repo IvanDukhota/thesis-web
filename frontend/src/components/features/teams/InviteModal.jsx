@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { RiCloseLine, RiUserLine } from 'react-icons/ri';
-import './CreateTeamModal.css';
+import './CreateTeamModal/CreateTeamModal.css';
 
 export function InviteModal({ onClose, onInvite }) {
     const [input, setInput] = useState('');

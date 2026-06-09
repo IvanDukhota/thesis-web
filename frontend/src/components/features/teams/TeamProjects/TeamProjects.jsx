@@ -1,12 +1,12 @@
 import { RiAddLine } from 'react-icons/ri';
 import './TeamProjects.css';
 
-export function TeamProjects({ projects }) {
+export function TeamProjects({ projects, onAddProject }) {
     return (
         <div className="tp-root">
             <div className="tp-header">
                 <span className="tp-title">Projects</span>
-                <button className="tp-add-btn"><RiAddLine size={14} /></button>
+                <button className="tp-add-btn" onClick={onAddProject}><RiAddLine size={14} /></button>
             </div>
             <div className="tp-list">
                 {projects.map((p, i) => (

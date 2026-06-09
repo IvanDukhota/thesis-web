@@ -3,13 +3,17 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from 'react-router-dom';
 import {
     RiUser3Line,
-    RiChat3Line,
     RiBellLine,
     RiLogoutBoxRLine,
 } from 'react-icons/ri';
 import { VscLayout } from 'react-icons/vsc';
 
-const NAV_LINKS = ["Projects", "Teams", "Marketplace"];
+const NAV_LINKS = [
+    { label: "Projects", path: '/projects' },
+    { label: "Teams", path: '/teams' },
+    { label: "Marketplace", path: null },
+    { label: "Chat", path: null },
+];
 
 function Header() {
     const [hidden, setHidden] = useState(false);
@@ -50,7 +54,6 @@ function Header() {
 
     const DROPDOWN_ITEMS = [
         { icon: <RiUser3Line size={15} />, label: "Profile", action: goToProfile },
-        { icon: <RiChat3Line size={15} />, label: "Chat", action: () => setOpen(false) },
         { icon: <RiBellLine size={15} />, label: "Notifications", action: () => setOpen(false) },
     ];
 
@@ -65,8 +68,12 @@ function Header() {
             </button>
 
             <nav className="header-nav">
-                {NAV_LINKS.map((label) => (
-                    <button key={label} className="header-nav-btn">
+                {NAV_LINKS.map(({ label, path }) => (
+                    <button
+                        key={label}
+                        className="header-nav-btn"
+                        onClick={() => path && navigate(path)}
+                    >
                         {label}
                     </button>
                 ))}
