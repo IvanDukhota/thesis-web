@@ -1,0 +1,361 @@
+html {
+    overflow-y: scroll;
+    scrollbar-gutter: stable;
+}
+
+.teamspage {
+    min-height: 100vh;
+    width: 100%;
+    background: black;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.teamspage-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.teamspage-empty-wrap {
+    position: relative;
+    z-index: 1;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding-top: 100px;
+    padding-bottom: 60px;
+}
+
+.teamspage-empty {
+    width: 800px;
+    height: 400px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 16px;
+    box-shadow: 0 40px 80px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+}
+
+.teamspage-empty-title {
+    font-size: 22px;
+    font-weight: 500;
+    color: #e4e4e7;
+    letter-spacing: -0.02em;
+    margin-bottom: 14px;
+}
+
+.teamspage-empty-desc {
+    font-size: 14px;
+    color: #71717a;
+    line-height: 1.7;
+    max-width: 420px;
+    margin-bottom: 36px;
+    text-align: center;
+}
+
+.teamspage-empty-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.teamspage-btn {
+    height: 44px;
+    padding: 0 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    cursor: pointer;
+    letter-spacing: 0.01em;
+    transition: opacity 0.15s, background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.teamspage-btn--secondary {
+    background: none;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #a1a1aa;
+}
+
+.teamspage-btn--secondary:hover {
+    color: #e4e4e7;
+    border-color: rgba(255, 255, 255, 0.16);
+}
+
+.teamspage-btn--primary {
+    background: linear-gradient(90deg, #4c1d95, #5b21b6);
+    border: 1px solid rgba(139, 92, 246, 0.25);
+    color: rgba(255, 255, 255, 0.88);
+    font-weight: 500;
+}
+
+.teamspage-btn--primary:hover {
+    opacity: 0.85;
+}
+
+.teamspage-board-wrap {
+    position: relative;
+    z-index: 1;
+    width: 1300px;
+    margin-top: 100px;
+    margin-bottom: 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.teamspage-board-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 250px;
+    height: 40px;
+    padding: 0 14px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.teamspage-board-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #e4e4e7;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.teamspage-board-gear {
+    background: none;
+    border: none;
+    color: #52525b;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    padding: 3px;
+    border-radius: 5px;
+    flex-shrink: 0;
+    transition: color 0.15s;
+}
+
+.teamspage-board-gear:hover {
+    color: #a1a1aa;
+}
+
+.teamspage-board {
+    display: grid;
+    grid-template-columns: 22% 28% 50%;
+    gap: 12px;
+    height: 560px;
+}
+
+@keyframes tpColFadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(28px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.teamspage-col {
+    min-height: 0;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.015);
+    opacity: 0;
+    animation: tpColFadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.teamspage-col:nth-child(1) { animation-delay: 0.05s; }
+.teamspage-col:nth-child(2) { animation-delay: 0.15s; }
+.teamspage-col:nth-child(3) { animation-delay: 0.25s; }
+
+.teamspage-col--lg {
+    min-height: 0;
+}
+
+@keyframes tpWelcomeFadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(32px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.tp-welcome {
+    display: flex;
+    width: 860px;
+    min-height: 320px;
+    border-radius: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    box-shadow: 0 40px 80px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    overflow: hidden;
+    opacity: 0;
+    animation: tpWelcomeFadeUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards;
+}
+
+.tp-welcome-left {
+    position: relative;
+    width: 480px;
+    flex-shrink: 0;
+    background: linear-gradient(145deg, #0e0814 0%, #100c20 60%, #0d0a18 100%);
+    padding: 52px 52px 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 32px;
+    overflow: hidden;
+}
+
+.tp-welcome-left::before {
+    content: '';
+    position: absolute;
+    width: 320px;
+    height: 320px;
+    border-radius: 50%;
+    background: rgba(109, 40, 217, 0.09);
+    top: -100px;
+    right: -80px;
+    pointer-events: none;
+}
+
+.tp-welcome-left::after {
+    content: '';
+    position: absolute;
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    background: rgba(124, 58, 237, 0.06);
+    bottom: -60px;
+    left: 10px;
+    pointer-events: none;
+}
+
+.tp-slides-area {
+    position: relative;
+    min-height: 160px;
+}
+
+.tp-slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.45s ease, transform 0.45s ease;
+    pointer-events: none;
+}
+
+.tp-slide--active {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.tp-slide-icon {
+    color: #7c3aed;
+    display: flex;
+    align-items: center;
+}
+
+.tp-slide-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #e4e4e7;
+    letter-spacing: -0.03em;
+    line-height: 1.2;
+    margin: 0;
+}
+
+.tp-slide-desc {
+    font-size: 13.5px;
+    color: #71717a;
+    line-height: 1.75;
+    margin: 0;
+    max-width: 340px;
+}
+
+.tp-dots {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.tp-dot {
+    height: 6px;
+    width: 6px;
+    border-radius: 3px;
+    border: none;
+    background: rgba(255, 255, 255, 0.12);
+    cursor: pointer;
+    padding: 0;
+    transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1), background 0.3s ease;
+}
+
+.tp-dot--active {
+    width: 20px;
+    background: #7c3aed;
+}
+
+.tp-welcome-right {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.015);
+    border-left: 1px solid rgba(255, 255, 255, 0.06);
+    padding: 44px 40px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-start;
+}
+
+.tp-welcome-cta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+}
+
+.tp-cta-title {
+    font-size: 18px;
+    font-weight: 500;
+    color: #e4e4e7;
+    letter-spacing: -0.02em;
+    margin: 0 0 10px;
+}
+
+.tp-cta-desc {
+    font-size: 13.5px;
+    color: #71717a;
+    line-height: 1.75;
+    margin: 0 0 28px;
+}
+
+.tp-cta-actions {
+    display: flex;
+    gap: 20px;
+}
+
+.teamspage-btn {
+    height: 36px;
+    padding: 0 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    letter-spacing: 0.01em;
+    transition: opacity 0.15s, background 0.15s, border-color 0.15s, color 0.15s;
+}

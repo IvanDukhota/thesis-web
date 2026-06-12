@@ -7,7 +7,6 @@ html {
     position: relative;
     min-height: 100vh;
     width: 100%;
-    background: black;
     overflow-x: hidden;
     display: flex;
     align-items: center;
@@ -20,4 +19,44 @@ html {
     inset: 0;
     z-index: 0;
     pointer-events: none;
+}
+
+@keyframes profileContainerFadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(32px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.profile-container {
+    width: 1300px;
+    height: 620px;
+    margin-top: 120px;
+    z-index: 1;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.9),
+        inset 0 1px 0 rgba(255, 255, 255, 0.15),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    display: grid;
+    grid-template-columns: 50% 50%;
+    overflow: hidden;
+    opacity: 0;
+    animation: profileContainerFadeUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards;
+}
+
+.profile-container-left {
+    display: flex;
+    min-height: 0;
+}
+
+.profile-container-right {
+    display: flex;
+    min-height: 0;
 }

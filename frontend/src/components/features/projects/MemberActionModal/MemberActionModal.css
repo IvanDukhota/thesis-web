@@ -1,0 +1,216 @@
+.mam-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 300;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: mamFade 0.15s ease;
+}
+
+@keyframes mamFade {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.mam-modal {
+    width: 320px;
+    background: #111115;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 32px 64px rgba(0, 0, 0, 0.9);
+    animation: mamSlide 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes mamSlide {
+    from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.97);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.mam-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.mam-member-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.mam-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4c1d95, #6d28d9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.85);
+    flex-shrink: 0;
+}
+
+.mam-name {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: #f4f4f5;
+    letter-spacing: -0.01em;
+}
+
+.mam-current-role {
+    display: block;
+    font-size: 11px;
+    color: #52525b;
+    margin-top: 1px;
+}
+
+.mam-close {
+    background: none;
+    border: none;
+    color: #52525b;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    padding: 4px;
+    border-radius: 5px;
+    transition: color 0.15s, background 0.15s;
+}
+
+.mam-close:hover {
+    color: #a1a1aa;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.mam-body {
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.mam-label {
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #3f3f46;
+}
+
+.mam-roles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.mam-role-pill {
+    padding: 5px 13px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    background: rgba(255, 255, 255, 0.02);
+    color: #71717a;
+    font-size: 12.5px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    font-family: inherit;
+}
+
+.mam-role-pill:hover {
+    color: #d4d4d8;
+    border-color: rgba(255, 255, 255, 0.13);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.mam-role-pill--active {
+    background: rgba(109, 40, 217, 0.12);
+    border-color: rgba(139, 92, 246, 0.35);
+    color: #c4b5fd;
+}
+
+.mam-remove-btn {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    width: 100%;
+    height: 36px;
+    border-radius: 8px;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    background: rgba(239, 68, 68, 0.05);
+    color: #f87171;
+    font-size: 13px;
+    cursor: pointer;
+    justify-content: center;
+    transition: background 0.15s, border-color 0.15s;
+    font-family: inherit;
+}
+
+.mam-remove-btn:hover {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.35);
+}
+
+.mam-remove-btn--confirm {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.5);
+    color: #fca5a5;
+}
+
+.mam-footer {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    padding: 14px 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.mam-btn {
+    height: 36px;
+    padding: 0 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: opacity 0.15s, color 0.15s;
+}
+
+.mam-btn--cancel {
+    background: none;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    color: #71717a;
+}
+
+.mam-btn--cancel:hover {
+    color: #a1a1aa;
+}
+
+.mam-btn--save {
+    background: linear-gradient(90deg, #4c1d95, #5b21b6);
+    border: 1px solid rgba(139, 92, 246, 0.25);
+    color: rgba(255, 255, 255, 0.88);
+    font-weight: 500;
+}
+
+.mam-btn--save:hover {
+    opacity: 0.85;
+}

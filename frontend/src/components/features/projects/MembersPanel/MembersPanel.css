@@ -1,0 +1,234 @@
+.msb-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    background: rgba(0, 0, 0, 0.45);
+    animation: msbFade 0.2s ease;
+}
+
+@keyframes msbFade {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.msb-backdrop--closing {
+    animation: msbFadeOut 0.22s ease forwards;
+}
+
+@keyframes msbFadeOut {
+    from {
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0;
+    }
+}
+
+.msb-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 300px;
+    z-index: 201;
+    background: #111115;
+    border-left: 1px solid rgba(255, 255, 255, 0.09);
+    display: flex;
+    flex-direction: column;
+    animation: msbSlide 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes msbSlide {
+    from {
+        transform: translateX(100%);
+    }
+
+    to {
+        transform: translateX(0);
+    }
+}
+
+.msb-panel--closing {
+    animation: msbSlideOut 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes msbSlideOut {
+    from {
+        transform: translateX(0);
+    }
+
+    to {
+        transform: translateX(100%);
+    }
+}
+
+.msb-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    flex-shrink: 0;
+}
+
+.msb-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #ffffff;
+    letter-spacing: -0.04em;
+}
+
+.msb-close {
+    background: none;
+    border: none;
+    color: #52525b;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    padding: 4px;
+    border-radius: 5px;
+    transition: color 0.15s, background 0.15s;
+}
+
+.msb-close:hover {
+    color: #a1a1aa;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.msb-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.msb-body::-webkit-scrollbar {
+    width: 3px;
+}
+
+.msb-body::-webkit-scrollbar-thumb {
+    background: #27272a;
+    border-radius: 4px;
+}
+
+.msb-section-label {
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #3f3f46;
+    padding: 0 8px 4px;
+}
+
+.msb-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.msb-member {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 8px;
+    border-radius: 8px;
+    transition: background 0.13s;
+}
+
+.msb-member:hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.msb-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4c1d95, #6d28d9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.85);
+    flex-shrink: 0;
+}
+
+.msb-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.msb-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: #d4d4d8;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.msb-role {
+    font-size: 11px;
+    color: #52525b;
+}
+
+.msb-gear {
+    background: none;
+    border: none;
+    color: #3f3f46;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    padding: 4px;
+    border-radius: 4px;
+    opacity: 0;
+    transition: color 0.13s, opacity 0.13s;
+    flex-shrink: 0;
+}
+
+.msb-member:hover .msb-gear {
+    opacity: 1;
+}
+
+.msb-gear:hover {
+    color: #a1a1aa;
+}
+
+.msb-footer {
+    padding: 14px 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    flex-shrink: 0;
+}
+
+.msb-invite-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    width: 100%;
+    height: 36px;
+    border-radius: 8px;
+    border: 1px dashed rgba(139, 92, 246, 0.3);
+    background: none;
+    color: #7c3aed;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    font-family: inherit;
+}
+
+.msb-invite-btn:hover {
+    background: rgba(109, 40, 217, 0.08);
+    color: #a78bfa;
+    border-color: rgba(139, 92, 246, 0.5);
+}
