@@ -4,6 +4,11 @@ from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.db import models
 
 
+def user_avatar_path(instance, filename):
+    ext = filename.split('.')[-1]
+    return f'users/user_{instance.id}/avatar.{ext}'
+
+
 class UserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
         if not email:
@@ -33,7 +38,22 @@ class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True)
     first_name = models.CharField(max_length=150, blank=True)
     last_name = models.CharField(max_length=150, blank=True)
-    avatar = models.URLField(blank=True)
+    avatar = models.ImageField(upload_to=user_avatar_path, blank=True, null=True)
+
+    language = models.CharField(
+        max_length=10,
+        default='en',
+        choices=[
+            ('en', 'English'),
+            ('uk', 'Ukrainian'),
+            ('ru', 'Russian'),
+            ('de', 'German'),
+            ('fr', 'French'),
+            ('es', 'Spanish'),
+            ('pl', 'Polish'),
+        ],
+        help_text='Preferred language for translations'
+    )
 
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
@@ -56,6 +76,12 @@ class User(AbstractBaseUser, PermissionsMixin):
     def full_name(self):
         full_name = f"{self.first_name} {self.last_name}".strip()
         return full_name or self.email
+
+    @property
+    def avatar_url(self):
+        if self.avatar:
+            return self.avatar.url
+        return None
 
 class UserContact(models.Model):
     owner = models.ForeignKey(

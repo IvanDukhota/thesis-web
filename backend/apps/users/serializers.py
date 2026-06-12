@@ -9,6 +9,7 @@ User = get_user_model()
 class UserSerializer(serializers.ModelSerializer):
     full_name = serializers.CharField(read_only=True)
     is_contact = serializers.BooleanField(read_only=True, default=False)
+    avatar = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -23,6 +24,14 @@ class UserSerializer(serializers.ModelSerializer):
             "is_contact",
         ]
         read_only_fields = ["id", "created_at", "full_name", "is_contact"]
+
+    def get_avatar(self, obj):
+        if obj.avatar:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.avatar.url)
+            return obj.avatar.url
+        return None
 
 
 class RegisterSerializer(serializers.ModelSerializer):
