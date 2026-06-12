@@ -197,6 +197,18 @@ html {
 }
 
 
+@keyframes ppWelcomeFadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(32px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 .pp-welcome {
     display: flex;
     width: 860px;
@@ -205,6 +217,8 @@ html {
     border: 1px solid rgba(255, 255, 255, 0.07);
     box-shadow: 0 40px 80px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.06);
     overflow: hidden;
+    opacity: 0;
+    animation: ppWelcomeFadeUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards;
 }
 
 .pp-welcome-left {

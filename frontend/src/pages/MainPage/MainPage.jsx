@@ -3,11 +3,9 @@ import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import Header from '../../components/layout/Header/Header.jsx';
-import DarkVeil from '../../components/layout/DarkVeil/DarkVeil.jsx';
 import CodeWindow from '../../components/features/main/CodeWindow/CodeWindow.jsx';
 import IdeSection from '../../components/features/main/IdeSection/IdeSection.jsx';
 
-import { darkVeilConfig } from '../../components/config/PagesConfig.js';
 import { FEATURES } from '../../components/config/FeaturesData.jsx';
 
 function MainPage() {
@@ -24,9 +22,6 @@ function MainPage() {
 
     return (
         <div className="mainpage">
-            <div className="mainpage-bg">
-                <DarkVeil {...darkVeilConfig} />
-            </div>
             <Header />
             <div className='welcome-container'>
                 <div className='welcome-container-text'>
