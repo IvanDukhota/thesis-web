@@ -169,7 +169,7 @@ const Header = forwardRef(function Header(_, ref) {
                                 <RiCloseLine size={16} />
                             </button>
                         </div>
-                        <p className="logout-modal-desc">You'll be logged out and redirected to the login page.</p>
+                        <p className="logout-modal-desc">You&apos;ll be logged out and redirected to the login page.</p>
                         <div className="logout-modal-actions">
                             <button className="logout-btn logout-btn--cancel" onClick={() => setShowLogout(false)}>Cancel</button>
                             <button className="logout-btn logout-btn--confirm" onClick={handleSignOut}>Sign out</button>

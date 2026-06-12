@@ -1,6 +1,5 @@
 import './AuthPage.css';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { VscLayout } from 'react-icons/vsc';
 
 import DarkVeil from '../../components/layout/DarkVeil/DarkVeil.jsx';
@@ -18,8 +17,6 @@ const EMPTY_REGISTER_STATE = {
 export default function AuthPage() {
     const [mode, setMode] = useState('login');
     const [registerState, setRegisterState] = useState(EMPTY_REGISTER_STATE);
-    const navigate = useNavigate();
-
     return (
         <div className='authpage'>
             <div className="authpage-bg">
