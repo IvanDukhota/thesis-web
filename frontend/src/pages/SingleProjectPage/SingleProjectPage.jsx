@@ -3,7 +3,6 @@ import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { RiSettings3Line, RiAddLine, RiTeamLine, RiArrowRightSLine } from 'react-icons/ri';
 import Header from '../../components/layout/Header/Header';
-import DarkVeil from '../../components/layout/DarkVeil/DarkVeil';
 import { KanbanBoard } from '../../components/features/projects/KanbanBoard/KanbanBoard';
 import { MembersPanel } from '../../components/features/projects/MembersPanel/MembersPanel';
 import { ProjectSettingsModal } from '../../components/features/projects/ProjectSettingsModal/ProjectSettingsModal';
@@ -28,7 +27,6 @@ export default function SingleProjectPage() {
 
     return (
         <div className="spp-root">
-            <div className="spp-bg"><DarkVeil /></div>
             <Header />
 
             <div className="spp-layout">

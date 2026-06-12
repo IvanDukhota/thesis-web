@@ -2,7 +2,6 @@ import './TeamsPage.css';
 import { useEffect, useState, useRef } from 'react';
 import { RiSettings3Line, RiTeamLine, RiUserAddLine, RiUserSettingsLine, RiBarChartBoxLine } from 'react-icons/ri';
 import Header from '../../components/layout/Header/Header';
-import DarkVeil from '../../components/layout/DarkVeil/DarkVeil';
 
 import { CreateTeamModal } from '../../components/features/teams/CreateTeamModal/CreateTeamModal';
 import { TeamSettingsModal } from '../../components/features/teams/TeamSettingsModal/TeamSettingsModal';
@@ -120,7 +119,6 @@ export default function TeamsPage() {
 
     return (
         <div className="teamspage">
-            <div className="teamspage-bg"><DarkVeil /></div>
             <Header ref={headerRef} />
 
             {!hasTeam ? (

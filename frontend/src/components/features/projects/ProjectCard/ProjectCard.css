@@ -1,3 +1,14 @@
+@keyframes pcCardFadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(24px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 .pc-card {
     padding: 18px 20px;
     border: 1px solid rgba(255, 255, 255, 0.06);
@@ -8,7 +19,16 @@
     flex-direction: column;
     gap: 10px;
     transition: border-color 0.22s, background 0.22s, transform 0.22s;
+    opacity: 0;
+    animation: pcCardFadeUp 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+.pc-card:nth-child(1) { animation-delay: 0.05s; }
+.pc-card:nth-child(2) { animation-delay: 0.12s; }
+.pc-card:nth-child(3) { animation-delay: 0.19s; }
+.pc-card:nth-child(4) { animation-delay: 0.26s; }
+.pc-card:nth-child(5) { animation-delay: 0.33s; }
+.pc-card:nth-child(6) { animation-delay: 0.40s; }
 
 .pc-card:hover {
     border-color: rgba(124, 58, 237, 0.3);

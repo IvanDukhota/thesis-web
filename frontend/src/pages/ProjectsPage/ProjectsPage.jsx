@@ -2,7 +2,6 @@ import './ProjectsPage.css';
 import { useEffect, useState } from 'react';
 import { RiAddLine, RiLayoutMasonryLine, RiTeamLine, RiBriefcase4Line, RiBarChartBoxLine } from 'react-icons/ri';
 import Header from '../../components/layout/Header/Header';
-import DarkVeil from '../../components/layout/DarkVeil/DarkVeil';
 import { CreateProjectModal } from '../../components/features/projects/CreateProjectModal/CreateProjectModal';
 import { ProjectCard } from '../../components/features/projects/ProjectCard/ProjectCard';
 
@@ -117,7 +116,6 @@ export default function ProjectsPage() {
 
     return (
         <div className="projectspage">
-            <div className="projectspage-bg"><DarkVeil /></div>
             <Header />
 
             {!hasProjects ? (
