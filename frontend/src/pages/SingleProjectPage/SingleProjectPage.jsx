@@ -1,7 +1,7 @@
 import './SingleProjectPage.css';
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { RiSettings3Line, RiAddLine } from 'react-icons/ri';
+import { RiSettings3Line, RiAddLine, RiTeamLine, RiArrowRightSLine } from 'react-icons/ri';
 import Header from '../../components/layout/Header/Header';
 import DarkVeil from '../../components/layout/DarkVeil/DarkVeil';
 import { KanbanBoard } from '../../components/features/projects/KanbanBoard/KanbanBoard';
@@ -13,6 +13,7 @@ export default function SingleProjectPage() {
     const { id } = useParams();
     const [showSettings, setShowSettings] = useState(false);
     const [showCreateTask, setShowCreateTask] = useState(false);
+    const [showMembers, setShowMembers] = useState(false);
     const kanbanRef = useRef(null);
 
     const [projectName, setProjectName] = useState(
@@ -39,12 +40,18 @@ export default function SingleProjectPage() {
                                 <RiSettings3Line size={15} />
                             </button>
                         </div>
-                        <MembersPanel />
                     </div>
-                    <button className="spp-create-task-btn" onClick={() => setShowCreateTask(true)}>
-                        Create task
-                        <RiAddLine size={14} />
-                    </button>
+                    <div className="spp-topbar-right">
+                        <button className="spp-create-task-btn" onClick={() => setShowCreateTask(true)}>
+                            Create task
+                            <RiAddLine size={14} />
+                        </button>
+                        <button className="spp-members-btn" onClick={() => setShowMembers(true)}>
+                            <RiTeamLine size={14} />
+                            Members
+                            <RiArrowRightSLine size={14} className="spp-members-arrow" />
+                        </button>
+                    </div>
                 </div>
 
                 <div className="spp-board-wrap">
@@ -60,6 +67,8 @@ export default function SingleProjectPage() {
                     onDelete={() => { }}
                 />
             )}
+
+            {showMembers && <MembersPanel onClose={() => setShowMembers(false)} />}
 
             {showCreateTask && (
                 <CreateTaskModal

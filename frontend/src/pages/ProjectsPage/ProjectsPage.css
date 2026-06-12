@@ -69,13 +69,13 @@ html {
 }
 
 .pp-create-btn {
-    height: 44px;
-    padding: 0 28px;
+    height: 36px;
+    padding: 0 20px;
     border-radius: 8px;
     background: linear-gradient(90deg, #4c1d95, #5b21b6);
     border: 1px solid rgba(139, 92, 246, 0.25);
     color: rgba(255, 255, 255, 0.88);
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 500;
     cursor: pointer;
     transition: opacity 0.15s;
@@ -100,14 +100,13 @@ html {
     display: flex;
     align-items: center;
     gap: 10px;
-    width: 200px;
-    height: 40px;
+    height: 34px;
 }
 
 .pp-board-title {
-    font-size: 18px;
-    font-weight: 600;
-    color: #e4e4e7;
+    font-size: 20px;
+    font-weight: 500;
+    color: #d0d0d1;
     letter-spacing: -0.02em;
 }
 
@@ -118,6 +117,7 @@ html {
     border: 1px solid rgba(255, 255, 255, 0.08);
     background: none;
     color: #71717a;
+    margin-left: 8px;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -169,10 +169,12 @@ html {
 }
 
 .pp-column-title {
-    font-size: 12px;
-    letter-spacing: 0.08em;
+    font-size: 11px;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: #52525b;
+    color: #a1a1aa;
+    border-left: 2px solid rgba(139, 92, 246, 0.45);
+    padding-left: 8px;
 }
 
 .pp-column-list {
@@ -189,7 +191,157 @@ html {
 }
 
 .pp-empty-col-text {
-    font-size: 13px;
-    color: #3f3f46;
+    font-size: 11.5px;
+    color: #7c3aed;
     font-style: italic;
+}
+
+
+.pp-welcome {
+    display: flex;
+    width: 860px;
+    min-height: 320px;
+    border-radius: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    box-shadow: 0 40px 80px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    overflow: hidden;
+}
+
+.pp-welcome-left {
+    position: relative;
+    width: 480px;
+    flex-shrink: 0;
+    background: linear-gradient(145deg, #0e0814 0%, #100c20 60%, #0d0a18 100%);
+    padding: 52px 52px 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 32px;
+    overflow: hidden;
+}
+
+.pp-welcome-left::before {
+    content: '';
+    position: absolute;
+    width: 320px;
+    height: 320px;
+    border-radius: 50%;
+    background: rgba(109, 40, 217, 0.09);
+    top: -100px;
+    right: -80px;
+    pointer-events: none;
+}
+
+.pp-welcome-left::after {
+    content: '';
+    position: absolute;
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    background: rgba(124, 58, 237, 0.06);
+    bottom: -60px;
+    left: 10px;
+    pointer-events: none;
+}
+
+.pp-slides-area {
+    position: relative;
+    min-height: 160px;
+}
+
+.pp-slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.45s ease, transform 0.45s ease;
+    pointer-events: none;
+}
+
+.pp-slide--active {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.pp-slide-icon {
+    color: #7c3aed;
+    display: flex;
+    align-items: center;
+}
+
+.pp-slide-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #e4e4e7;
+    letter-spacing: -0.03em;
+    line-height: 1.2;
+    margin: 0;
+}
+
+.pp-slide-desc {
+    font-size: 13.5px;
+    color: #71717a;
+    line-height: 1.75;
+    margin: 0;
+    max-width: 340px;
+}
+
+.pp-dots {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.pp-dot {
+    height: 6px;
+    width: 6px;
+    border-radius: 3px;
+    border: none;
+    background: rgba(255, 255, 255, 0.12);
+    cursor: pointer;
+    padding: 0;
+    transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1), background 0.3s ease;
+}
+
+.pp-dot--active {
+    width: 20px;
+    background: #7c3aed;
+}
+
+.pp-welcome-right {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.015);
+    border-left: 1px solid rgba(255, 255, 255, 0.06);
+    padding: 44px 40px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-start;
+}
+
+.pp-welcome-cta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0;
+}
+
+.pp-cta-title {
+    font-size: 20px;
+    font-weight: 500;
+    color: #e4e4e7;
+    letter-spacing: -0.02em;
+    margin: 0 0 10px;
+    align-self: flex-start;
+}
+
+.pp-cta-desc {
+    font-size: 13.5px;
+    color: #71717a;
+    line-height: 1.75;
+    margin: 0 0 32px;
+    align-self: flex-start;
 }

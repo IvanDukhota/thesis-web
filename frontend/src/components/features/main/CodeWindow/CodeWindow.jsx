@@ -35,7 +35,6 @@ export default function CodeWindow() {
         }
     }, [visibleLines]);
 
-    // restart loop
     useEffect(() => {
         if (visibleLines === CODE_LINES.length) {
             const t = setTimeout(() => setVisibleLines(0), 3200);

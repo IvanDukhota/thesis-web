@@ -72,6 +72,19 @@
     overflow: hidden;
 }
 
+.tc-hint {
+    font-size: 10px;
+    color: #a78bfa;
+    text-align: center;
+    opacity: 0;
+    transition: opacity 0.2s;
+    letter-spacing: 0.02em;
+}
+
+.tc-card:hover .tc-hint {
+    opacity: 1;
+}
+
 .tc-footer {
     display: flex;
     align-items: center;

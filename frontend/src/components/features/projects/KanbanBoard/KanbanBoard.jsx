@@ -1,5 +1,6 @@
 import { useState, useRef, useImperativeHandle, forwardRef } from 'react';
 import { TaskCard } from '../TaskCard/TaskCard';
+import { EditTaskModal } from '../EditTaskModal/EditTaskModal';
 import './KanbanBoard.css';
 
 const COLUMNS = ['To Do', 'In Progress', 'Testing', 'Finished'];
@@ -28,6 +29,7 @@ export const KanbanBoard = forwardRef(function KanbanBoard(_, ref) {
     const [tasks, setTasks] = useState(INIT_TASKS);
     const [dragId, setDragId] = useState(null);
     const [dragOver, setDragOver] = useState(null);
+    const [editingTask, setEditingTask] = useState(null);
     const dragColRef = useRef(null);
 
     useImperativeHandle(ref, () => ({
@@ -37,6 +39,21 @@ export const KanbanBoard = forwardRef(function KanbanBoard(_, ref) {
             setTasks(prev => ({ ...prev, [col]: [...prev[col], task] }));
         }
     }));
+
+    const handleEditSave = (updatedTask, newCol) => {
+        setTasks(prev => {
+            const srcCol = editingTask.col;
+            if (srcCol === newCol) {
+                return { ...prev, [srcCol]: prev[srcCol].map(t => t.id === updatedTask.id ? updatedTask : t) };
+            }
+            return {
+                ...prev,
+                [srcCol]: prev[srcCol].filter(t => t.id !== updatedTask.id),
+                [newCol]: [...prev[newCol], updatedTask],
+            };
+        });
+        setEditingTask(null);
+    };
 
     const handleDragStart = (id, col) => { setDragId(id); dragColRef.current = col; };
 
@@ -60,34 +77,46 @@ export const KanbanBoard = forwardRef(function KanbanBoard(_, ref) {
     };
 
     return (
-        <div className="kb-board">
-            {COLUMNS.map(col => (
-                <div
-                    key={col}
-                    className={`kb-column ${dragOver === col ? 'kb-column--over' : ''}`}
-                    onDragOver={e => { e.preventDefault(); setDragOver(col); }}
-                    onDragLeave={() => setDragOver(null)}
-                    onDrop={() => handleDrop(col)}
-                >
-                    <div className="kb-col-header">
-                        <span className="kb-col-title">{col}</span>
-                        <span className="kb-col-count">{tasks[col].length}</span>
-                    </div>
+        <>
+            <div className="kb-board">
+                {COLUMNS.map(col => (
+                    <div
+                        key={col}
+                        className={`kb-column ${dragOver === col ? 'kb-column--over' : ''}`}
+                        onDragOver={e => { e.preventDefault(); setDragOver(col); }}
+                        onDragLeave={() => setDragOver(null)}
+                        onDrop={() => handleDrop(col)}
+                    >
+                        <div className="kb-col-header">
+                            <span className="kb-col-title">{col}</span>
+                            <span className="kb-col-count">{tasks[col].length}</span>
+                        </div>
 
-                    <div className="kb-col-body">
-                        {tasks[col].map(task => (
-                            <TaskCard
-                                key={task.id}
-                                task={task}
-                                onDragStart={(id) => handleDragStart(id, col)}
-                            />
-                        ))}
-                        {tasks[col].length === 0 && (
-                            <div className="kb-col-empty">drop here</div>
-                        )}
+                        <div className="kb-col-body">
+                            {tasks[col].map(task => (
+                                <TaskCard
+                                    key={task.id}
+                                    task={task}
+                                    onDragStart={(id) => handleDragStart(id, col)}
+                                    onEdit={() => setEditingTask({ task, col })}
+                                />
+                            ))}
+                            {tasks[col].length === 0 && (
+                                <div className="kb-col-empty">drop here</div>
+                            )}
+                        </div>
                     </div>
-                </div>
-            ))}
-        </div>
+                ))}
+            </div>
+
+            {editingTask && (
+                <EditTaskModal
+                    task={editingTask.task}
+                    currentCol={editingTask.col}
+                    onClose={() => setEditingTask(null)}
+                    onSave={handleEditSave}
+                />
+            )}
+        </>
     );
 });

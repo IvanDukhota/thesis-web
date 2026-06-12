@@ -1,5 +1,6 @@
 import './MainPage.css';
 import { useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import Header from '../../components/layout/Header/Header.jsx';
 import DarkVeil from '../../components/layout/DarkVeil/DarkVeil.jsx';
@@ -10,6 +11,7 @@ import { darkVeilConfig } from '../../components/config/PagesConfig.js';
 import { FEATURES } from '../../components/config/FeaturesData.jsx';
 
 function MainPage() {
+    const navigate = useNavigate();
     const ideRef = useRef(null);
 
     useEffect(() => {
@@ -38,7 +40,7 @@ function MainPage() {
                     </p>
                     <div className='button-container-1 hero-anim hero-anim--3'>
                         <button className='button-class-1' onClick={scrollToIde}>Download IDE</button>
-                        <button className='button-class-2'>Get Started</button>
+                        <button className='button-class-2' onClick={() => navigate('/auth')}>Get Started</button>
                     </div>
                 </div>
                 <div className='welcome-container-media hero-anim hero-anim--4'>

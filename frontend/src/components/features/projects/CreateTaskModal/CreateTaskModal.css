@@ -27,7 +27,7 @@
     border-radius: 14px;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    overflow: visible;
     box-shadow: 0 40px 80px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.06);
     animation: ctm2Slide 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -191,6 +191,17 @@
     z-index: 10;
     box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8);
     animation: ctm2DropIn 0.14s cubic-bezier(0.16, 1, 0.3, 1);
+    max-height: 180px;
+    overflow-y: auto;
+}
+
+.ctm2-select-dropdown::-webkit-scrollbar {
+    width: 3px;
+}
+
+.ctm2-select-dropdown::-webkit-scrollbar-thumb {
+    background: #27272a;
+    border-radius: 4px;
 }
 
 @keyframes ctm2DropIn {
