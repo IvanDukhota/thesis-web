@@ -1,6 +1,6 @@
 import './AuthPage.css';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { VscLayout } from 'react-icons/vsc';
 
 import DarkVeil from '../../components/layout/DarkVeil/DarkVeil.jsx';
 import { darkVeilConfig } from '../../components/config/PagesConfig.js';
@@ -17,8 +17,6 @@ const EMPTY_REGISTER_STATE = {
 export default function AuthPage() {
     const [mode, setMode] = useState('login');
     const [registerState, setRegisterState] = useState(EMPTY_REGISTER_STATE);
-    const navigate = useNavigate();
-
     return (
         <div className='authpage'>
             <div className="authpage-bg">
@@ -26,10 +24,10 @@ export default function AuthPage() {
             </div>
 
             <div className={`auth-container ${mode === 'register' ? 'auth-container--wide' : ''}`}>
-                <button className="auth-logo" onClick={() => navigate('/')}>
-                    <span className="auth-logo-mark">T</span>
+                <div className="auth-logo">
+                    <div className="auth-logo-mark"><VscLayout size={16} /></div>
                     <span className="auth-logo-word">TeamHub</span>
-                </button>
+                </div>
 
                 <div className="auth-toggle">
                     <button className={`auth-toggle-btn ${mode === 'login' ? 'auth-toggle-btn--active' : ''}`} onClick={() => setMode('login')}>Sign in</button>

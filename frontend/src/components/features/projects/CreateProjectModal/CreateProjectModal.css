@@ -1,0 +1,241 @@
+.cpm-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: cpmFade 0.15s ease;
+}
+
+@keyframes cpmFade {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.cpm-modal {
+    width: 420px;
+    background: #0d0d0f;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 40px 80px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    animation: cpmSlide 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    overflow: hidden;
+}
+
+@keyframes cpmSlide {
+    from {
+        opacity: 0;
+        transform: translateY(14px) scale(0.97);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.cpm-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.cpm-title {
+    font-size: 15px;
+    font-weight: 500;
+    color: #e4e4e7;
+    letter-spacing: -0.01em;
+}
+
+.cpm-close {
+    background: none;
+    border: none;
+    color: #52525b;
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    transition: color 0.15s, background 0.15s;
+}
+
+.cpm-close:hover {
+    color: #a1a1aa;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.cpm-body {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.cpm-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.cpm-label {
+    font-size: 12px;
+    color: #71717a;
+    letter-spacing: 0.02em;
+}
+
+.cpm-required {
+    color: #a78bfa;
+    margin-left: 2px;
+}
+
+.cpm-input {
+    height: 38px;
+    padding: 0 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 7px;
+    color: #e4e4e7;
+    font-size: 13.5px;
+    outline: none;
+    width: 100%;
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.cpm-input:focus {
+    border-color: rgba(109, 40, 217, 0.45);
+    background: rgba(109, 40, 217, 0.04);
+}
+
+.cpm-input::placeholder {
+    color: #3f3f46;
+}
+
+.cpm-input--error {
+    border-color: rgba(239, 68, 68, 0.45) !important;
+}
+
+.cpm-error {
+    font-size: 11.5px;
+    color: #f87171;
+}
+
+.cpm-textarea {
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 7px;
+    color: #e4e4e7;
+    font-size: 13.5px;
+    outline: none;
+    width: 100%;
+    resize: none;
+    font-family: inherit;
+    line-height: 1.5;
+    transition: border-color 0.15s;
+}
+
+.cpm-textarea:focus {
+    border-color: rgba(109, 40, 217, 0.45);
+}
+
+.cpm-textarea::placeholder {
+    color: #3f3f46;
+}
+
+.cpm-type-row {
+    display: flex;
+    gap: 10px;
+}
+
+.cpm-type-option {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 8px;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.02);
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.cpm-type-option:hover {
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+.cpm-type-option--active {
+    border-color: rgba(139, 92, 246, 0.4);
+    background: rgba(109, 40, 217, 0.07);
+}
+
+.cpm-checkbox {
+    display: none;
+}
+
+.cpm-type-label {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.cpm-type-name {
+    font-size: 13.5px;
+    font-weight: 500;
+    color: #d4d4d8;
+}
+
+.cpm-type-sub {
+    font-size: 11.5px;
+    color: #52525b;
+}
+
+.cpm-footer {
+    padding: 16px 24px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.cpm-btn {
+    height: 38px;
+    padding: 0 20px;
+    border-radius: 8px;
+    font-size: 13.5px;
+    cursor: pointer;
+    transition: opacity 0.15s, color 0.15s;
+}
+
+.cpm-btn--cancel {
+    background: none;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    color: #71717a;
+}
+
+.cpm-btn--cancel:hover {
+    color: #a1a1aa;
+}
+
+.cpm-btn--create {
+    background: linear-gradient(90deg, #4c1d95, #5b21b6);
+    border: 1px solid rgba(139, 92, 246, 0.25);
+    color: rgba(255, 255, 255, 0.88);
+    font-weight: 500;
+}
+
+.cpm-btn--create:hover {
+    opacity: 0.85;
+}
