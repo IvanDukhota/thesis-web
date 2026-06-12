@@ -25,12 +25,10 @@ function DonutChart({ segments }) {
     const total = segments.reduce((s, x) => s + x.value, 0);
     const done = segments.find(s => s.label === 'Done')?.value ?? 0;
 
-    let acc = -90;
-    const rotations = segments.map(seg => {
-        const rot = acc;
-        acc += (seg.value / total) * 360;
-        return rot;
-    });
+    const rotations = segments.reduce(({ angle, rots }, seg) => ({
+        angle: angle + (seg.value / total) * 360,
+        rots: [...rots, angle],
+    }), { angle: -90, rots: [] }).rots;
 
     return (
         <svg width="170" height="170" viewBox="0 0 170 170">
