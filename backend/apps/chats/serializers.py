@@ -24,6 +24,8 @@ class ChatMemberSerializer(serializers.ModelSerializer):
 
 class ChatSerializer(serializers.ModelSerializer):
     members = ChatMemberSerializer(many=True, read_only=True)
+    unread_count = serializers.SerializerMethodField()
+    is_new = serializers.SerializerMethodField()
 
     class Meta:
         model = Chat
@@ -39,4 +41,32 @@ class ChatSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
             "members",
+            "unread_count",
+            "is_new",
         ]
+
+    def get_unread_count(self, obj):
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            return 0
+
+        try:
+            member = obj.members.get(user=request.user, is_active=True)
+            last_read_position = member.last_read_position or 0
+
+            # Count messages after last read position
+            unread = obj.messages.filter(position__gt=last_read_position).exclude(sender=request.user).count()
+            return unread
+        except ChatMember.DoesNotExist:
+            return 0
+
+    def get_is_new(self, obj):
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            return False
+
+        try:
+            member = obj.members.get(user=request.user, is_active=True)
+            return member.last_read_position == 0 or member.last_read_position is None
+        except ChatMember.DoesNotExist:
+            return False

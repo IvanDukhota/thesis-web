@@ -4,6 +4,11 @@ from django.conf import settings
 from django.db import models
 
 
+def chat_avatar_path(instance, filename):
+    ext = filename.split('.')[-1]
+    return f'chats/chat_{instance.id}/avatar.{ext}'
+
+
 class Chat(models.Model):
     class ChatType(models.TextChoices):
         DIRECT = "direct", "Direct"
@@ -16,7 +21,7 @@ class Chat(models.Model):
 
     title = models.CharField(max_length=255, blank=True)
     description = models.TextField(blank=True)
-    avatar = models.URLField(blank=True)
+    avatar = models.ImageField(upload_to=chat_avatar_path, blank=True, null=True)
 
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -36,6 +41,12 @@ class Chat(models.Model):
         if self.type == self.ChatType.DIRECT:
             return self.direct_key or f"Direct chat {self.id}"
         return self.title or f"Group chat {self.id}"
+
+    @property
+    def avatar_url(self):
+        if self.avatar:
+            return self.avatar.url
+        return None
 
 
 class ChatMember(models.Model):

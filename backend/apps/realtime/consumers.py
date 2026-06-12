@@ -6,10 +6,6 @@ from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from django.contrib.auth import get_user_model
 
 from apps.chats.models import Chat, ChatMember
-from apps.chats.serializers import ChatSerializer
-from apps.chats.services import get_or_create_direct_chat
-from apps.messages.serializers import MessageSerializer
-from apps.messages.services import create_text_message
 
 User = get_user_model()
 
@@ -47,7 +43,7 @@ class AppConsumer(AsyncJsonWebsocketConsumer):
         await self.send_json(
             {
                 "type": "connection.established",
-                "message": "Connected to global user channel",
+                "message": "Connected to personal user channel",
                 "user_id": self.user.id,
             }
         )
@@ -76,10 +72,6 @@ class AppConsumer(AsyncJsonWebsocketConsumer):
 
         if event_type == "chat.close":
             await self.close_active_chat()
-            return
-
-        if event_type == "message.send":
-            await self.send_message(content)
             return
 
         if event_type == "message.read":
@@ -163,81 +155,6 @@ class AppConsumer(AsyncJsonWebsocketConsumer):
         if send_event:
             await self.send_json({"type": "chat.closed"})
 
-    async def send_message(self, content):
-        payload = content.get("payload", {})
-        text = str(payload.get("text", "")).strip()
-        client_id = payload.get("client_id")
-
-        if not text:
-            await self.send_json({"type": "message.error", "message": "Message text is empty."})
-            return
-
-        if self.active_chat_type == Chat.ChatType.DIRECT:
-            if not self.active_recipient_id:
-                await self.send_json(
-                    {
-                        "type": "message.error",
-                        "message": "No direct recipient selected.",
-                    }
-                )
-                return
-
-            message_data, chat_data = await self.create_direct_text_message(
-                recipient_id=self.active_recipient_id,
-                text=text,
-                client_id=client_id,
-            )
-
-        elif self.active_chat_type == Chat.ChatType.GROUP:
-            if not self.active_chat_id:
-                await self.send_json(
-                    {
-                        "type": "message.error",
-                        "message": "No group chat selected.",
-                    }
-                )
-                return
-
-            message_data, chat_data = await self.create_group_text_message(
-                chat_id=self.active_chat_id,
-                text=text,
-                client_id=client_id,
-            )
-
-        else:
-            await self.send_json({"type": "message.error", "message": "No active chat selected."})
-            return
-
-        chat_id = str(message_data["chat"])
-
-        if self.active_chat_id != chat_id or not self.active_chat_group_name:
-            await self.subscribe_to_chat(chat_id)
-
-        await self.send_json(
-            {
-                "type": "chat.opened",
-                "exists": True,
-                "chat_id": chat_id,
-                "chat_type": self.active_chat_type,
-            }
-        )
-
-        await self.channel_layer.group_send(
-            f"chat_{chat_id}",
-            {
-                "type": "chat_message",
-                "payload": {
-                    "type": "message.created",
-                    "chat_id": chat_id,
-                    "payload": message_data,
-                },
-            },
-        )
-
-        await self.notify_chat_members_about_message(message_data, chat_data)
-
-        await self.update_sender_read_position(chat_id, message_data["position"])
-
     async def mark_messages_read(self, content):
         chat_id = content.get("chat_id")
         position = content.get("position")
@@ -250,10 +167,12 @@ class AppConsumer(AsyncJsonWebsocketConsumer):
         except ValueError:
             return
 
-        updated_position = await self.update_read_position(chat_id, position)
+        result = await self.update_read_position(chat_id, position)
 
-        if updated_position is None:
+        if result is None:
             return
+
+        updated_position, unread_count = result
 
         await self.channel_layer.group_send(
             f"chat_{chat_id}",
@@ -264,8 +183,99 @@ class AppConsumer(AsyncJsonWebsocketConsumer):
                     "chat_id": str(chat_id),
                     "user_id": self.user.id,
                     "last_read_position": updated_position,
+                    "unread_count": unread_count,
                 },
             },
+        )
+
+
+    async def broadcast_message_created(self, event):
+
+        message_data = event["message_data"]
+        chat_data = event["chat_data"]
+        chat_id = str(message_data["chat"])
+
+        if self.active_chat_id != chat_id or not self.active_chat_group_name:
+            await self.subscribe_to_chat(chat_id)
+
+            await self.send_json(
+                {
+                    "type": "chat.opened",
+                    "exists": True,
+                    "chat_id": chat_id,
+                    "chat_type": chat_data.get("type"),
+                }
+            )
+
+        await self.send_json(
+            {
+                "type": "message.created",
+                "chat_id": chat_id,
+                "payload": message_data,
+            }
+        )
+
+    async def broadcast_message_deleted(self, event):
+        message_id = event["message_id"]
+
+        await self.send_json(
+            {
+                "type": "message.deleted",
+                "message_id": message_id,
+            }
+        )
+    
+        async def broadcast_message_edited(self, event):
+            message_data = event["message_data"]
+
+            await self.send_json(
+                {
+                    "type": "message.edited",
+                    "payload": message_data,
+                }
+            )
+
+    async def send_notification(self, event):
+        notification_type = event["notification_type"]
+        chat_id = event["chat_id"]
+        sender_name = event.get("sender_name", "")
+        message_sent_at = event.get("message_sent_at")
+        chat_data = event["chat_data"]
+
+        await self.send_json(
+            {
+                "type": f"notification.{notification_type}",
+                "chat_id": chat_id,
+                "message": f"Новое сообщение от {sender_name}",
+                "message_sent_at": message_sent_at,
+                "chat": chat_data,
+            }
+        )
+
+    # Под вопросом
+    async def send_chat_opened(self, event):
+        chat_id = event["chat_id"]
+        chat_type = event["chat_type"]
+
+        await self.subscribe_to_chat(chat_id)
+
+        await self.send_json(
+            {
+                "type": "chat.opened",
+                "exists": True,
+                "chat_id": chat_id,
+                "chat_type": chat_type,
+            }
+        )
+
+    async def send_chat_deleted(self, event):
+        chat_id = event["chat_id"]
+
+        await self.send_json(
+            {
+                "type": "chat.deleted",
+                "chat_id": chat_id,
+            }
         )
 
     async def chat_message(self, event):
@@ -273,6 +283,14 @@ class AppConsumer(AsyncJsonWebsocketConsumer):
 
     async def app_event(self, event):
         await self.send_json(event["payload"])
+
+    async def translation_ready(self, event):
+        await self.send_json({
+            "type": "translation.ready",
+            "message_id": event["message_id"],
+            "translated_text": event["translated_text"],
+            "target_language": event["target_language"],
+        })
 
     @database_sync_to_async
     def get_chat_by_id(self, chat_id):
@@ -299,68 +317,6 @@ class AppConsumer(AsyncJsonWebsocketConsumer):
         return result
 
     @database_sync_to_async
-    def create_direct_text_message(self, recipient_id, text, client_id):
-        recipient = User.objects.get(id=recipient_id)
-        chat, _ = get_or_create_direct_chat(self.user, recipient)
-
-        message = create_text_message(
-            chat=chat,
-            sender=self.user,
-            text=text,
-            client_id=client_id,
-        )
-
-        return MessageSerializer(message).data, ChatSerializer(chat).data
-
-    @database_sync_to_async
-    def create_group_text_message(self, chat_id, text, client_id):
-        chat = Chat.objects.get(
-            id=chat_id,
-            members__user=self.user,
-            members__is_active=True,
-            is_active=True,
-        )
-
-        message = create_text_message(
-            chat=chat,
-            sender=self.user,
-            text=text,
-            client_id=client_id,
-        )
-
-        return MessageSerializer(message).data, ChatSerializer(chat).data
-
-    async def notify_chat_members_about_message(self, message_data, chat_data):
-        chat_id = str(message_data["chat"])
-        sender_id = int(message_data["sender"]["id"])
-
-        member_ids = await self.get_chat_member_ids(chat_id)
-
-        for member_id in member_ids:
-            if int(member_id) == sender_id:
-                continue
-
-            await self.channel_layer.group_send(
-                f"user_{member_id}",
-                {
-                    "type": "app_event",
-                    "payload": {
-                        "type": "notification.new_message",
-                        "chat_id": chat_id,
-                        "sender_id": sender_id,
-                        "message": f"Новое сообщение от {message_data['sender']['full_name']}",
-                        "payload": message_data,
-                        "chat": chat_data,
-                    },
-                },
-            )
-
-    @database_sync_to_async
-    def get_chat_member_ids(self, chat_id):
-        chat = Chat.objects.get(id=chat_id)
-        return list(chat.members.filter(is_active=True).values_list("user_id", flat=True))
-
-    @database_sync_to_async
     def update_read_position(self, chat_id, position):
         try:
             member = ChatMember.objects.get(
@@ -372,22 +328,19 @@ class AppConsumer(AsyncJsonWebsocketConsumer):
             return None
 
         if position <= member.last_read_position:
-            return member.last_read_position
+            unread_count = member.chat.messages.filter(
+                position__gt=member.last_read_position,
+                is_deleted=False,
+            ).exclude(sender=self.user).count()
+
+            return (member.last_read_position, unread_count)
 
         member.last_read_position = position
         member.save(update_fields=["last_read_position"])
 
-        return member.last_read_position
+        unread_count = member.chat.messages.filter(
+            position__gt=position,
+            is_deleted=False,
+        ).exclude(sender=self.user).count()
 
-    @database_sync_to_async
-    def update_sender_read_position(self, chat_id, position):
-        try:
-            member = ChatMember.objects.get(
-                chat_id=chat_id,
-                user=self.user,
-                is_active=True,
-            )
-            member.last_read_position = position
-            member.save(update_fields=["last_read_position"])
-        except ChatMember.DoesNotExist:
-            pass
+        return (member.last_read_position, unread_count)

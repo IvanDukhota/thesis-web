@@ -14,14 +14,26 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+from django.conf import settings
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 from apps.common.views import health_check
+from apps.messages.views import MessageCreateView, TranslationRequestView, MessageDeleteView, MessageEditView
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/auth/", include("apps.users.urls")),
     path("api/users/", include("apps.users.urls")),
     path("api/chats/", include("apps.chats.urls")),
+    path("api/messages/direct/", MessageCreateView.as_view(), name="message-create-direct"),
+    path("api/messages/<uuid:message_id>/edit/", MessageEditView.as_view(), name="message-edit"),
+    path("api/messages/<uuid:message_id>/", MessageDeleteView.as_view(), name="message-delete"),
+    path("api/translations/request/", TranslationRequestView.as_view(), name="translation-request"),
     path('api/v1/health/', health_check),
 ]
+
+urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+
+if settings.DEBUG and not settings.USE_S3:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

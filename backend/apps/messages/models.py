@@ -35,6 +35,13 @@ class Message(models.Model):
     )
     text = models.TextField(blank=True)
 
+    source_language = models.CharField(
+        max_length=10,
+        blank=True,
+        null=True,
+        help_text='Detected language of the message'
+    )
+
     reply_to = models.ForeignKey(
         "self",
         null=True,
@@ -99,3 +106,24 @@ class Attachment(models.Model):
 
     def __str__(self):
         return self.file_name
+
+
+class MessageTranslation(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    message = models.ForeignKey(
+        Message,
+        on_delete=models.CASCADE,
+        related_name='translations'
+    )
+    target_language = models.CharField(max_length=10)
+    translated_text = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = [['message', 'target_language']]
+        indexes = [
+            models.Index(fields=['message', 'target_language']),
+        ]
+
+    def __str__(self):
+        return f"Translation of {self.message_id} to {self.target_language}"

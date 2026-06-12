@@ -110,7 +110,6 @@ class ContactCreateView(generics.CreateAPIView):
 
 
 class ContactListView(APIView):
-    """Gives list of all user's contacts"""
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
@@ -124,7 +123,6 @@ class ContactListView(APIView):
 
 
 class ContactsWithoutChatsView(APIView):
-    """Gives list of contacts that don't have direct chat with the user yet"""
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
@@ -154,7 +152,7 @@ class ContactsWithoutChatsView(APIView):
                     "id": contact.id,
                     "email": contact.email,
                     "full_name": contact.full_name,
-                    "avatar": getattr(contact, 'avatar', ''),
+                    "avatar": contact.avatar.url if contact.avatar else None,
                 })
 
         return Response(contacts_without_chats)

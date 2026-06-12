@@ -4,12 +4,15 @@ from .models import Attachment, Message
 
 
 class AttachmentSerializer(serializers.ModelSerializer):
+    url = serializers.SerializerMethodField()
+
     class Meta:
         model = Attachment
         fields = [
             "id",
             "type",
             "file_name",
+            "url",
             "mime_type",
             "size",
             "width",
@@ -17,6 +20,11 @@ class AttachmentSerializer(serializers.ModelSerializer):
             "duration_sec",
             "created_at",
         ]
+
+    def get_url(self, obj):
+        from config.storage import AttachmentStorage
+        storage = AttachmentStorage()
+        return storage.url(obj.storage_key)
 
 
 class MessageSenderSerializer(serializers.Serializer):
@@ -28,6 +36,8 @@ class MessageSenderSerializer(serializers.Serializer):
 class MessageSerializer(serializers.ModelSerializer):
     sender = serializers.SerializerMethodField()
     attachments = AttachmentSerializer(many=True, read_only=True)
+    translated_text = serializers.SerializerMethodField()
+    translation_status = serializers.SerializerMethodField()
 
     class Meta:
         model = Message
@@ -45,6 +55,8 @@ class MessageSerializer(serializers.ModelSerializer):
             "is_deleted",
             "sent_at",
             "edited_at",
+            "translated_text",
+            "translation_status",
         ]
 
     def get_sender(self, obj):
@@ -53,3 +65,24 @@ class MessageSerializer(serializers.ModelSerializer):
             "email": obj.sender.email,
             "full_name": obj.sender.full_name,
         }
+
+    def get_translated_text(self, obj):
+        target_language = self.context.get('target_language')
+        if not target_language:
+            return None
+
+        if hasattr(obj, '_prefetched_translations'):
+            for translation in obj._prefetched_translations:
+                if translation.target_language == target_language:
+                    return translation.translated_text
+            return None
+
+        translation = obj.translations.filter(
+            target_language=target_language
+        ).first()
+
+        return translation.translated_text if translation else None
+
+    def get_translation_status(self, obj):
+        translated_text = self.get_translated_text(obj)
+        return 'ready' if translated_text else 'pending'
