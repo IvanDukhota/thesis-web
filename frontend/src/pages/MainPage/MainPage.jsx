@@ -1,6 +1,7 @@
 import './MainPage.css';
 import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext.jsx';
 
 import Header from '../../components/layout/Header/Header.jsx';
 import CodeWindow from '../../components/features/main/CodeWindow/CodeWindow.jsx';
@@ -11,6 +12,7 @@ import { FEATURES } from '../../components/config/FeaturesData.jsx';
 function MainPage() {
     const navigate = useNavigate();
     const ideRef = useRef(null);
+    const { user } = useAuth();
 
     useEffect(() => {
         window.scrollTo(0, 0);
@@ -35,7 +37,7 @@ function MainPage() {
                     </p>
                     <div className='button-container-1 hero-anim hero-anim--3'>
                         <button className='button-class-1' onClick={scrollToIde}>Download IDE</button>
-                        <button className='button-class-2' onClick={() => navigate('/auth')}>Get Started</button>
+                        <button className='button-class-2' onClick={() => navigate(user ? '/projects' : '/auth')}>Get Started</button>
                     </div>
                 </div>
                 <div className='welcome-container-media hero-anim hero-anim--4'>

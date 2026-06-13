@@ -13,7 +13,6 @@ class UserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
         if not email:
             raise ValueError("Email is required")
-
         email = self.normalize_email(email)
         user = self.model(email=email, **extra_fields)
         user.set_password(password)
@@ -24,36 +23,47 @@ class UserManager(BaseUserManager):
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
         extra_fields.setdefault("is_active", True)
-
         if extra_fields.get("is_staff") is not True:
             raise ValueError("Superuser must have is_staff=True")
-
         if extra_fields.get("is_superuser") is not True:
             raise ValueError("Superuser must have is_superuser=True")
-
         return self.create_user(email, password, **extra_fields)
 
 
 class User(AbstractBaseUser, PermissionsMixin):
+    GENDER_CHOICES = [
+        ('male', 'Male'),
+        ('female', 'Female'),
+    ]
+
+    REGION_CHOICES = [
+        ('north_america', 'North America'),
+        ('south_america', 'South America'),
+        ('europe', 'Europe'),
+        ('asia', 'Asia'),
+        ('africa', 'Africa'),
+        ('oceania', 'Oceania'),
+        ('middle_east', 'Middle East'),
+    ]
+
+    LANGUAGE_CHOICES = [
+        ('en', 'English'),
+        ('uk', 'Ukrainian'),
+        ('ru', 'Russian'),
+        ('de', 'German'),
+        ('fr', 'French'),
+        ('es', 'Spanish'),
+        ('pl', 'Polish'),
+    ]
+
     email = models.EmailField(unique=True)
-    first_name = models.CharField(max_length=150, blank=True)
-    last_name = models.CharField(max_length=150, blank=True)
+    username = models.CharField(max_length=50, unique=True)
     avatar = models.ImageField(upload_to=user_avatar_path, blank=True, null=True)
 
-    language = models.CharField(
-        max_length=10,
-        default='en',
-        choices=[
-            ('en', 'English'),
-            ('uk', 'Ukrainian'),
-            ('ru', 'Russian'),
-            ('de', 'German'),
-            ('fr', 'French'),
-            ('es', 'Spanish'),
-            ('pl', 'Polish'),
-        ],
-        help_text='Preferred language for translations'
-    )
+    language = models.CharField(max_length=10, default='en', choices=LANGUAGE_CHOICES)
+    gender = models.CharField(max_length=20, blank=True, default='', choices=GENDER_CHOICES)
+    age = models.PositiveSmallIntegerField(null=True, blank=True)
+    region = models.CharField(max_length=50, blank=True, default='', choices=REGION_CHOICES)
 
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
@@ -67,21 +77,21 @@ class User(AbstractBaseUser, PermissionsMixin):
     REQUIRED_FIELDS = []
 
     class Meta:
-        ordering = ["first_name", "last_name", "email"]
+        ordering = ["username", "email"]
 
     def __str__(self):
         return self.email
 
     @property
     def full_name(self):
-        full_name = f"{self.first_name} {self.last_name}".strip()
-        return full_name or self.email
+        return self.username
 
     @property
     def avatar_url(self):
         if self.avatar:
             return self.avatar.url
         return None
+
 
 class UserContact(models.Model):
     owner = models.ForeignKey(

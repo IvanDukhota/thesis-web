@@ -1,19 +1,23 @@
 import { useState } from 'react';
-import { RiSettings3Line, RiUserLine, RiMailLine, RiMapPinLine, RiGenderlessLine, RiCalendarLine } from 'react-icons/ri';
+import { RiSettings3Line, RiMailLine, RiMapPinLine, RiGenderlessLine, RiCalendarLine, RiTranslate2 } from 'react-icons/ri';
 
 import { EditProfileModal } from '../ProfileModal/EditProfileModal.jsx';
+import { useAuth } from '../../../../context/AuthContext.jsx';
 import './ProfileLeft.css';
 import '../ProfileModal/EditProfileModal.css';
 
-const DEFAULT_PROFILE = {
-    avatar: null,
-    nick: 'testnick',
-    email: 'test@example.com',
-    firstName: 'test',
-    lastName: 'Tester',
-    region: 'Europe',
-    gender: 'Male',
-    age: '24',
+const LANGUAGE_LABELS = {
+    en: 'English', uk: 'Ukrainian', ru: 'Russian',
+    de: 'German', fr: 'French', es: 'Spanish', pl: 'Polish',
+};
+
+const GENDER_LABELS = {
+    male: 'Male', female: 'Female',
+};
+
+const REGION_LABELS = {
+    north_america: 'North America', south_america: 'South America', europe: 'Europe',
+    asia: 'Asia', africa: 'Africa', oceania: 'Oceania', middle_east: 'Middle East',
 };
 
 function MetaRow({ icon, value, placeholder }) {
@@ -28,31 +32,28 @@ function MetaRow({ icon, value, placeholder }) {
 }
 
 export function ProfileLeft() {
-    const [profile, setProfile] = useState(DEFAULT_PROFILE);
+    const { user } = useAuth();
     const [editOpen, setEditOpen] = useState(false);
 
     return (
         <div className="pl-root">
             <div className="pl-top">
                 <div className="pl-avatar-wrap">
-                    {profile.avatar
-                        ? <img src={profile.avatar} alt="avatar" className="pl-avatar-img" />
-                        : <div className="pl-avatar-placeholder">{profile.nick?.[0]?.toUpperCase() || 'U'}</div>
+                    {user?.avatar
+                        ? <img src={user.avatar} alt="avatar" className="pl-avatar-img" />
+                        : <div className="pl-avatar-placeholder">{user?.username?.[0]?.toUpperCase() || 'U'}</div>
                     }
                 </div>
 
                 <div className="pl-info">
                     <div className="pl-name">
-                        {(profile.firstName || profile.lastName)
-                            ? `${profile.firstName} ${profile.lastName}`.trim()
-                            : <span className="pl-empty">Name not set</span>
-                        }
+                        {user?.username || <span className="pl-empty">Username not set</span>}
                     </div>
-                    <MetaRow icon={<RiUserLine size={13} />} value={profile.nick} placeholder="Nickname not set" />
-                    <MetaRow icon={<RiMailLine size={13} />} value={profile.email} placeholder="Email not set" />
-                    <MetaRow icon={<RiMapPinLine size={13} />} value={profile.region} placeholder="Region not set" />
-                    <MetaRow icon={<RiGenderlessLine size={13} />} value={profile.gender} placeholder="Gender not set" />
-                    <MetaRow icon={<RiCalendarLine size={13} />} value={profile.age ? `${profile.age} y.o.` : null} placeholder="Age not set" />
+                    <MetaRow icon={<RiMailLine size={13} />} value={user?.email} placeholder="Email not set" />
+                    <MetaRow icon={<RiTranslate2 size={13} />} value={LANGUAGE_LABELS[user?.language]} placeholder="Language not set" />
+                    <MetaRow icon={<RiMapPinLine size={13} />} value={REGION_LABELS[user?.region]} placeholder="Region not set" />
+                    <MetaRow icon={<RiGenderlessLine size={13} />} value={GENDER_LABELS[user?.gender]} placeholder="Gender not set" />
+                    <MetaRow icon={<RiCalendarLine size={13} />} value={user?.age ? `${user.age} y.o.` : null} placeholder="Age not set" />
                 </div>
 
                 <button className="pl-settings-btn" onClick={() => setEditOpen(true)} aria-label="Edit profile">
@@ -74,8 +75,6 @@ export function ProfileLeft() {
 
             {editOpen && (
                 <EditProfileModal
-                    profile={profile}
-                    onSave={setProfile}
                     onClose={() => setEditOpen(false)}
                 />
             )}

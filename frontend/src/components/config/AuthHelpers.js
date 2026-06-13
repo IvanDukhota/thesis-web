@@ -1,9 +1,18 @@
 export const onlyLetters = (v) => v.replace(/[0-9]/g, '');
 
+export const LANGUAGES = [
+    { value: 'en', label: 'English' },
+    { value: 'uk', label: 'Ukrainian' },
+    { value: 'ru', label: 'Russian' },
+    { value: 'de', label: 'German' },
+    { value: 'fr', label: 'French' },
+    { value: 'es', label: 'Spanish' },
+    { value: 'pl', label: 'Polish' },
+];
+
 export const GENDERS = [
     { value: 'male', label: 'Male' },
     { value: 'female', label: 'Female' },
-    { value: 'other', label: 'Other' },
 ];
 
 export const REGIONS = [
@@ -25,11 +34,8 @@ export function validateStepOne(data) {
     return e;
 }
 
-export function validateStepTwo(data) {
-    const e = {};
-    if (data.firstName && /\d/.test(data.firstName)) e.firstName = 'No numbers allowed.';
-    if (data.lastName && /\d/.test(data.lastName)) e.lastName = 'No numbers allowed.';
-    return e;
+export function validateStepTwo() {
+    return {};
 }
 
 export function validateStepThree(data) {

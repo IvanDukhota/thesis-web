@@ -31,6 +31,8 @@ urlpatterns = [
     path("api/messages/<uuid:message_id>/", MessageDeleteView.as_view(), name="message-delete"),
     path("api/translations/request/", TranslationRequestView.as_view(), name="translation-request"),
     path('api/v1/health/', health_check),
+    path('api/teams/', include('apps.teams.urls')),
+    path('api/invitations/', include('apps.invitations.urls')),
 ]
 
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

@@ -1,23 +1,55 @@
 import './AuthPage.css';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { VscLayout } from 'react-icons/vsc';
 
 import { LoginForm, RegisterStepper } from '../../components/features/auth/AuthComponents.jsx';
+import { useAuth } from '../../context/AuthContext.jsx';
 
 const EMPTY_REGISTER_STATE = {
-    data: { nick: '', email: '', password: '', password2: '', firstName: '', lastName: '', gender: '', age: '', region: '' },
+    data: { nick: '', email: '', password: '', password2: '', language: 'en', gender: '', age: '', region: '' },
     errors: {},
     done: false,
     showSkipModal: false,
-    stepperActive: false,
 };
 
 export default function AuthPage() {
     const [mode, setMode] = useState('login');
     const [registerState, setRegisterState] = useState(EMPTY_REGISTER_STATE);
+    const { user, loading, login, register } = useAuth();
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        if (!loading && user) navigate('/', { replace: true });
+    }, [user, loading, navigate]);
+
+    useEffect(() => {
+        if (registerState.done) {
+            const t = setTimeout(() => navigate('/'), 1500);
+            return () => clearTimeout(t);
+        }
+    }, [registerState.done, navigate]);
+
+    const handleLogin = async (email, password) => {
+        const result = await login(email, password);
+        return result;
+    };
+
+    const handleRegister = async (data) => {
+        return register({
+            username: data.nick,
+            email: data.email,
+            password: data.password,
+            password_confirm: data.password2,
+            language: data.language || 'en',
+            gender: data.gender || '',
+            age: data.age ? parseInt(data.age) : null,
+            region: data.region || '',
+        });
+    };
+
     return (
         <div className='authpage'>
-
             <div className={`auth-container ${mode === 'register' ? 'auth-container--wide' : ''}`}>
                 <div className="auth-logo">
                     <div className="auth-logo-mark"><VscLayout size={16} /></div>
@@ -31,8 +63,8 @@ export default function AuthPage() {
 
                 <div className="auth-body">
                     {mode === 'login'
-                        ? <LoginForm />
-                        : <RegisterStepper registerState={registerState} setRegisterState={setRegisterState} />
+                        ? <LoginForm onLogin={handleLogin} />
+                        : <RegisterStepper registerState={registerState} setRegisterState={setRegisterState} onRegister={handleRegister} />
                     }
                 </div>
             </div>

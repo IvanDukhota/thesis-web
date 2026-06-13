@@ -1,25 +1,29 @@
+
 import { useState, useEffect } from 'react';
 import { RiCloseLine, RiAddLine, RiDeleteBinLine, RiMailLine } from 'react-icons/ri';
 import './CreateTeamModal.css'
 
-const ALL_PERMS = [
-    'view',
-    'invite',
-    'create project',
-    'manage team',
-    'delete',
+const PERM_MAP = [
+    { label: 'view', key: 'can_view' },
+    { label: 'create project', key: 'can_create_projects' },
+    { label: 'edit team', key: 'can_edit_team' },
+    { label: 'manage settings', key: 'can_manage_settings' },
+    { label: 'delete', key: 'can_delete' },
 ];
 
+const ALL_PERM_LABELS = PERM_MAP.map(p => p.label);
+
 const DEFAULT_ROLES = [
-    { id: 1, name: 'Admin', perms: ['view', 'invite', 'create project', 'edit team', 'manage roles', 'delete'] },
-    { id: 2, name: 'Member', perms: ['view', 'invite', 'create project'] },
+    { id: 1, name: 'Admin', perms: ALL_PERM_LABELS, isDefault: true, isLocked: true },
+    { id: 2, name: 'Member', perms: ['view'], isDefault: true, isLocked: false },
 ];
 
 function RoleRow({ role, onChange, onRemove }) {
-    const togglePerm = (p) => {
-        const next = role.perms.includes(p)
-            ? role.perms.filter(x => x !== p)
-            : [...role.perms, p];
+    const togglePerm = (label) => {
+        if (role.isLocked) return;
+        const next = role.perms.includes(label)
+            ? role.perms.filter(x => x !== label)
+            : [...role.perms, label];
         onChange({ ...role, perms: next });
     };
     return (
@@ -28,21 +32,24 @@ function RoleRow({ role, onChange, onRemove }) {
                 className="ctm-input ctm-role-name"
                 value={role.name}
                 placeholder="Role name"
-                onChange={e => onChange({ ...role, name: e.target.value })}
+                readOnly={role.isLocked}
+                onChange={e => !role.isLocked && onChange({ ...role, name: e.target.value })}
             />
             <div className="ctm-perms">
-                {ALL_PERMS.map(p => (
+                {PERM_MAP.map(({ label }) => (
                     <button
-                        key={p}
+                        key={label}
                         type="button"
-                        className={`ctm-perm-chip ${role.perms.includes(p) ? 'ctm-perm-chip--on' : ''}`}
-                        onClick={() => togglePerm(p)}
-                    >{p}</button>
+                        className={`ctm-perm-chip ${role.perms.includes(label) ? 'ctm-perm-chip--on' : ''} ${role.isLocked ? 'ctm-perm-chip--locked' : ''}`}
+                        onClick={() => togglePerm(label)}
+                    >{label}</button>
                 ))}
             </div>
-            <button className="ctm-icon-btn ctm-icon-btn--danger" onClick={onRemove} type="button">
-                <RiDeleteBinLine size={14} />
-            </button>
+            {!role.isLocked && (
+                <button className="ctm-icon-btn ctm-icon-btn--danger" onClick={onRemove} type="button">
+                    <RiDeleteBinLine size={14} />
+                </button>
+            )}
         </div>
     );
 }
@@ -54,13 +61,15 @@ export function CreateTeamModal({ onClose, onCreate }) {
     const [inviteInput, setInviteInput] = useState('');
     const [invited, setInvited] = useState([]);
     const [nameError, setNameError] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [submitError, setSubmitError] = useState('');
 
     useEffect(() => {
         document.body.style.overflow = 'hidden';
         return () => { document.body.style.overflow = ''; };
     }, []);
 
-    const addRole = () => setRoles(r => [...r, { id: Date.now(), name: '', perms: ['view'] }]);
+    const addRole = () => setRoles(r => [...r, { id: Date.now(), name: '', perms: ['view'], isDefault: false, isLocked: false }]);
     const updateRole = (id, val) => setRoles(r => r.map(x => x.id === id ? val : x));
     const removeRole = (id) => setRoles(r => r.filter(x => x.id !== id));
 
@@ -72,9 +81,17 @@ export function CreateTeamModal({ onClose, onCreate }) {
         setInviteInput('');
     };
 
-    const handleCreate = () => {
+    const handleCreate = async () => {
         if (!name.trim()) { setNameError(true); return; }
-        onCreate({ name, desc, roles, invited });
+        setLoading(true);
+        setSubmitError('');
+        const customRoles = roles.filter(r => !r.isDefault && r.name.trim());
+        const result = await onCreate({ name, desc, customRoles, invited });
+        setLoading(false);
+        if (result?.ok === false) {
+            setSubmitError(result.error || 'Failed to create team');
+            return;
+        }
         onClose();
     };
 
@@ -167,8 +184,11 @@ export function CreateTeamModal({ onClose, onCreate }) {
                 </div>
 
                 <div className="ctm-footer">
-                    <button className="ctm-btn ctm-btn--cancel" onClick={onClose} type="button">Cancel</button>
-                    <button className="ctm-btn ctm-btn--create" onClick={handleCreate} type="button">Create team</button>
+                    {submitError && <span className="ctm-error-text">{submitError}</span>}
+                    <button className="ctm-btn ctm-btn--cancel" onClick={onClose} type="button" disabled={loading}>Cancel</button>
+                    <button className="ctm-btn ctm-btn--create" onClick={handleCreate} type="button" disabled={loading}>
+                        {loading ? 'Creating...' : 'Create team'}
+                    </button>
                 </div>
             </div>
         </div>

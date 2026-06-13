@@ -9,6 +9,7 @@ import logging
 from .models import UserContact
 from .serializers import (
     ContactCreateSerializer,
+    ProfileUpdateSerializer,
     RegisterSerializer,
     UserSerializer,
 )
@@ -40,8 +41,13 @@ class MeView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        serializer = UserSerializer(request.user)
-        return Response(serializer.data)
+        return Response(UserSerializer(request.user).data)
+
+    def patch(self, request):
+        serializer = ProfileUpdateSerializer(request.user, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(UserSerializer(request.user).data)
 
 
 class UserDirectoryView(APIView):
@@ -120,6 +126,22 @@ class ContactListView(APIView):
         ).order_by("first_name", "last_name", "email")
 
         return Response(UserSerializer(contacts, many=True).data)
+
+
+class UserSearchView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        username = request.query_params.get('username', '').strip()
+        if not username:
+            return Response({'detail': 'username is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            user = User.objects.get(username__iexact=username)
+        except User.DoesNotExist:
+            return Response({'detail': 'No user with this username.'}, status=status.HTTP_404_NOT_FOUND)
+        if user == request.user:
+            return Response({'detail': 'No user with this username.'}, status=status.HTTP_404_NOT_FOUND)
+        return Response({'id': user.id, 'username': user.username, 'avatar': user.avatar.url if user.avatar else None})
 
 
 class ContactsWithoutChatsView(APIView):

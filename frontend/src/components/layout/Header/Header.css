@@ -384,3 +384,22 @@
     background: rgba(239, 68, 68, 0.18);
     border-color: rgba(239, 68, 68, 0.38);
 }
+
+.header-signin-btn {
+    height: 34px;
+    padding: 0 16px;
+    background: rgba(124, 58, 237, 0.12);
+    border: 1px solid rgba(124, 58, 237, 0.3);
+    border-radius: 8px;
+    color: #a78bfa;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.header-signin-btn:hover {
+    background: rgba(124, 58, 237, 0.2);
+    border-color: rgba(124, 58, 237, 0.5);
+    color: #c4b5fd;
+}

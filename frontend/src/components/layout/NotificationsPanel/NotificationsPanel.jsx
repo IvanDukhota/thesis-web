@@ -1,54 +1,98 @@
-import { useState } from 'react';
-import { RiCloseLine, RiArrowRightLine, RiNotification3Line } from 'react-icons/ri';
+import { useEffect, useState } from 'react';
+import { RiCheckLine, RiCloseLine, RiNotification3Line } from 'react-icons/ri';
+import { apiAcceptInvitation, apiDeclineInvitation, apiGetInvitations } from '../../../api/invitationsApi';
 import './NotificationsPanel.css';
 
-const INIT_NOTIFICATIONS = [
-    { id: 1, title: 'Assigned you to "Build auth endpoints"', from: 'Alex K.', time: '2m ago' },
-    { id: 2, title: 'Commented on "Design database schema"', from: 'Maria S.', time: '18m ago' },
-    { id: 3, title: 'Added you to project "TeamHub"', from: 'Alex K.', time: '1h ago' },
-    { id: 4, title: 'Changed your role to Designer', from: 'Ivan D.', time: '3h ago' },
-];
+function timeAgo(dateStr) {
+    const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000);
+    if (diff < 60) return `${diff}s ago`;
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    return `${Math.floor(diff / 86400)}d ago`;
+}
 
-export function NotificationsPanel({ open }) {
-    const [items, setItems] = useState(INIT_NOTIFICATIONS);
+export function NotificationsPanel({ open, onCountChange }) {
+    const [items, setItems] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [actionLoading, setActionLoading] = useState(null);
 
-    const remove = (id) => setItems(prev => prev.filter(n => n.id !== id));
+    useEffect(() => {
+        if (!open) return;
+        setLoading(true);
+        apiGetInvitations().then(({ ok, data }) => {
+            setLoading(false);
+            if (ok) setItems(data);
+        });
+    }, [open]);
+
+    const handleAccept = async (inv) => {
+        setActionLoading(inv.id);
+        const { ok } = await apiAcceptInvitation(inv.id);
+        setActionLoading(null);
+        if (ok) {
+            setItems(prev => prev.filter(i => i.id !== inv.id));
+            onCountChange?.(-1);
+            window.dispatchEvent(new Event('teamInviteAccepted'));
+        }
+    };
+
+    const handleDecline = async (inv) => {
+        setActionLoading(inv.id);
+        const { ok } = await apiDeclineInvitation(inv.id);
+        setActionLoading(null);
+        if (ok) {
+            setItems(prev => prev.filter(i => i.id !== inv.id));
+            onCountChange?.(-1);
+        }
+    };
 
     return (
         <div className={`np-dropdown ${open ? 'np-dropdown--open' : ''}`}>
             <div className="np-header">
                 <span className="np-title">Notifications</span>
-                {items.length > 0 && (
-                    <button className="np-clear-btn" onClick={() => setItems([])}>
-                        Clear all
-                    </button>
-                )}
             </div>
 
             <div className="np-body">
-                {items.length === 0 ? (
+                {loading ? (
+                    <div className="np-empty">
+                        <span>Loading...</span>
+                    </div>
+                ) : items.length === 0 ? (
                     <div className="np-empty">
                         <RiNotification3Line size={26} />
                         <span>No notifications</span>
                     </div>
                 ) : (
-                    items.map(n => (
-                        <div key={n.id} className="np-item">
+                    items.map(inv => (
+                        <div key={inv.id} className="np-item">
                             <div className="np-item-top">
-                                <div className="np-avatar">{n.from[0]}</div>
+                                <div className="np-avatar">{inv.invited_by.username[0].toUpperCase()}</div>
                                 <div className="np-item-info">
-                                    <span className="np-from">{n.from}</span>
-                                    <span className="np-time">{n.time}</span>
+                                    <span className="np-from">{inv.invited_by.username}</span>
+                                    <span className="np-time">{timeAgo(inv.created_at)}</span>
                                 </div>
-                                <button className="np-delete" onClick={() => remove(n.id)}>
-                                    <RiCloseLine size={13} />
+                            </div>
+                            <p className="np-text">
+                                Invited you to join <strong>{inv.team.name}</strong>
+                            </p>
+                            <div className="np-actions">
+                                <button
+                                    className="np-accept-btn"
+                                    onClick={() => handleAccept(inv)}
+                                    disabled={actionLoading === inv.id}
+                                >
+                                    <RiCheckLine size={12} />
+                                    Accept
+                                </button>
+                                <button
+                                    className="np-decline-btn"
+                                    onClick={() => handleDecline(inv)}
+                                    disabled={actionLoading === inv.id}
+                                >
+                                    <RiCloseLine size={12} />
+                                    Decline
                                 </button>
                             </div>
-                            <p className="np-text">{n.title}</p>
-                            <button className="np-goto">
-                                Go to
-                                <RiArrowRightLine size={12} />
-                            </button>
                         </div>
                     ))
                 )}

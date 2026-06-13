@@ -272,6 +272,65 @@
     background: rgba(109, 40, 217, 0.1);
 }
 
+.ctm-perm-chip--locked {
+    cursor: default;
+}
+
+.im-found-user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    margin-top: 8px;
+    border: 1px solid rgba(139, 92, 246, 0.25);
+    border-radius: 8px;
+    background: rgba(109, 40, 217, 0.06);
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.im-found-user:hover {
+    background: rgba(109, 40, 217, 0.1);
+    border-color: rgba(139, 92, 246, 0.4);
+}
+
+.im-found-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4c1d95, #6d28d9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.85);
+    flex-shrink: 0;
+}
+
+.im-found-name {
+    flex: 1;
+    font-size: 13px;
+    color: #d4d4d8;
+}
+
+.im-found-add {
+    color: #a78bfa;
+    flex-shrink: 0;
+}
+
+.im-search-error {
+    font-size: 12px;
+    color: #71717a;
+    margin-top: 8px;
+    padding-left: 2px;
+}
+
+.ctm-input[readonly] {
+    opacity: 0.55;
+    cursor: default;
+}
+
 .ctm-invite-row {
     display: flex;
     gap: 8px;

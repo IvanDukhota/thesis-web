@@ -191,3 +191,51 @@
     background: rgba(109, 40, 217, 0.12);
     border-color: rgba(139, 92, 246, 0.35);
 }
+
+.np-actions {
+    display: flex;
+    gap: 6px;
+    padding-left: 37px;
+}
+
+.np-accept-btn,
+.np-decline-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    height: 26px;
+    padding: 0 10px;
+    border-radius: 6px;
+    font-size: 11.5px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.np-accept-btn:disabled,
+.np-decline-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.np-accept-btn {
+    border: 1px solid rgba(34, 197, 94, 0.25);
+    background: rgba(34, 197, 94, 0.08);
+    color: #4ade80;
+}
+
+.np-accept-btn:hover:not(:disabled) {
+    background: rgba(34, 197, 94, 0.14);
+    border-color: rgba(34, 197, 94, 0.4);
+}
+
+.np-decline-btn {
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    background: none;
+    color: #71717a;
+}
+
+.np-decline-btn:hover:not(:disabled) {
+    color: #a1a1aa;
+    border-color: rgba(255, 255, 255, 0.12);
+}

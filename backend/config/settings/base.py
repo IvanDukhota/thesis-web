@@ -33,6 +33,8 @@ INSTALLED_APPS = [
     "apps.messages",
     "apps.realtime",
     "apps.common",
+    "apps.teams",
+    "apps.invitations",
 ]
 
 MIDDLEWARE = [
