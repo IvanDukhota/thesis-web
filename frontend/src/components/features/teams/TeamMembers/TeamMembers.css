@@ -172,6 +172,8 @@
     border-radius: 14px;
     box-shadow: 0 40px 80px rgba(0, 0, 0, 0.9);
     animation: tmmSlide 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    overflow: hidden;
 }
 
 @keyframes tmmSlide {
@@ -446,4 +448,101 @@
 .tmm-role-option--active {
     color: #c4b5fd;
     background: rgba(109, 40, 217, 0.08);
+}
+
+.tmm-confirm {
+    position: absolute;
+    inset: 0;
+    background: rgba(10, 10, 12, 0.92);
+    backdrop-filter: blur(6px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 28px 24px;
+    animation: tmmConfirmIn 0.18s ease;
+    border-radius: 14px;
+}
+
+@keyframes tmmConfirmIn {
+    from { opacity: 0; transform: scale(0.97); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.tmm-confirm-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #f87171;
+    margin-bottom: 6px;
+}
+
+.tmm-confirm-text {
+    font-size: 14px;
+    font-weight: 500;
+    color: #e4e4e7;
+    text-align: center;
+    margin: 0;
+}
+
+.tmm-confirm-text strong {
+    color: #fff;
+}
+
+.tmm-confirm-sub {
+    font-size: 12.5px;
+    color: #52525b;
+    text-align: center;
+    margin: 0 0 8px;
+}
+
+.tmm-confirm-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.tmm-confirm-cancel {
+    height: 34px;
+    padding: 0 16px;
+    border-radius: 7px;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    background: none;
+    color: #71717a;
+    font-size: 13px;
+    cursor: pointer;
+    transition: color 0.15s;
+}
+
+.tmm-confirm-cancel:hover {
+    color: #a1a1aa;
+}
+
+.tmm-confirm-remove {
+    height: 34px;
+    padding: 0 16px;
+    border-radius: 7px;
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    background: rgba(239, 68, 68, 0.12);
+    color: #f87171;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.tmm-confirm-remove:hover:not(:disabled) {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.5);
+}
+
+.tmm-confirm-remove:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }

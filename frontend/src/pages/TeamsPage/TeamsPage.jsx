@@ -11,6 +11,7 @@ import { TeamMembers } from '../../components/features/teams/TeamMembers/TeamMem
 import { TeamProjects } from '../../components/features/teams/TeamProjects/TeamProjects';
 import { TeamStats } from '../../components/features/teams/TeamStats/TeamStats';
 import { apiCreateTeam, apiDeleteTeam, apiGetMyTeam, apiUpdateTeam, apiCreateRole, apiUpdateRole, apiDeleteRole, apiUpdateMember, apiRemoveMember } from '../../api/teamsApi';
+import { apiGetTeamProjects } from '../../api/projectsApi';
 
 const PERM_MAP = [
     { label: 'view', key: 'can_view' },
@@ -99,7 +100,7 @@ function WelcomeCard({ onCreateClick, onNotifClick }) {
 
 
 function normalizeMember(m) {
-    return { id: m.id, name: m.username, role: m.role_name, status: 'active', is_admin: m.is_admin, avatar: m.avatar };
+    return { id: m.id, userId: m.user_id, name: m.username, role: m.role_name, status: 'active', is_admin: m.is_admin, avatar: m.avatar };
 }
 
 export default function TeamsPage() {
@@ -119,20 +120,21 @@ export default function TeamsPage() {
     const [projects, setProjects] = useState([]);
     const headerRef = useRef(null);
 
-    const loadTeam = useCallback(() => {
-        apiGetMyTeam().then(({ ok, data }) => {
-            if (ok) {
-                setTeamId(data.id);
-                setTeamName(data.name);
-                setTeamDesc(data.description || '');
-                setMembers((data.members || []).map(normalizeMember));
-                setRoles(data.roles || []);
-                setHasTeam(true);
-            } else {
-                setHasTeam(false);
-            }
-            setTeamLoading(false);
-        });
+    const loadTeam = useCallback(async () => {
+        const { ok, data } = await apiGetMyTeam();
+        if (ok) {
+            setTeamId(data.id);
+            setTeamName(data.name);
+            setTeamDesc(data.description || '');
+            setMembers((data.members || []).map(normalizeMember));
+            setRoles(data.roles || []);
+            setHasTeam(true);
+            const projRes = await apiGetTeamProjects(data.id);
+            if (projRes.ok) setProjects(projRes.data);
+        } else {
+            setHasTeam(false);
+        }
+        setTeamLoading(false);
     }, []);
 
     useEffect(() => {
@@ -300,7 +302,7 @@ export default function TeamsPage() {
                             />
                         </div>
                         <div className="teamspage-col teamspage-col--lg">
-                            <TeamStats />
+                            <TeamStats teamId={teamId} />
                         </div>
                     </div>
                 </div>
@@ -321,6 +323,7 @@ export default function TeamsPage() {
             )}
             {showAddProj && (
                 <AddProjectModal
+                    teamId={teamId}
                     members={members}
                     onClose={() => setShowAddProj(false)}
                     onAdd={handleAddProject}

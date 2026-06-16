@@ -232,3 +232,210 @@
     color: #a78bfa;
     border-color: rgba(139, 92, 246, 0.5);
 }
+
+/* ── Member edit modal ── */
+.msb-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 400;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.msb-modal {
+    background: #111115;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    width: 340px;
+    display: flex;
+    flex-direction: column;
+    animation: msbModalIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes msbModalIn {
+    from { opacity: 0; transform: scale(0.96) translateY(6px); }
+    to { opacity: 1; transform: none; }
+}
+
+.msb-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 20px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.msb-modal-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #fff;
+    letter-spacing: -0.03em;
+}
+
+.msb-modal-close {
+    background: none;
+    border: none;
+    color: #52525b;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    padding: 3px;
+    border-radius: 5px;
+    transition: color 0.15s;
+}
+
+.msb-modal-close:hover { color: #a1a1aa; }
+
+.msb-modal-body {
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.msb-modal-user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.msb-modal-username {
+    font-size: 14px;
+    font-weight: 500;
+    color: #d4d4d8;
+}
+
+.msb-modal-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.msb-modal-label {
+    font-size: 11px;
+    color: #52525b;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.msb-modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    gap: 10px;
+}
+
+.msb-modal-footer-right {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+}
+
+.msb-modal-remove {
+    background: none;
+    border: none;
+    color: #ef4444;
+    font-size: 13px;
+    cursor: pointer;
+    padding: 0;
+    font-family: inherit;
+    transition: color 0.15s;
+}
+
+.msb-modal-remove:hover { color: #fca5a5; }
+.msb-modal-remove:disabled { opacity: 0.4; cursor: default; }
+
+.msb-modal-cancel {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 7px;
+    color: #a1a1aa;
+    font-size: 13px;
+    padding: 6px 14px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s;
+}
+
+.msb-modal-cancel:hover { background: rgba(255,255,255,0.08); }
+.msb-modal-cancel:disabled { opacity: 0.4; cursor: default; }
+
+.msb-modal-save {
+    background: #7c3aed;
+    border: none;
+    border-radius: 7px;
+    color: #fff;
+    font-size: 13px;
+    padding: 6px 14px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s;
+}
+
+.msb-modal-save:hover { background: #6d28d9; }
+.msb-modal-save:disabled { opacity: 0.5; cursor: default; }
+
+/* ── Role dropdown ── */
+.msb-role-select {
+    position: relative;
+}
+
+.msb-role-trigger {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    color: #d4d4d8;
+    font-size: 13px;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: border-color 0.15s;
+}
+
+.msb-role-trigger:hover,
+.msb-role-trigger--open { border-color: rgba(139,92,246,0.5); }
+
+.msb-role-arrow {
+    color: #52525b;
+    transition: transform 0.18s;
+}
+
+.msb-role-arrow--up { transform: rotate(180deg); }
+
+.msb-role-list {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: #18181b;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    overflow: hidden;
+    z-index: 500;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+
+.msb-role-option {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    color: #a1a1aa;
+    font-size: 13px;
+    padding: 9px 14px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.13s, color 0.13s;
+}
+
+.msb-role-option:hover { background: rgba(255,255,255,0.05); color: #d4d4d8; }
+.msb-role-option--active { color: #a78bfa; }

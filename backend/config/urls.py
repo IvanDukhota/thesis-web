@@ -33,6 +33,9 @@ urlpatterns = [
     path('api/v1/health/', health_check),
     path('api/teams/', include('apps.teams.urls')),
     path('api/invitations/', include('apps.invitations.urls')),
+    path('api/projects/', include('apps.projects.urls')),
+    path('api/notifications/', include('apps.notifications.urls')),
+    path('api/stats/', include('apps.stats.urls')),
 ]
 
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

@@ -170,6 +170,10 @@
     outline: none;
 }
 
+.ctm2-select-trigger--error {
+    border-color: rgba(239, 68, 68, 0.45) !important;
+}
+
 .ctm2-select-arrow {
     color: #52525b;
     transition: transform 0.18s;
@@ -277,4 +281,94 @@
 
 .ctm2-btn--create:hover {
     opacity: 0.85;
+}
+
+/* ── Styled Date Picker (shared) ── */
+
+.sdp-wrap {
+    position: relative;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.sdp-wrap:hover:not(.sdp-wrap--disabled) {
+    border-color: rgba(109, 40, 217, 0.4);
+    background: rgba(109, 40, 217, 0.04);
+}
+
+.sdp-icon {
+    color: #52525b;
+    flex-shrink: 0;
+    transition: color 0.15s;
+}
+
+.sdp-wrap:hover:not(.sdp-wrap--disabled) .sdp-icon {
+    color: #a78bfa;
+}
+
+.sdp-text {
+    font-size: 13px;
+    color: #e4e4e7;
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-family: inherit;
+}
+
+.sdp-placeholder {
+    font-size: 13px;
+    color: #3f3f46;
+    flex: 1;
+    font-family: inherit;
+}
+
+.sdp-wrap--disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.sdp-dropdown {
+    position: absolute;
+    top: calc(100% + 5px);
+    left: 0;
+    background: #111114;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 9px;
+    padding: 8px;
+    z-index: 200;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8);
+    display: flex;
+    gap: 6px;
+    animation: ctm2DropIn 0.14s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sdp-sel {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    color: #e4e4e7;
+    font-size: 12.5px;
+    padding: 5px 6px;
+    cursor: pointer;
+    outline: none;
+    font-family: inherit;
+}
+
+.sdp-sel:focus {
+    border-color: rgba(109, 40, 217, 0.45);
+}
+
+.sdp-sel option {
+    background: #18181b;
+    color: #e4e4e7;
 }

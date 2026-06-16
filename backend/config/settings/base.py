@@ -35,6 +35,10 @@ INSTALLED_APPS = [
     "apps.common",
     "apps.teams",
     "apps.invitations",
+    "apps.projects",
+    "apps.notifications",
+    "apps.tasks",
+    "apps.stats",
 ]
 
 MIDDLEWARE = [

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { RiAddLine, RiShieldUserLine, RiSettings3Line, RiCloseLine, RiArrowDownSLine } from 'react-icons/ri';
+import { RiAddLine, RiShieldUserLine, RiSettings3Line, RiCloseLine, RiArrowDownSLine, RiUserUnfollowLine } from 'react-icons/ri';
 import { InviteModal } from '../InviteModal';
 import './TeamMembers.css';
 
@@ -51,6 +51,7 @@ function MemberModal({ member, roles, onSave, onRemove, onClose }) {
     const [selectedRole, setSelectedRole] = useState(currentRoleId);
     const [saving, setSaving] = useState(false);
     const [removing, setRemoving] = useState(false);
+    const [confirmRemove, setConfirmRemove] = useState(false);
 
     const handleSave = async () => {
         if (!selectedRole || selectedRole === currentRoleId) { onClose(); return; }
@@ -83,8 +84,12 @@ function MemberModal({ member, roles, onSave, onRemove, onClose }) {
                     </div>
                 </div>
                 <div className="tmm-footer">
-                    <button className="tmm-remove-btn" onClick={handleRemove} disabled={removing || saving}>
-                        {removing ? 'Removing...' : 'Remove from team'}
+                    <button
+                        className="tmm-remove-btn"
+                        onClick={() => setConfirmRemove(true)}
+                        disabled={removing || saving}
+                    >
+                        Remove from team
                     </button>
                     <div className="tmm-footer-right">
                         <button className="tmm-cancel-btn" onClick={onClose} disabled={saving || removing}>Cancel</button>
@@ -93,6 +98,24 @@ function MemberModal({ member, roles, onSave, onRemove, onClose }) {
                         </button>
                     </div>
                 </div>
+
+                {confirmRemove && (
+                    <div className="tmm-confirm">
+                        <div className="tmm-confirm-icon">
+                            <RiUserUnfollowLine size={22} />
+                        </div>
+                        <p className="tmm-confirm-text">Remove <strong>{member.name}</strong> from team?</p>
+                        <p className="tmm-confirm-sub">They will lose access to all team projects.</p>
+                        <div className="tmm-confirm-actions">
+                            <button className="tmm-confirm-cancel" onClick={() => setConfirmRemove(false)}>
+                                Cancel
+                            </button>
+                            <button className="tmm-confirm-remove" onClick={handleRemove} disabled={removing}>
+                                {removing ? 'Removing...' : 'Yes, remove'}
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>,
         document.body

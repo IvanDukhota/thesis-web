@@ -11,12 +11,13 @@ import { VscLayout } from 'react-icons/vsc';
 import { NotificationsPanel } from '../NotificationsPanel/NotificationsPanel';
 import { useAuth } from '../../../context/AuthContext';
 import { apiGetInvitations } from '../../../api/invitationsApi';
+import { apiGetNotifications } from '../../../api/notificationsApi';
 
 const NAV_LINKS = [
     { label: "Projects", path: '/projects' },
     { label: "Teams", path: '/teams' },
     { label: "Marketplace", path: null },
-    { label: "Chat", path: null },
+    { label: "Chat", path: '/chat' },
 ];
 
 const Header = forwardRef(function Header(_, ref) {
@@ -29,8 +30,10 @@ const Header = forwardRef(function Header(_, ref) {
 
     useEffect(() => {
         if (!user) return;
-        apiGetInvitations().then(({ ok, data }) => {
-            if (ok) setNotifCount(data.length);
+        Promise.all([apiGetInvitations(), apiGetNotifications()]).then(([invRes, notifRes]) => {
+            const invCount = invRes.ok ? invRes.data.length : 0;
+            const notifCount = notifRes.ok ? notifRes.data.length : 0;
+            setNotifCount(invCount + notifCount);
         });
     }, [user]);
 

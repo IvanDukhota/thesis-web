@@ -7,6 +7,7 @@ import AuthPage from './pages/AuthPage/AuthPage';
 import TeamsPage from './pages/TeamsPage/TeamsPage';
 import ProjectsPage from './pages/ProjectsPage/ProjectsPage';
 import SingleProjectPage from './pages/SingleProjectPage/SingleProjectPage';
+import ChatPage from './chat/ChatPage';
 import DarkVeil from './components/layout/DarkVeil/DarkVeil';
 import { darkVeilConfig } from './components/config/PagesConfig';
 
@@ -26,6 +27,7 @@ function AppRoutes() {
             <Route path="/teams" element={<ProtectedRoute><TeamsPage /></ProtectedRoute>} />
             <Route path="/projects" element={<ProtectedRoute><ProjectsPage /></ProtectedRoute>} />
             <Route path="/projects/:id" element={<ProtectedRoute><SingleProjectPage /></ProtectedRoute>} />
+            <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
         </Routes>
     );
 }

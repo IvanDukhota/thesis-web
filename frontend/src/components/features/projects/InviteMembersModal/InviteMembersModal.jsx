@@ -1,32 +1,44 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { RiCloseLine, RiCheckLine, RiAddLine } from 'react-icons/ri';
+import { apiGetMyTeam } from '../../../../api/teamsApi';
+import { apiAddProjectMember } from '../../../../api/projectsApi';
 import './InviteMembersModal.css';
 
-const TEAM_MEMBERS = [
-    { name: 'Dmytro V.', role: 'Developer' },
-    { name: 'Sofia M.', role: 'Designer' },
-    { name: 'Taras B.', role: 'Tester' },
-];
-
-export function InviteMembersModal({ projectMembers, onClose, onInvite }) {
+export function InviteMembersModal({ projectId, teamId, existingMemberIds, onClose, onInvited }) {
+    const [teamMembers, setTeamMembers] = useState([]);
     const [selected, setSelected] = useState(new Set());
+    const [loading, setLoading] = useState(false);
 
-    const available = TEAM_MEMBERS.filter(
-        m => !projectMembers.some(pm => pm.name === m.name)
+    useEffect(() => {
+        if (!teamId) return;
+        apiGetMyTeam().then(({ ok, data }) => {
+            if (ok) setTeamMembers(data.members || []);
+        });
+    }, [teamId]);
+
+    const available = teamMembers.filter(
+        m => !existingMemberIds.includes(m.user_id)
     );
 
-    const toggle = (name) => {
+    const toggle = (userId) => {
         setSelected(prev => {
             const next = new Set(prev);
-            next.has(name) ? next.delete(name) : next.add(name);
+            next.has(userId) ? next.delete(userId) : next.add(userId);
             return next;
         });
     };
 
-    const handleDone = () => {
-        const toAdd = available.filter(m => selected.has(m.name));
-        if (toAdd.length > 0) onInvite(toAdd);
+    const handleDone = async () => {
+        if (selected.size === 0) { onClose(); return; }
+        setLoading(true);
+        const added = [];
+        for (const userId of selected) {
+            const { ok, data } = await apiAddProjectMember(projectId, userId);
+            if (ok) added.push(data);
+        }
+        setLoading(false);
+        if (added.length > 0) onInvited(added);
         onClose();
     };
 
@@ -45,18 +57,18 @@ export function InviteMembersModal({ projectMembers, onClose, onInvite }) {
                         <>
                             <p className="imm-label">Team members</p>
                             <div className="imm-list">
-                                {available.map((m, i) => {
-                                    const isSelected = selected.has(m.name);
+                                {available.map((m) => {
+                                    const isSelected = selected.has(m.user_id);
                                     return (
-                                        <div key={i} className={`imm-member ${isSelected ? 'imm-member--selected' : ''}`}>
-                                            <div className="imm-avatar">{m.name[0]}</div>
+                                        <div key={m.id} className={`imm-member ${isSelected ? 'imm-member--selected' : ''}`}>
+                                            <div className="imm-avatar">{m.username[0].toUpperCase()}</div>
                                             <div className="imm-info">
-                                                <span className="imm-name">{m.name}</span>
-                                                <span className="imm-role">{m.role}</span>
+                                                <span className="imm-name">{m.username}</span>
+                                                <span className="imm-role">{m.role_name || 'Member'}</span>
                                             </div>
                                             <button
                                                 className={`imm-add-btn ${isSelected ? 'imm-add-btn--active' : ''}`}
-                                                onClick={() => toggle(m.name)}
+                                                onClick={() => toggle(m.user_id)}
                                             >
                                                 {isSelected ? <RiCheckLine size={14} /> : <RiAddLine size={14} />}
                                             </button>
@@ -70,8 +82,8 @@ export function InviteMembersModal({ projectMembers, onClose, onInvite }) {
 
                 <div className="imm-footer">
                     <button className="imm-btn imm-btn--cancel" onClick={onClose}>Cancel</button>
-                    <button className="imm-btn imm-btn--done" onClick={handleDone}>
-                        Done {selected.size > 0 && `(${selected.size})`}
+                    <button className="imm-btn imm-btn--done" onClick={handleDone} disabled={loading}>
+                        {loading ? 'Adding...' : `Done${selected.size > 0 ? ` (${selected.size})` : ''}`}
                     </button>
                 </div>
             </div>

@@ -59,9 +59,12 @@ class MessageCreateView(APIView):
         text = request.data.get('text', '').strip()
         recipient_id = request.data.get('recipient_id')
         client_id = request.data.get('client_id')
+        reply_to_id = request.data.get('reply_to_id')
+        forwarded_from_id = request.data.get('forwarded_from_id')
         files = request.FILES.getlist('files')
 
-        if not text and not files:
+        # Allow empty message only if forwarding
+        if not text and not files and not forwarded_from_id:
             return Response(
                 {"detail": "Message must contain text or files."},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -121,6 +124,35 @@ class MessageCreateView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
+        # Validate reply_to_id if provided
+        reply_to_message = None
+        if reply_to_id:
+            try:
+                reply_to_message = Message.objects.get(
+                    id=reply_to_id,
+                    chat=chat,
+                    is_deleted=False,
+                )
+            except Message.DoesNotExist:
+                return Response(
+                    {"detail": "Reply target message not found."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+        # Validate forwarded_from_id if provided
+        forwarded_from_message = None
+        if forwarded_from_id:
+            try:
+                forwarded_from_message = Message.objects.get(
+                    id=forwarded_from_id,
+                    is_deleted=False,
+                )
+            except Message.DoesNotExist:
+                return Response(
+                    {"detail": "Forwarded message not found."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
         last_position = (
             Message.objects.filter(chat=chat)
             .aggregate(value=Max("position"))
@@ -128,7 +160,9 @@ class MessageCreateView(APIView):
             or 0
         )
         next_position = last_position + 1
+        
 
+        # Determine message type based on files or forwarded message attachments
         message_type = Message.MessageType.TEXT
         if files:
             first_file_type = validated_files[0]['attachment_type']
@@ -138,6 +172,12 @@ class MessageCreateView(APIView):
                 message_type = Message.MessageType.VIDEO
             else:
                 message_type = Message.MessageType.FILE
+        elif forwarded_from_message:
+            # If forwarding, inherit message type and text from original message
+            message_type = forwarded_from_message.type
+            # Copy original text if no new text provided
+            if not text:
+                text = forwarded_from_message.text
 
         message = Message.objects.create(
             chat=chat,
@@ -146,6 +186,8 @@ class MessageCreateView(APIView):
             type=message_type,
             text=text,
             client_id=client_id,
+            reply_to=reply_to_message,
+            forwarded_from=forwarded_from_message,
         )
 
         if files:
@@ -168,6 +210,20 @@ class MessageCreateView(APIView):
                     size=file.size,
                     width=file_data.get('width'),
                     height=file_data.get('height'),
+                )
+        elif forwarded_from_message:
+            # Copy attachments from forwarded message
+            for original_attachment in forwarded_from_message.attachments.all():
+                Attachment.objects.create(
+                    message=message,
+                    type=original_attachment.type,
+                    storage_key=original_attachment.storage_key,
+                    file_name=original_attachment.file_name,
+                    mime_type=original_attachment.mime_type,
+                    size=original_attachment.size,
+                    width=original_attachment.width,
+                    height=original_attachment.height,
+                    duration_sec=original_attachment.duration_sec,
                 )
 
         chat.save(update_fields=['updated_at'])
@@ -208,6 +264,7 @@ class MessageCreateView(APIView):
                 "chat_data": chat_data_clean,
             },
         )
+
 
         # Get all member IDs from chat_data
         member_ids = [m['user'] for m in chat_data_clean.get('members', [])]
@@ -292,6 +349,7 @@ class MessageCreateView(APIView):
             )
 
         return Response(message_data, status=status.HTTP_201_CREATED)
+
 
     def _validate_file(self, file):
         result = {

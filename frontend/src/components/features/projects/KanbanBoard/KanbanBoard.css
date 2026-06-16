@@ -175,3 +175,31 @@
 .kb-add-cancel:hover {
     color: #a1a1aa;
 }
+
+.kb-board--loading .kb-column {
+    animation: none;
+    opacity: 1;
+}
+
+.kb-col-body--loading {
+    gap: 10px;
+    padding-top: 10px;
+}
+
+@keyframes kbPulse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.6; }
+}
+
+.kb-skeleton {
+    height: 64px;
+    border-radius: 9px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    animation: kbPulse 1.6s ease-in-out infinite;
+}
+
+.kb-skeleton--short {
+    height: 48px;
+    animation-delay: 0.3s;
+}

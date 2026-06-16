@@ -3,6 +3,7 @@ from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.projects.models import ProjectMember
 from .models import Team, TeamMember, TeamRole
 from .serializers import TeamCreateSerializer, TeamMemberSerializer, TeamRoleSerializer, TeamSerializer, TeamUpdateSerializer
 
@@ -149,7 +150,10 @@ class TeamMemberDetailView(APIView):
                 return Response({'detail': 'Permission denied.'}, status=status.HTTP_403_FORBIDDEN)
         if target.role and target.role.is_admin:
             return Response({'detail': 'Cannot remove an admin from the team.'}, status=status.HTTP_400_BAD_REQUEST)
+        user_to_remove = target.user
+        team = target.team
         target.delete()
+        ProjectMember.objects.filter(project__team=team, user=user_to_remove).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 

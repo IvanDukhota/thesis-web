@@ -1,5 +1,58 @@
 .etm-modal {
     width: 500px;
+    position: relative;
+    overflow: hidden;
+}
+
+.etm-modal .ctm2-footer {
+    justify-content: space-between;
+}
+
+.ctm2-input--readonly {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.ctm2-input--readonly:focus {
+    border-color: rgba(255, 255, 255, 0.06) !important;
+    background: rgba(255, 255, 255, 0.03) !important;
+}
+
+.ctm2-select-trigger--disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.etm-footer-left {
+    display: flex;
+    align-items: center;
+}
+
+.etm-footer-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.etm-delete-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    height: 34px;
+    padding: 0 12px;
+    border-radius: 7px;
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    background: rgba(239, 68, 68, 0.06);
+    color: #f87171;
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.etm-delete-btn:hover {
+    background: rgba(239, 68, 68, 0.12);
+    border-color: rgba(239, 68, 68, 0.4);
 }
 
 .etm-divider {
@@ -41,3 +94,89 @@
     color: #3f3f46;
     text-align: center;
 }
+
+/* ── Delete confirmation overlay ── */
+
+.etm-confirm {
+    position: absolute;
+    inset: 0;
+    background: rgba(10, 10, 12, 0.92);
+    backdrop-filter: blur(6px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    z-index: 10;
+    animation: etmConfirmIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    border-radius: 14px;
+}
+
+@keyframes etmConfirmIn {
+    from {
+        opacity: 0;
+        transform: scale(1.02);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.etm-confirm-text {
+    font-size: 15px;
+    font-weight: 500;
+    color: #e4e4e7;
+    letter-spacing: -0.01em;
+}
+
+.etm-confirm-sub {
+    font-size: 12.5px;
+    color: #52525b;
+    margin-bottom: 8px;
+}
+
+.etm-confirm-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.etm-confirm-cancel {
+    height: 36px;
+    padding: 0 20px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.04);
+    color: #a1a1aa;
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.etm-confirm-cancel:hover {
+    background: rgba(255, 255, 255, 0.07);
+    color: #e4e4e7;
+}
+
+.etm-confirm-delete {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: 36px;
+    padding: 0 20px;
+    border-radius: 8px;
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    background: rgba(239, 68, 68, 0.1);
+    color: #f87171;
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.etm-confirm-delete:hover {
+    background: rgba(239, 68, 68, 0.18);
+    border-color: rgba(239, 68, 68, 0.5);
+}
+

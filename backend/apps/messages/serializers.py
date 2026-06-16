@@ -33,9 +33,27 @@ class MessageSenderSerializer(serializers.Serializer):
     full_name = serializers.CharField()
 
 
+class ReplyToMessageSerializer(serializers.ModelSerializer):
+    sender = serializers.SerializerMethodField()
+    attachments = AttachmentSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Message
+        fields = ["id", "position", "sender", "type", "text", "attachments"]
+
+    def get_sender(self, obj):
+        return {
+            "id": obj.sender.id,
+            "email": obj.sender.email,
+            "full_name": obj.sender.full_name,
+        }
+
+
 class MessageSerializer(serializers.ModelSerializer):
     sender = serializers.SerializerMethodField()
     attachments = AttachmentSerializer(many=True, read_only=True)
+    reply_to = ReplyToMessageSerializer(read_only=True)
+    forwarded_from = ReplyToMessageSerializer(read_only=True)
     translated_text = serializers.SerializerMethodField()
     translation_status = serializers.SerializerMethodField()
 

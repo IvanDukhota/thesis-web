@@ -11,13 +11,14 @@ class TeamRoleSerializer(serializers.ModelSerializer):
 
 class TeamMemberSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source='user.username', read_only=True)
+    user_id = serializers.IntegerField(source='user.id', read_only=True)
     avatar = serializers.SerializerMethodField()
     role_name = serializers.SerializerMethodField()
     is_admin = serializers.SerializerMethodField()
 
     class Meta:
         model = TeamMember
-        fields = ['id', 'username', 'avatar', 'role_name', 'is_admin', 'joined_at']
+        fields = ['id', 'user_id', 'username', 'avatar', 'role_name', 'is_admin', 'joined_at']
 
     def get_avatar(self, obj):
         return obj.user.avatar.url if obj.user.avatar else None

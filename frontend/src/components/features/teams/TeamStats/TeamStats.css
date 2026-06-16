@@ -108,12 +108,18 @@
     color: #d4d4d8;
 }
 
+.ts-bars-section {
+    display: flex;
+    justify-content: center;
+    margin-top: 10px;
+}
+
 .ts-bar-wrap {
     display: flex;
     flex-direction: column;
     gap: 12px;
-    width: 100%;
-    max-width: 400px;
+    width: 380px;
+    max-width: 100%;
 }
 
 .ts-bar-row {
@@ -219,4 +225,51 @@
     color: #3f3f46;
     line-height: 1.5;
     max-width: 220px;
+}
+
+.ts-body--data {
+    align-items: flex-start;
+    justify-content: flex-start;
+}
+
+.ts-content {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.ts-kpi-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+}
+
+.ts-kpi {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 14px 16px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.ts-kpi-val {
+    font-size: 20px;
+    font-weight: 600;
+    color: #d4d4d8;
+    letter-spacing: -0.02em;
+}
+
+.ts-kpi-label {
+    font-size: 11.5px;
+    color: #52525b;
+}
+
+.ts-no-tasks {
+    font-size: 13px;
+    color: #3f3f46;
+    text-align: center;
+    padding: 24px 0;
 }

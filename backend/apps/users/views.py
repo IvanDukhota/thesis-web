@@ -60,7 +60,7 @@ class UserDirectoryView(APIView):
             UserContact.objects.filter(owner=current_user).values_list("contact_id", flat=True)
         )
 
-        contacts = User.objects.filter(id__in=contact_ids).order_by("first_name", "last_name", "email")
+        contacts = User.objects.filter(id__in=contact_ids).order_by("username")
         others = User.objects.exclude(id=current_user.id).exclude(id__in=contact_ids).order_by(
             "first_name", "last_name", "email"
         )
@@ -123,7 +123,7 @@ class ContactListView(APIView):
 
         contacts = User.objects.filter(
             id__in=user.contacts.values_list('contact_id', flat=True)
-        ).order_by("first_name", "last_name", "email")
+        ).order_by("username")
 
         return Response(UserSerializer(contacts, many=True).data)
 

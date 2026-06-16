@@ -13,15 +13,15 @@ const PRIORITY_CLASS = {
     low: 'tc-priority--low',
 };
 
-export function TaskCard({ task, onDragStart, onEdit }) {
+export function TaskCard({ task, onDragStart, onEdit, canEdit = true }) {
     return (
         <div
             className="tc-card"
-            draggable
-            onDragStart={(e) => {
+            draggable={canEdit}
+            onDragStart={canEdit ? (e) => {
                 e.dataTransfer.effectAllowed = 'move';
                 onDragStart(task.id);
-            }}
+            } : undefined}
             onDoubleClick={onEdit}
         >
             {task.priority && (
@@ -31,7 +31,7 @@ export function TaskCard({ task, onDragStart, onEdit }) {
             )}
             <p className="tc-title">{task.title}</p>
             {task.desc && <p className="tc-desc">{task.desc}</p>}
-            <div className="tc-hint">Double click to edit</div>
+            <div className="tc-hint">{canEdit ? 'Double click to edit' : 'Double click to view'}</div>
             <div className="tc-footer">
                 {task.assignee && (
                     <span className="tc-assignee">

@@ -1,8 +1,10 @@
-import { useState } from 'react';
-import { RiSettings3Line, RiMailLine, RiMapPinLine, RiGenderlessLine, RiCalendarLine, RiTranslate2 } from 'react-icons/ri';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { RiSettings3Line, RiMailLine, RiMapPinLine, RiGenderlessLine, RiCalendarLine, RiTranslate2, RiTeamLine, RiArrowRightSLine } from 'react-icons/ri';
 
 import { EditProfileModal } from '../ProfileModal/EditProfileModal.jsx';
 import { useAuth } from '../../../../context/AuthContext.jsx';
+import { apiGetMyTeam } from '../../../../api/teamsApi.js';
 import './ProfileLeft.css';
 import '../ProfileModal/EditProfileModal.css';
 
@@ -33,7 +35,17 @@ function MetaRow({ icon, value, placeholder }) {
 
 export function ProfileLeft() {
     const { user } = useAuth();
+    const navigate = useNavigate();
     const [editOpen, setEditOpen] = useState(false);
+    const [team, setTeam] = useState(null);
+    const [teamLoaded, setTeamLoaded] = useState(false);
+
+    useEffect(() => {
+        apiGetMyTeam().then(({ ok, data }) => {
+            if (ok) setTeam(data);
+            setTeamLoaded(true);
+        });
+    }, []);
 
     return (
         <div className="pl-root">
@@ -65,12 +77,37 @@ export function ProfileLeft() {
 
             <div className="pl-bottom">
                 <p className="pl-team-title">Current team</p>
-                <div className="pl-no-team">
-                    <p className="pl-no-team-text">
-                        You are not part of a team yet. Create your own or join an existing one.
-                    </p>
-                    <button className="pl-team-btn">Browse teams</button>
-                </div>
+
+                {!teamLoaded ? (
+                    <p className="pl-no-team-text" style={{ color: '#3f3f46' }}>Loading...</p>
+                ) : team ? (
+                    <div className="pl-team-card" onClick={() => navigate('/teams')}>
+                        <div className="pl-team-card-icon">
+                            <RiTeamLine size={18} />
+                        </div>
+                        <div className="pl-team-card-info">
+                            <span className="pl-team-card-name">{team.name}</span>
+                            <span className="pl-team-card-meta">
+                                {team.members?.length ?? 0} member{(team.members?.length ?? 0) !== 1 ? 's' : ''}
+                            </span>
+                        </div>
+                        <RiArrowRightSLine size={16} className="pl-team-card-arrow" />
+                    </div>
+                ) : (
+                    <div className="pl-no-team">
+                        <p className="pl-no-team-text">
+                            You are not part of a team yet. Create your own or join an existing one.
+                        </p>
+                        <div className="pl-team-actions">
+                            <button className="pl-team-btn pl-team-btn--secondary" onClick={() => navigate('/teams')}>
+                                Check Notifications
+                            </button>
+                            <button className="pl-team-btn pl-team-btn--primary" onClick={() => navigate('/teams')}>
+                                Create Team
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {editOpen && (

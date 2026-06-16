@@ -1,16 +1,49 @@
 import { useState } from 'react';
 import { RiCloseLine } from 'react-icons/ri';
+import { apiCreateProject } from '../../../../api/projectsApi';
 import './CreateProjectModal.css';
 
-export function CreateProjectModal({ onClose, onCreate }) {
+export function CreateProjectModal({ onClose, onCreate, teamId, canCreateTeamProject }) {
     const [name, setName] = useState('');
     const [desc, setDesc] = useState('');
     const [isSolo, setIsSolo] = useState(true);
     const [nameErr, setNameErr] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
 
-    const handleCreate = () => {
+    const selectTeam = () => {
+        if (!teamId) {
+            setError('You need to be in a team to create a team project.');
+            return;
+        }
+        if (!canCreateTeamProject) {
+            setError("You don't have permission to create team projects. Ask your team admin.");
+            return;
+        }
+        setIsSolo(false);
+        setError('');
+    };
+
+    const handleCreate = async () => {
         if (!name.trim()) { setNameErr(true); return; }
-        onCreate({ name, desc, type: isSolo ? 'solo' : 'team', tasks: 0, done: 0, status: 'Active' });
+        if (!isSolo && !teamId) {
+            setError('You need to be in a team to create a team project.');
+            return;
+        }
+
+        setLoading(true);
+        const payload = { name: name.trim(), description: desc.trim(), type: isSolo ? 'solo' : 'team' };
+        if (!isSolo && teamId) payload.team = teamId;
+
+        const { ok, data } = await apiCreateProject(payload);
+        setLoading(false);
+
+        if (!ok) {
+            setError(data?.detail || data?.name?.[0] || 'Failed to create project.');
+            return;
+        }
+
+        onCreate(data);
         onClose();
     };
 
@@ -53,7 +86,7 @@ export function CreateProjectModal({ onClose, onCreate }) {
                                 <input
                                     type="checkbox"
                                     checked={isSolo}
-                                    onChange={() => setIsSolo(true)}
+                                    onChange={() => { setIsSolo(true); setError(''); }}
                                     className="cpm-checkbox"
                                 />
                                 <span className="cpm-type-label">
@@ -65,7 +98,7 @@ export function CreateProjectModal({ onClose, onCreate }) {
                                 <input
                                     type="checkbox"
                                     checked={!isSolo}
-                                    onChange={() => setIsSolo(false)}
+                                    onChange={selectTeam}
                                     className="cpm-checkbox"
                                 />
                                 <span className="cpm-type-label">
@@ -74,12 +107,15 @@ export function CreateProjectModal({ onClose, onCreate }) {
                                 </span>
                             </label>
                         </div>
+                        {error && <span className="cpm-error">{error}</span>}
                     </div>
                 </div>
 
                 <div className="cpm-footer">
                     <button className="cpm-btn cpm-btn--cancel" onClick={onClose}>Cancel</button>
-                    <button className="cpm-btn cpm-btn--create" onClick={handleCreate}>Create project</button>
+                    <button className="cpm-btn cpm-btn--create" onClick={handleCreate} disabled={loading}>
+                        {loading ? 'Creating...' : 'Create project'}
+                    </button>
                 </div>
             </div>
         </div>

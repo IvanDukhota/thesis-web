@@ -73,6 +73,15 @@ class InvitationAcceptView(APIView):
 
         member_role = TeamRole.objects.filter(team=invitation.team, name='Member').first()
         TeamMember.objects.create(team=invitation.team, user=request.user, role=member_role)
+
+        from apps.users.models import UserContact
+        existing_members = TeamMember.objects.filter(
+            team=invitation.team
+        ).exclude(user=request.user).select_related('user')
+        for member in existing_members:
+            UserContact.objects.get_or_create(owner=request.user, contact=member.user)
+            UserContact.objects.get_or_create(owner=member.user, contact=request.user)
+
         invitation.status = TeamInvitation.Status.ACCEPTED
         invitation.save()
         return Response({'detail': 'Accepted.'})
