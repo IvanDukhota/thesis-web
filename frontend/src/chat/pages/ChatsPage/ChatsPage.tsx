@@ -309,6 +309,7 @@ export default function ChatsPage() {
 
         // Если чат уже открыт, ничего не делаем
         if (activeChatIdRef.current === chatId) return;
+        alert(activeChatIdRef.current);
 
         // Открываем существующий чат и загружаем его историю
         void openChat(chatId);
@@ -849,6 +850,7 @@ export default function ChatsPage() {
   };
 
   const openChat = async (chatId: string) => {
+    activeChatIdRef.current = chatId;
     setActiveChatId(chatId);
     setActiveRecipientId(null);
     setActiveChatData(null);

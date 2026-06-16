@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { RealtimeProvider } from './chat/providers/RealtimeProvider';
 import MainPage from './pages/MainPage/MainPage';
 import ProfilePage from './pages/ProfilePage/ProfilePage';
 import AuthPage from './pages/AuthPage/AuthPage';
@@ -36,10 +37,12 @@ function App() {
     return (
         <Router>
             <AuthProvider>
-                <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
-                    <DarkVeil {...darkVeilConfig} />
-                </div>
-                <AppRoutes />
+                <RealtimeProvider>
+                    <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
+                        <DarkVeil {...darkVeilConfig} />
+                    </div>
+                    <AppRoutes />
+                </RealtimeProvider>
             </AuthProvider>
         </Router>
     );

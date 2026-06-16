@@ -10,6 +10,7 @@ import {
 import { VscLayout } from 'react-icons/vsc';
 import { NotificationsPanel } from '../NotificationsPanel/NotificationsPanel';
 import { useAuth } from '../../../context/AuthContext';
+import { useRealtime } from '../../../chat/providers/RealtimeProvider';
 import { apiGetInvitations } from '../../../api/invitationsApi';
 import { apiGetNotifications } from '../../../api/notificationsApi';
 
@@ -27,6 +28,7 @@ const Header = forwardRef(function Header(_, ref) {
     const [showLogout, setShowLogout] = useState(false);
     const [notifCount, setNotifCount] = useState(0);
     const { user, logout } = useAuth();
+    const { toast, clearToast } = useRealtime();
 
     useEffect(() => {
         if (!user) return;
@@ -198,6 +200,12 @@ const Header = forwardRef(function Header(_, ref) {
                             <button className="logout-btn logout-btn--confirm" onClick={handleSignOut}>Sign out</button>
                         </div>
                     </div>
+                </div>
+            )}
+
+            {toast && (
+                <div className="app-toast" onClick={clearToast}>
+                    {toast}
                 </div>
             )}
         </>
