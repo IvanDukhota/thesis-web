@@ -160,7 +160,6 @@ class MessageCreateView(APIView):
             or 0
         )
         next_position = last_position + 1
-        
 
         # Determine message type based on files or forwarded message attachments
         message_type = Message.MessageType.TEXT
@@ -265,7 +264,6 @@ class MessageCreateView(APIView):
             },
         )
 
-
         # Get all member IDs from chat_data
         member_ids = [m['user'] for m in chat_data_clean.get('members', [])]
         sender_id = user.id
@@ -349,7 +347,6 @@ class MessageCreateView(APIView):
             )
 
         return Response(message_data, status=status.HTTP_201_CREATED)
-
 
     def _validate_file(self, file):
         result = {

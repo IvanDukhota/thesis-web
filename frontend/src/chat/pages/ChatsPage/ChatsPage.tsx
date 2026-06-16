@@ -309,7 +309,6 @@ export default function ChatsPage() {
 
         // Если чат уже открыт, ничего не делаем
         if (activeChatIdRef.current === chatId) return;
-        alert(activeChatIdRef.current);
 
         // Открываем существующий чат и загружаем его историю
         void openChat(chatId);
@@ -512,7 +511,7 @@ export default function ChatsPage() {
     });
 
     return () => unsubscribe();
-  }, [me, setActiveChatId]);
+  }, [me]);
 
 
   // Закрывает WebSocket соединение при размонтировании страницы, сбрасывает активный чат и очищает таймеры
@@ -529,7 +528,7 @@ export default function ChatsPage() {
         window.clearTimeout(floatingDateTimerRef.current);
       }
     };
-  }, [setActiveChatId]);
+  }, []);
 
   // Управляет скроллом при загрузке сообщений и изменении их количества
   useEffect(() => {
@@ -945,6 +944,7 @@ export default function ChatsPage() {
   };
 
   const openChatByContact = async (contact: ContactWithoutChat) => {
+    activeChatIdRef.current = null;
     setActiveChatId(null);
     setActiveRecipientId(contact.id);
     setActiveChatData(null);
