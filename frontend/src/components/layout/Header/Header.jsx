@@ -17,7 +17,7 @@ import { apiGetNotifications } from '../../../api/notificationsApi';
 const NAV_LINKS = [
     { label: "Projects", path: '/projects' },
     { label: "Teams", path: '/teams' },
-    { label: "Marketplace", path: null },
+    { label: "Marketplace", path: '/marketplace' },
     { label: "Chat", path: '/chat' },
 ];
 

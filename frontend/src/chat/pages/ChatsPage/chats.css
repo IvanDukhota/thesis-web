@@ -198,6 +198,7 @@
 .chat-main__name {
   font-size: 18px;
   font-weight: 800;
+  color: white;
 }
 
 .chat-main__status {

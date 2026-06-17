@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     "apps.notifications",
     "apps.tasks",
     "apps.stats",
+    "apps.marketplace",
 ]
 
 MIDDLEWARE = [

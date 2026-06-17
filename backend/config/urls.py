@@ -36,6 +36,7 @@ urlpatterns = [
     path('api/projects/', include('apps.projects.urls')),
     path('api/notifications/', include('apps.notifications.urls')),
     path('api/stats/', include('apps.stats.urls')),
+    path('api/marketplace/', include('apps.marketplace.urls')),
 ]
 
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
