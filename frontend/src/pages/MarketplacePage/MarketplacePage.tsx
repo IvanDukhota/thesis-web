@@ -26,9 +26,7 @@ export default function MarketplacePage() {
     tags: [],
     min_price: undefined,
     max_price: undefined,
-    delivery_time: "",
-    min_rating: undefined,
-    sort: "created_at",
+    sort: "-created_at",
   });
 
   useEffect(() => {
@@ -38,14 +36,12 @@ export default function MarketplacePage() {
           getOrders(),
           getTags(100),
         ]);
-
         setOrders(ordersData);
         setTags(tagsData);
       } finally {
         setLoading(false);
       }
     };
-
     void loadInitialData();
   }, []);
 
@@ -63,7 +59,6 @@ export default function MarketplacePage() {
         setLoading(false);
       }
     };
-
     void loadOrders();
   }, [filters, searchQuery, selectedTags]);
 
@@ -85,14 +80,11 @@ export default function MarketplacePage() {
     const diffDays = Math.floor(diffMs / 86400000);
 
     if (diffMins < 1) return "just now";
-    if (diffMins < 60) return `${diffMins} min ago`;
+    if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays < 7) return `${diffDays}d ago`;
 
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-    });
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   };
 
   const totalPages = Math.ceil(orders.length / PAGE_SIZE);
@@ -135,7 +127,7 @@ export default function MarketplacePage() {
             >
               1
             </button>
-            {startPage > 2 && <span className="marketplace-pagination__ellipsis">...</span>}
+            {startPage > 2 && <span className="marketplace-pagination__ellipsis">…</span>}
           </>
         )}
 
@@ -155,7 +147,7 @@ export default function MarketplacePage() {
 
         {endPage < totalPages && (
           <>
-            {endPage < totalPages - 1 && <span className="marketplace-pagination__ellipsis">...</span>}
+            {endPage < totalPages - 1 && <span className="marketplace-pagination__ellipsis">…</span>}
             <button
               className="marketplace-pagination__button"
               onClick={() => setCurrentPage(totalPages)}
@@ -199,21 +191,18 @@ export default function MarketplacePage() {
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onCreated={(newOrder) => {
-          // Преобразуем OrderDetail в OrderListItem
           const listItem: OrderListItem = {
             id: newOrder.id,
             slug: newOrder.slug,
             title: newOrder.title,
             price: newOrder.price,
-            delivery_time: newOrder.delivery_time,
-            rating: newOrder.rating,
-            reviews_count: newOrder.reviews_count,
-            orders_count: newOrder.orders_count,
+            estimated_days: newOrder.estimated_days,
+            status: newOrder.status,
+            applications_count: newOrder.applications_count,
+            views_count: newOrder.views_count,
             buyer: newOrder.buyer,
             category_name: newOrder.category.name,
             tags: newOrder.tags,
-            thumbnail: newOrder.images[0]?.url || null,
-            is_favorited: newOrder.is_favorited,
             created_at: newOrder.created_at,
           };
           setOrders((prev) => [listItem, ...prev]);
@@ -227,7 +216,7 @@ export default function MarketplacePage() {
             <input
               type="text"
               className="marketplace-search"
-              placeholder="Search projects, technologies or skills..."
+              placeholder="Search jobs, technologies, skills…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -246,7 +235,7 @@ export default function MarketplacePage() {
                 <button
                   className="marketplace-tag__remove"
                   onClick={() => handleRemoveTag(tag)}
-                  title="Remove tag"
+                  title="Remove"
                 >
                   ×
                 </button>
@@ -255,7 +244,7 @@ export default function MarketplacePage() {
             <button
               className="marketplace-tag marketplace-tag--add"
               onClick={() => setIsTagModalOpen(true)}
-              title="Add tags"
+              title="Add skill filter"
             >
               +
             </button>
@@ -273,7 +262,7 @@ export default function MarketplacePage() {
 
         <div className="marketplace-content">
           {loading ? (
-            <div className="marketplace-loading">Loading jobs...</div>
+            <div className="marketplace-loading">Loading…</div>
           ) : (
             <>
               {paginatedOrders.length === 0 ? (
@@ -284,72 +273,63 @@ export default function MarketplacePage() {
                 <>
                   <div className="marketplace-orders">
                     {paginatedOrders.map((order) => (
-                      <div key={order.id} className="marketplace-order-card">
-                        <div className="marketplace-order-card__header">
-                          <h3 className="marketplace-order-card__title">{order.title}</h3>
-                          <div className="marketplace-order-card__meta">
-                            <span className="marketplace-order-card__date">
-                              {formatDate(order.created_at)}
-                            </span>
+                      <div key={order.id} className="mp-card">
+                        <div className="mp-card__head">
+                          <h3 className="mp-card__title">{order.title}</h3>
+                          <span className="mp-card__date">
+                            {formatDate(order.created_at)}
+                          </span>
+                        </div>
+
+                        {order.tags.length > 0 && (
+                          <div className="mp-card__tags">
+                            {order.tags.slice(0, 5).map((tag) => (
+                              <span key={tag.id} className="mp-card__tag">
+                                {tag.name}
+                              </span>
+                            ))}
+                            {order.tags.length > 5 && (
+                              <span className="mp-card__tag mp-card__tag--more">
+                                +{order.tags.length - 5}
+                              </span>
+                            )}
+                          </div>
+                        )}
+
+                        <div className="mp-card__stats">
+                          <div className="mp-card__stat">
+                            <span className="mp-card__stat-label">Budget</span>
+                            <span className="mp-card__stat-value">${order.price}</span>
+                          </div>
+                          <div className="mp-card__stat">
+                            <span className="mp-card__stat-label">Delivery</span>
+                            <span className="mp-card__stat-value">{order.estimated_days}d</span>
+                          </div>
+                          <div className="mp-card__stat">
+                            <span className="mp-card__stat-label">Applied</span>
+                            <span className="mp-card__stat-value">{order.applications_count}</span>
                           </div>
                         </div>
 
-                        <div className="marketplace-order-card__tags">
-                          {order.tags.slice(0, 5).map((tag) => (
-                            <span key={tag.id} className="marketplace-order-card__tag">
-                              {tag.name}
-                            </span>
-                          ))}
-                          {order.tags.length > 5 && (
-                            <span className="marketplace-order-card__tag marketplace-order-card__tag--more">
-                              +{order.tags.length - 5}
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="marketplace-order-card__details">
-                          <div className="marketplace-order-card__detail">
-                            <span className="marketplace-order-card__detail-label">Budget</span>
-                            <span className="marketplace-order-card__detail-value">${order.price}</span>
-                          </div>
-                          <div className="marketplace-order-card__detail">
-                            <span className="marketplace-order-card__detail-label">Delivery</span>
-                            <span className="marketplace-order-card__detail-value">{order.delivery_time}</span>
-                          </div>
-                          <div className="marketplace-order-card__detail">
-                            <span className="marketplace-order-card__detail-label">Rating</span>
-                            <span className="marketplace-order-card__detail-value">
-                              ⭐ {Number(order.rating).toFixed(1)}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="marketplace-order-card__seller">
-                          <div className="marketplace-order-card__seller-avatar">
+                        <div className="mp-card__buyer">
+                          <div className="mp-card__buyer-avatar">
                             {order.buyer.full_name.charAt(0).toUpperCase()}
                           </div>
-                          <div className="marketplace-order-card__seller-info">
-                            <div className="marketplace-order-card__seller-name">
-                              {order.buyer.full_name}
-                            </div>
-                            <div className="marketplace-order-card__seller-stats">
-                              Posted by client
-                            </div>
-                          </div>
+                          <span className="mp-card__buyer-name">{order.buyer.full_name}</span>
+                          <span className="mp-card__buyer-label">Client</span>
                         </div>
 
-                        <div className="marketplace-order-card__actions">
-                          <button className="marketplace-order-card__button marketplace-order-card__button--primary">
+                        <div className="mp-card__actions">
+                          <button className="mp-card__btn mp-card__btn--primary">
                             Apply Now
                           </button>
-                          <button className="marketplace-order-card__button marketplace-order-card__button--secondary">
+                          <button className="mp-card__btn mp-card__btn--secondary">
                             Contact
                           </button>
                         </div>
                       </div>
                     ))}
                   </div>
-
                   {renderPagination()}
                 </>
               )}

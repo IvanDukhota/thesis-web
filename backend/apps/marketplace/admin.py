@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Category, Tag, Order, OrderImage, Favorite, Review
+from .models import Category, Tag, Order, OrderAttachment, OrderApplication
 
 
 @admin.register(Category)
@@ -19,53 +19,56 @@ class TagAdmin(admin.ModelAdmin):
     ordering = ['-usage_count', 'name']
 
 
-class OrderImageInline(admin.TabularInline):
-    model = OrderImage
+class OrderAttachmentInline(admin.TabularInline):
+    model = OrderAttachment
     extra = 1
-    fields = ['image', 'order_position', 'width', 'height']
+    fields = ['file', 'uploaded_at']
+    readonly_fields = ['uploaded_at']
 
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ['title', 'seller', 'category', 'price', 'status', 'views_count', 'created_at']
+    list_display = ['title', 'buyer', 'category', 'price', 'status', 'views_count', 'applications_count', 'created_at']
     list_filter = ['status', 'category', 'created_at']
-    search_fields = ['title', 'description', 'seller__email']
+    search_fields = ['title', 'description', 'buyer__email']
     prepopulated_fields = {'slug': ('title',)}
     filter_horizontal = ['tags']
-    inlines = [OrderImageInline]
-    readonly_fields = ['views_count', 'orders_count', 'created_at', 'updated_at']
+    inlines = [OrderAttachmentInline]
+
+    readonly_fields = [
+        'views_count',
+        'applications_count',
+        'created_at',
+        'updated_at',
+        'embedding'
+    ]
 
     fieldsets = (
         ('Basic Information', {
-            'fields': ('title', 'slug', 'description', 'seller', 'category', 'tags')
+            'fields': ('title', 'slug', 'description', 'buyer', 'category', 'tags')
         }),
         ('Pricing & Delivery', {
-            'fields': ('price', 'delivery_time')
+            'fields': ('price', 'estimated_days')
         }),
-        ('Details', {
-            'fields': ('features', 'requirements', 'status')
+        ('Status', {
+            'fields': ('status',)
+        }),
+        ('Embedding', {
+            'fields': ('embedding',)
         }),
         ('Statistics', {
-            'fields': ('views_count', 'orders_count')
+            'fields': ('views_count', 'applications_count')
         }),
         ('Timestamps', {
-            'fields': ('created_at', 'updated_at', 'published_at')
+            'fields': ('created_at', 'updated_at')
         }),
     )
 
 
-@admin.register(Favorite)
-class FavoriteAdmin(admin.ModelAdmin):
-    list_display = ['user', 'order', 'created_at']
-    list_filter = ['created_at']
-    search_fields = ['user__email', 'order__title']
-    raw_id_fields = ['user', 'order']
-
-
-@admin.register(Review)
-class ReviewAdmin(admin.ModelAdmin):
-    list_display = ['order', 'buyer', 'rating', 'created_at']
-    list_filter = ['rating', 'created_at']
-    search_fields = ['order__title', 'buyer__email', 'comment']
-    raw_id_fields = ['order', 'buyer']
+@admin.register(OrderApplication)
+class OrderApplicationAdmin(admin.ModelAdmin):
+    list_display = ['order', 'applicant', 'status', 'created_at']
+    list_filter = ['status', 'created_at']
+    search_fields = ['order__title', 'applicant__email', 'message']
+    raw_id_fields = ['order', 'applicant', 'team']
     readonly_fields = ['created_at', 'updated_at']

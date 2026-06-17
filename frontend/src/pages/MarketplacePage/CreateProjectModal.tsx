@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { getCategories, createOrder, type Category, type OrderDetail } from "../../api/marketplace";
-import "../../chat/pages/ChatsPage/modal.css";
+import "./create-job-modal.css";
 
 type CreateProjectModalProps = {
   isOpen: boolean;
@@ -17,9 +17,7 @@ export default function CreateProjectModal({
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
   const [price, setPrice] = useState("");
-  const [deliveryTime, setDeliveryTime] = useState("");
-  const [features, setFeatures] = useState("");
-  const [requirements, setRequirements] = useState("");
+  const [estimatedDays, setEstimatedDays] = useState("");
   const [tagNames, setTagNames] = useState("");
 
   const [categories, setCategories] = useState<Category[]>([]);
@@ -32,9 +30,7 @@ export default function CreateProjectModal({
       setDescription("");
       setCategory("");
       setPrice("");
-      setDeliveryTime("");
-      setFeatures("");
-      setRequirements("");
+      setEstimatedDays("");
       setTagNames("");
       loadCategories();
     }
@@ -53,7 +49,7 @@ export default function CreateProjectModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!title.trim() || !description.trim() || !category || !price || !deliveryTime) {
+    if (!title.trim() || !description.trim() || !category || !price || !estimatedDays) {
       alert("Please fill in all required fields");
       return;
     }
@@ -64,14 +60,15 @@ export default function CreateProjectModal({
       return;
     }
 
+    const daysNum = parseInt(estimatedDays, 10);
+    if (isNaN(daysNum) || daysNum <= 0) {
+      alert("Please enter a valid number of days");
+      return;
+    }
+
     setIsCreating(true);
 
     try {
-      const featuresArray = features
-        .split("\n")
-        .map((f) => f.trim())
-        .filter((f) => f.length > 0);
-
       const tagNamesArray = tagNames
         .split(",")
         .map((t) => t.trim())
@@ -82,17 +79,15 @@ export default function CreateProjectModal({
         description: description.trim(),
         category,
         price: priceNum,
-        delivery_time: deliveryTime,
-        features: featuresArray.length > 0 ? featuresArray : undefined,
-        requirements: requirements.trim() || undefined,
+        estimated_days: daysNum,
         tag_names: tagNamesArray.length > 0 ? tagNamesArray : undefined,
-        status: "draft",
+        status: "open",
       });
 
       onCreated(newOrder);
     } catch (error) {
-      console.error("Failed to create project:", error);
-      alert("Failed to create project. Please try again.");
+      console.error("Failed to create job:", error);
+      alert("Failed to create job. Please try again.");
     } finally {
       setIsCreating(false);
     }
@@ -101,24 +96,24 @@ export default function CreateProjectModal({
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2 className="modal-title">Create New Project</h2>
-          <button className="modal-close" onClick={onClose} disabled={isCreating}>
+    <div className="cjm-overlay" onClick={onClose}>
+      <div className="cjm-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="cjm-header">
+          <span className="cjm-title">Post a Job</span>
+          <button className="cjm-close" onClick={onClose} disabled={isCreating}>
             ×
           </button>
         </div>
 
-        <form className="modal-form" onSubmit={handleSubmit}>
-          <div className="modal-form-group">
-            <label className="modal-label" htmlFor="title">
-              Project Title *
+        <form className="cjm-body" onSubmit={handleSubmit}>
+          <div className="cjm-field">
+            <label className="cjm-label" htmlFor="cjm-title">
+              Title <span className="cjm-required">*</span>
             </label>
             <input
-              id="title"
+              id="cjm-title"
               type="text"
-              className="modal-input"
+              className="cjm-input"
               placeholder="e.g., Develop CRM System for Logistics Company"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -128,32 +123,32 @@ export default function CreateProjectModal({
             />
           </div>
 
-          <div className="modal-form-group">
-            <label className="modal-label" htmlFor="description">
-              Description *
+          <div className="cjm-field">
+            <label className="cjm-label" htmlFor="cjm-description">
+              Description <span className="cjm-required">*</span>
             </label>
             <textarea
-              id="description"
-              className="modal-textarea"
-              placeholder="Describe your project requirements in detail..."
+              id="cjm-description"
+              className="cjm-textarea"
+              placeholder="Describe your project requirements in detail…"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               disabled={isCreating}
-              rows={5}
+              rows={4}
               required
             />
           </div>
 
-          <div className="modal-form-group">
-            <label className="modal-label" htmlFor="category">
-              Category *
+          <div className="cjm-field">
+            <label className="cjm-label" htmlFor="cjm-category">
+              Category <span className="cjm-required">*</span>
             </label>
             {loadingCategories ? (
-              <div className="modal-contacts-loading">Loading categories...</div>
+              <div className="cjm-loading">Loading categories…</div>
             ) : (
               <select
-                id="category"
-                className="modal-input"
+                id="cjm-category"
+                className="cjm-select"
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
                 disabled={isCreating}
@@ -169,14 +164,14 @@ export default function CreateProjectModal({
             )}
           </div>
 
-          <div className="modal-form-group">
-            <label className="modal-label" htmlFor="price">
-              Budget (USD) *
+          <div className="cjm-field">
+            <label className="cjm-label" htmlFor="cjm-price">
+              Budget (USD) <span className="cjm-required">*</span>
             </label>
             <input
-              id="price"
+              id="cjm-price"
               type="number"
-              className="modal-input"
+              className="cjm-input"
               placeholder="e.g., 2500"
               value={price}
               onChange={(e) => setPrice(e.target.value)}
@@ -187,86 +182,58 @@ export default function CreateProjectModal({
             />
           </div>
 
-          <div className="modal-form-group">
-            <label className="modal-label" htmlFor="deliveryTime">
-              Delivery Time *
+          <div className="cjm-field">
+            <label className="cjm-label" htmlFor="cjm-days">
+              Estimated Days <span className="cjm-required">*</span>
             </label>
             <input
-              id="deliveryTime"
-              type="text"
-              className="modal-input"
-              placeholder="e.g., 2 weeks, 1 month"
-              value={deliveryTime}
-              onChange={(e) => setDeliveryTime(e.target.value)}
+              id="cjm-days"
+              type="number"
+              className="cjm-input"
+              placeholder="e.g., 14"
+              value={estimatedDays}
+              onChange={(e) => setEstimatedDays(e.target.value)}
               disabled={isCreating}
-              maxLength={50}
+              min="1"
+              step="1"
               required
             />
           </div>
 
-          <div className="modal-form-group">
-            <label className="modal-label" htmlFor="tagNames">
+          <div className="cjm-field">
+            <label className="cjm-label" htmlFor="cjm-tags">
               Technologies & Skills
             </label>
             <input
-              id="tagNames"
+              id="cjm-tags"
               type="text"
-              className="modal-input"
-              placeholder="e.g., React, TypeScript, Django (comma-separated)"
+              className="cjm-input"
+              placeholder="React, TypeScript, Django (comma-separated)"
               value={tagNames}
               onChange={(e) => setTagNames(e.target.value)}
               disabled={isCreating}
             />
           </div>
-
-          <div className="modal-form-group">
-            <label className="modal-label" htmlFor="features">
-              Key Features (one per line)
-            </label>
-            <textarea
-              id="features"
-              className="modal-textarea"
-              placeholder="User authentication&#10;Dashboard with analytics&#10;Real-time notifications"
-              value={features}
-              onChange={(e) => setFeatures(e.target.value)}
-              disabled={isCreating}
-              rows={4}
-            />
-          </div>
-
-          <div className="modal-form-group">
-            <label className="modal-label" htmlFor="requirements">
-              Additional Requirements
-            </label>
-            <textarea
-              id="requirements"
-              className="modal-textarea"
-              placeholder="Any specific requirements or preferences..."
-              value={requirements}
-              onChange={(e) => setRequirements(e.target.value)}
-              disabled={isCreating}
-              rows={3}
-            />
-          </div>
-
-          <div className="modal-actions">
-            <button
-              type="button"
-              className="modal-button modal-button--secondary"
-              onClick={onClose}
-              disabled={isCreating}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="modal-button modal-button--primary"
-              disabled={isCreating || !title.trim() || !description.trim() || !category || !price || !deliveryTime}
-            >
-              {isCreating ? "Creating..." : "Create Project"}
-            </button>
-          </div>
         </form>
+
+        <div className="cjm-footer">
+          <button
+            type="button"
+            className="cjm-btn cjm-btn--cancel"
+            onClick={onClose}
+            disabled={isCreating}
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="cjm-btn cjm-btn--create"
+            disabled={isCreating || !title.trim() || !description.trim() || !category || !price || !estimatedDays}
+            onClick={handleSubmit}
+          >
+            {isCreating ? "Posting…" : "Post Job"}
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -19,14 +19,6 @@ export type Tag = {
   usage_count: number;
 };
 
-export type Seller = {
-  id: number;
-  email: string;
-  full_name: string;
-  nickname: string;
-  avatar: string | null;
-};
-
 export type Buyer = {
   id: number;
   email: string;
@@ -35,28 +27,18 @@ export type Buyer = {
   avatar: string | null;
 };
 
-export type OrderImage = {
-  id: string;
-  url: string;
-  order_position: number;
-  width: number | null;
-  height: number | null;
-};
-
 export type OrderListItem = {
   id: string;
   slug: string;
   title: string;
   price: string;
-  delivery_time: string;
-  rating: string;
-  reviews_count: number;
-  orders_count: number;
+  estimated_days: number;
+  status: string;
+  applications_count: number;
+  views_count: number;
   buyer: Buyer;
   category_name: string;
   tags: Tag[];
-  thumbnail: string | null;
-  is_favorited: boolean;
   created_at: string;
 };
 
@@ -66,30 +48,16 @@ export type OrderDetail = {
   title: string;
   description: string;
   price: string;
-  delivery_time: string;
-  features: string[];
-  requirements: string;
+  estimated_days: number;
   status: string;
-  rating: string;
-  reviews_count: number;
-  orders_count: number;
+  applications_count: number;
   views_count: number;
   buyer: Buyer;
   category: Category;
   tags: Tag[];
-  images: OrderImage[];
-  is_favorited: boolean;
+  attachments: { id: string; file: string }[];
   is_owner: boolean;
-  created_at: string;
-  updated_at: string;
-  published_at: string | null;
-};
-
-export type OrderReview = {
-  id: string;
-  seller: Seller;
-  rating: number;
-  comment: string;
+  has_applied: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -100,8 +68,6 @@ export type OrderFilters = {
   tags?: string[];
   min_price?: number;
   max_price?: number;
-  delivery_time?: string;
-  min_rating?: number;
   sort?: string;
 };
 
@@ -119,7 +85,7 @@ export async function getTags(limit = 20) {
   });
 }
 
-export async function getOrders(filters: OrderFilters = {}) {
+export async function getOrders(filters: OrderFilters = {}): Promise<OrderListItem[]> {
   const params = new URLSearchParams();
 
   if (filters.search) params.set('search', filters.search);
@@ -127,15 +93,14 @@ export async function getOrders(filters: OrderFilters = {}) {
   if (filters.tags) filters.tags.forEach(tag => params.append('tags', tag));
   if (filters.min_price) params.set('min_price', String(filters.min_price));
   if (filters.max_price) params.set('max_price', String(filters.max_price));
-  if (filters.delivery_time) params.set('delivery_time', filters.delivery_time);
-  if (filters.min_rating) params.set('min_rating', String(filters.min_rating));
-  if (filters.sort) params.set('sort', filters.sort);
+  params.set('sort', filters.sort ?? '-created_at');
 
   const query = params.toString();
-  return apiRequest<OrderListItem[]>(`/marketplace/orders/${query ? `?${query}` : ''}`, {
+  const response = await apiRequest<{ results: OrderListItem[] }>(`/marketplace/orders/?${query}`, {
     method: 'GET',
     auth: false,
   });
+  return response.results;
 }
 
 export async function getOrder(slug: string) {
@@ -151,79 +116,12 @@ export async function createOrder(data: {
   category: string;
   tag_names?: string[];
   price: number;
-  delivery_time: string;
-  features?: string[];
-  requirements?: string;
+  estimated_days: number;
   status: string;
-  images?: File[];
 }) {
-  const formData = new FormData();
-
-  formData.append('title', data.title);
-  formData.append('description', data.description);
-  formData.append('category', data.category);
-  formData.append('price', String(data.price));
-  formData.append('delivery_time', data.delivery_time);
-  formData.append('status', data.status);
-
-  if (data.tag_names) {
-    formData.append('tag_names', JSON.stringify(data.tag_names));
-  }
-
-  if (data.features) {
-    formData.append('features', JSON.stringify(data.features));
-  }
-
-  if (data.requirements) {
-    formData.append('requirements', data.requirements);
-  }
-
-  if (data.images) {
-    data.images.forEach(image => {
-      formData.append('images', image);
-    });
-  }
-
   return apiRequest<OrderDetail>('/marketplace/orders/', {
     method: 'POST',
     auth: true,
-    body: formData,
-    isFormData: true,
-  });
-}
-
-export async function favoriteOrder(slug: string) {
-  return apiRequest(`/marketplace/orders/${slug}/favorite/`, {
-    method: 'POST',
-    auth: true,
-  });
-}
-
-export async function unfavoriteOrder(slug: string) {
-  return apiRequest(`/marketplace/orders/${slug}/unfavorite/`, {
-    method: 'DELETE',
-    auth: true,
-  });
-}
-
-export async function getFavorites() {
-  return apiRequest<OrderListItem[]>('/marketplace/favorites/', {
-    method: 'GET',
-    auth: true,
-  });
-}
-
-export async function getOrderReviews(slug: string) {
-  return apiRequest<OrderReview[]>(`/marketplace/orders/${slug}/reviews/`, {
-    method: 'GET',
-    auth: false,
-  });
-}
-
-export async function createReview(slug: string, rating: number, comment: string) {
-  return apiRequest<OrderReview>(`/marketplace/orders/${slug}/review/`, {
-    method: 'POST',
-    auth: true,
-    body: JSON.stringify({ rating, comment }),
+    body: JSON.stringify(data),
   });
 }

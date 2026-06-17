@@ -1,18 +1,26 @@
-from rest_framework import viewsets, filters, status
+from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
-from django.db.models import Q, Count
-from django.shortcuts import get_object_or_404
-from .models import Category, Tag, Order, Favorite, Review
+from rest_framework.pagination import PageNumberPagination
+from django.db.models import Q
+from .models import Category, Tag, Order, OrderApplication
 from .serializers import (
     CategorySerializer,
     TagSerializer,
     OrderListSerializer,
     OrderDetailSerializer,
     OrderCreateUpdateSerializer,
-    ReviewSerializer
+    OrderApplicationListSerializer,
+    OrderApplicationDetailSerializer,
+    OrderApplicationCreateSerializer,
 )
+
+
+class StandardResultsSetPagination(PageNumberPagination):
+    page_size = 20
+    page_size_query_param = 'page_size'
+    max_page_size = 100
 
 
 class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
@@ -38,9 +46,10 @@ class TagViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class OrderViewSet(viewsets.ModelViewSet):
-    queryset = Order.objects.select_related('buyer', 'category').prefetch_related('tags', 'images')
+    queryset = Order.objects.select_related('buyer', 'category').prefetch_related('tags', 'attachments')
     permission_classes = [IsAuthenticatedOrReadOnly]
     lookup_field = 'slug'
+    pagination_class = StandardResultsSetPagination
 
     def get_serializer_class(self):
         if self.action in ['create', 'update', 'partial_update']:
@@ -52,9 +61,9 @@ class OrderViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = super().get_queryset()
 
-        # Фильтрация по статусу (показываем только опубликованные, если не владелец)
+        # Базовая фильтрация: показываем только открытые заказы
         if self.action == 'list':
-            queryset = queryset.filter(status='published')
+            queryset = queryset.filter(status=Order.OPEN)
 
         # Поиск по тексту
         search = self.request.query_params.get('search')
@@ -90,16 +99,10 @@ class OrderViewSet(viewsets.ModelViewSet):
             except ValueError:
                 pass
 
-        # Фильтр по времени доставки
-        delivery_time = self.request.query_params.get('delivery_time')
-        if delivery_time:
-            queryset = queryset.filter(delivery_time__icontains=delivery_time)
-
-        # Фильтр по рейтингу (упрощенная версия)
-        min_rating = self.request.query_params.get('min_rating')
-        if min_rating:
-            # TODO: Реализовать фильтрацию по рейтингу через аннотацию
-            pass
+        # Фильтр по статусу
+        status_filter = self.request.query_params.get('status')
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
 
         # Сортировка
         sort = self.request.query_params.get('sort', '-created_at')
@@ -120,52 +123,138 @@ class OrderViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
-    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
-    def favorite(self, request, slug=None):
-        order = self.get_object()
-        favorite, created = Favorite.objects.get_or_create(
-            user=request.user,
-            order=order
-        )
-        if created:
-            return Response({'status': 'added'}, status=status.HTTP_201_CREATED)
-        return Response({'status': 'already_favorited'}, status=status.HTTP_200_OK)
-
-    @action(detail=True, methods=['delete'], permission_classes=[IsAuthenticated])
-    def unfavorite(self, request, slug=None):
-        order = self.get_object()
-        deleted, _ = Favorite.objects.filter(user=request.user, order=order).delete()
-        if deleted:
-            return Response({'status': 'removed'}, status=status.HTTP_204_NO_CONTENT)
-        return Response({'status': 'not_favorited'}, status=status.HTTP_404_NOT_FOUND)
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    def my_orders(self, request):
+        """Заказы, созданные текущим пользователем"""
+        queryset = self.get_queryset().filter(buyer=request.user)
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
-    def favorites(self, request):
-        favorites = Favorite.objects.filter(user=request.user).select_related('order')
-        orders = [fav.order for fav in favorites]
-        serializer = self.get_serializer(orders, many=True)
+    def my_applications(self, request):
+        """Заказы, на которые пользователь подал заявку"""
+        applications = OrderApplication.objects.filter(applicant=request.user).values_list('order_id', flat=True)
+        queryset = self.get_queryset().filter(id__in=applications)
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
-    @action(detail=True, methods=['get'])
-    def reviews(self, request, slug=None):
-        order = self.get_object()
-        reviews = order.reviews.all()
-        serializer = ReviewSerializer(reviews, many=True, context={'request': request})
-        return Response(serializer.data)
+
+class OrderApplicationViewSet(viewsets.ModelViewSet):
+    queryset = OrderApplication.objects.select_related('order', 'applicant', 'team')
+    permission_classes = [IsAuthenticated]
+    pagination_class = StandardResultsSetPagination
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return OrderApplicationCreateSerializer
+        elif self.action == 'retrieve':
+            return OrderApplicationDetailSerializer
+        return OrderApplicationListSerializer
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        user = self.request.user
+
+        # Пользователь видит только свои заявки или заявки на свои заказы
+        queryset = queryset.filter(
+            Q(applicant=user) | Q(order__buyer=user)
+        )
+
+        # Фильтр по заказу
+        order_slug = self.request.query_params.get('order')
+        if order_slug:
+            queryset = queryset.filter(order__slug=order_slug)
+
+        # Фильтр по статусу
+        status_filter = self.request.query_params.get('status')
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+
+        return queryset.distinct()
 
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
-    def review(self, request, slug=None):
-        order = self.get_object()
+    def accept(self, request, pk=None):
+        """Принять заявку (только владелец заказа)"""
+        application = self.get_object()
 
-        # Проверка, что пользователь не оставляет отзыв на свой заказ
-        if order.buyer == request.user:
+        if application.order.buyer != request.user:
             return Response(
-                {'error': 'You cannot review your own order'},
+                {'error': 'Only the order owner can accept applications'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        if application.status != OrderApplication.PENDING:
+            return Response(
+                {'error': 'Application has already been processed'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        serializer = ReviewSerializer(data=request.data, context={'request': request})
-        if serializer.is_valid():
-            serializer.save(order=order)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        application.status = OrderApplication.ACCEPTED
+        application.save()
+
+        # Обновляем статус заказа
+        order = application.order
+        order.status = Order.IN_PROGRESS
+        order.save(update_fields=['status'])
+
+        serializer = self.get_serializer(application)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def reject(self, request, pk=None):
+        """Отклонить заявку (только владелец заказа)"""
+        application = self.get_object()
+
+        if application.order.buyer != request.user:
+            return Response(
+                {'error': 'Only the order owner can reject applications'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        if application.status != OrderApplication.PENDING:
+            return Response(
+                {'error': 'Application has already been processed'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        application.status = OrderApplication.REJECTED
+        application.save()
+
+        serializer = self.get_serializer(application)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def withdraw(self, request, pk=None):
+        """Отозвать заявку (только автор заявки)"""
+        application = self.get_object()
+
+        if application.applicant != request.user:
+            return Response(
+                {'error': 'You can only withdraw your own applications'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        if application.status != OrderApplication.PENDING:
+            return Response(
+                {'error': 'You can only withdraw pending applications'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        application.status = OrderApplication.WITHDRAWN
+        application.save()
+
+        # Уменьшаем счетчик заявок у заказа
+        order = application.order
+        order.applications_count = max(0, order.applications_count - 1)
+        order.save(update_fields=['applications_count'])
+
+        serializer = self.get_serializer(application)
+        return Response(serializer.data)

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, Fragment } from "react";
 import { getMe, type User } from "../../shared/api/auth";
 import {
   getChats,
+  getChat,
   getChatMessages,
   getContactsWithoutChats,
   createGroupChat,
@@ -323,6 +324,8 @@ export default function ChatsPage() {
           return;
         }
 
+        const isNewChat = activeChatIdRef.current === null;
+
         setActiveChatId(incomingChatId);
 
         const isSentByMe = payload.sender.id === me.id;
@@ -341,16 +344,26 @@ export default function ChatsPage() {
           scrollModeRef.current = "bottom";
         }
 
-        // Обновляем время последнего обновления чата, чтобы он поднимался в списке
-        setChats((prev) => {
-          const updated = prev.map((chat) =>
-            chat.id === incomingChatId ? { ...chat, updated_at: payload.sent_at } : chat,
-          );
-
-          return updated.sort(
-            (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
-          );
-        });
+        if (isNewChat) {
+          void getChat(incomingChatId).then((newChat) => {
+            setChats((prev) => {
+              if (prev.some((c) => c.id === newChat.id)) return prev;
+              return [{ ...newChat, updated_at: payload.sent_at }, ...prev].sort(
+                (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+              );
+            });
+            void getContactsWithoutChats().then(setContactsWithoutChats);
+          });
+        } else {
+          setChats((prev) => {
+            const updated = prev.map((chat) =>
+              chat.id === incomingChatId ? { ...chat, updated_at: payload.sent_at } : chat,
+            );
+            return updated.sort(
+              (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+            );
+          });
+        }
 
         return;
       }

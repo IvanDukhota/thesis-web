@@ -18,13 +18,6 @@ const CATEGORIES = [
   { value: "translation", label: "Translation" },
 ];
 
-const DELIVERY_TIMES = [
-  { value: "1-day", label: "1 day" },
-  { value: "1-week", label: "1 week" },
-  { value: "1-month", label: "1 month" },
-  { value: "", label: "Any" },
-];
-
 export default function FiltersDrawer({
   isOpen,
   onClose,
@@ -51,9 +44,7 @@ export default function FiltersDrawer({
       tags: filters.tags,
       min_price: undefined,
       max_price: undefined,
-      delivery_time: "",
-      min_rating: undefined,
-      sort: "created_at",
+      sort: "-created_at",
     };
     setLocalFilters(resetFilters);
   };
@@ -131,43 +122,6 @@ export default function FiltersDrawer({
             </div>
           </div>
 
-          <div className="filters-drawer__section">
-            <div className="filters-drawer__section-title">Delivery Time</div>
-            <div className="filters-drawer__options">
-              {DELIVERY_TIMES.map((time) => (
-                <label key={time.value} className="filters-drawer__checkbox">
-                  <input
-                    type="radio"
-                    name="delivery_time"
-                    checked={localFilters.delivery_time === time.value}
-                    onChange={() =>
-                      setLocalFilters((prev) => ({ ...prev, delivery_time: time.value }))
-                    }
-                  />
-                  <span className="filters-drawer__checkbox-label">{time.label}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          <div className="filters-drawer__section">
-            <div className="filters-drawer__section-title">Minimum Rating</div>
-            <input
-              type="number"
-              className="filters-drawer__input"
-              placeholder="e.g., 4.5"
-              min="0"
-              max="5"
-              step="0.1"
-              value={localFilters.min_rating || ""}
-              onChange={(e) =>
-                setLocalFilters((prev) => ({
-                  ...prev,
-                  min_rating: e.target.value ? Number(e.target.value) : undefined,
-                }))
-              }
-            />
-          </div>
         </div>
 
         <div className="filters-drawer__footer">
