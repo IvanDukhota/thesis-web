@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { RiImageLine, RiVideoLine, RiFileLine, RiAddLine, RiArrowRightSLine } from "react-icons/ri";
+import { RiImageLine, RiVideoLine, RiFileLine, RiArrowRightSLine, RiBriefcase2Line, RiAppsLine, RiFileList3Line, RiSendPlaneLine } from "react-icons/ri";
 import { getOrders, getMyOrders, getReceivedApplications, getSentApplications, getTags, aiSearch, type OrderListItem, type Tag, type OrderFilters, type OrderApplication } from "../../api/marketplace";
 import Header from "../../components/layout/Header/Header";
 import TagSelectionModal from "../../components/features/marketplace/TagSelectionModal/TagSelectionModal";
@@ -39,6 +39,20 @@ export default function MarketplacePage() {
   const [isTagModalOpen, setIsTagModalOpen] = useState(false);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const cardsRef = useRef<(HTMLDivElement | null)[]>([]);
+  const tabsRef = useRef<HTMLDivElement>(null);
+  const [tabIndicator, setTabIndicator] = useState<{ left: number; width: number } | null>(null);
+
+  useEffect(() => {
+    if (!tabsRef.current) return;
+    const activeBtn = tabsRef.current.querySelector<HTMLElement>('.marketplace-tab--active');
+    if (activeBtn) setTabIndicator({ left: activeBtn.offsetLeft, width: activeBtn.offsetWidth });
+  }, [activeTab]);
+
+  useEffect(() => {
+    document.documentElement.style.overflowY = isFiltersOpen ? 'hidden' : '';
+    return () => { document.documentElement.style.overflowY = ''; };
+  }, [isFiltersOpen]);
 
   const [filters, setFilters] = useState<OrderFilters>({
     search: "",
@@ -149,6 +163,26 @@ export default function MarketplacePage() {
     (currentPage - 1) * PAGE_SIZE,
     currentPage * PAGE_SIZE
   );
+
+  useEffect(() => {
+    const observers: IntersectionObserver[] = [];
+    cardsRef.current.forEach((card, idx) => {
+      if (!card) return;
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) {
+            card.style.transitionDelay = `${(idx % 3) * 65}ms`;
+            card.classList.add('mp-card--visible');
+            observer.unobserve(card);
+          }
+        },
+        { threshold: 0.06 }
+      );
+      observer.observe(card);
+      observers.push(observer);
+    });
+    return () => observers.forEach((o) => o.disconnect());
+  }, [paginatedOrders]);
 
   const renderPagination = () => {
     if (totalPages <= 1) return null;
@@ -272,25 +306,28 @@ export default function MarketplacePage() {
       />
 
       <div className="marketplace-container">
-        <div className="marketplace-tabs">
+        <div className="marketplace-tabs" ref={tabsRef}>
           <button
             className={activeTab === "all" ? "marketplace-tab marketplace-tab--active" : "marketplace-tab"}
             onClick={() => setActiveTab("all")}
           >
-            All Orders
+            <RiAppsLine size={15} /> All Orders
           </button>
           <button
             className={activeTab === "my-orders" ? "marketplace-tab marketplace-tab--active" : "marketplace-tab"}
             onClick={() => setActiveTab("my-orders")}
           >
-            My Orders
+            <RiFileList3Line size={15} /> My Orders
           </button>
           <button
             className={activeTab === "applications" ? "marketplace-tab marketplace-tab--active" : "marketplace-tab"}
             onClick={() => setActiveTab("applications")}
           >
-            Applications
+            <RiSendPlaneLine size={15} /> Applications
           </button>
+          {tabIndicator && (
+            <div className="marketplace-tab-indicator" style={{ left: tabIndicator.left, width: tabIndicator.width }} />
+          )}
         </div>
         <div className="marketplace-header">
           <div className="marketplace-search-row">
@@ -308,7 +345,7 @@ export default function MarketplacePage() {
               className="marketplace-create-button"
               onClick={() => setIsCreateModalOpen(true)}
             >
-              <RiAddLine size={15} /> Post Job
+              <RiBriefcase2Line size={15} /> Post Job
             </button>
           </div>
 
@@ -349,25 +386,43 @@ export default function MarketplacePage() {
               {activeTab === "applications" ? (
                 <div className="marketplace-applications">
                   <div className="marketplace-applications-section">
-                    <h2 className="marketplace-applications-title">Received Applications</h2>
+                    <h2 className="marketplace-applications-title">Applications</h2>
                     {receivedApplications.length === 0 ? (
                       <div className="marketplace-empty">No applications received yet.</div>
                     ) : (
-                      <div className="marketplace-applications-list">
-                        {receivedApplications.map((app) => (
-                          <ApplicationCard
-                            key={app.id}
-                            app={app}
-                            variant="received"
-                            onApprove={() => setReceivedApplications((prev) =>
-                              prev.map((a) => a.id === app.id ? { ...a, status: "accepted" } : a)
-                            )}
-                            onDiscard={() => setReceivedApplications((prev) =>
-                              prev.map((a) => a.id === app.id ? { ...a, status: "rejected" } : a)
-                            )}
-                          />
-                        ))}
-                      </div>
+                      <>
+                        {(["pending", "accepted", "withdrawn", "rejected"] as const).map((status) => {
+                          const group = receivedApplications.filter((a) => a.status === status);
+                          if (group.length === 0) return null;
+                          return (
+                            <div key={status} className="marketplace-status-group">
+                              <div className={`marketplace-status-group__label marketplace-status-group__label--${status}`}>
+                                <span className="marketplace-status-group__dot" />
+                                {status === "rejected" ? "Declined" : status.charAt(0).toUpperCase() + status.slice(1)}
+                                <span className="marketplace-status-group__count">{group.length}</span>
+                              </div>
+                              <div className="marketplace-applications-list">
+                                {group.map((app) => (
+                                  <ApplicationCard
+                                    key={app.id}
+                                    app={app}
+                                    variant="received"
+                                    onApprove={() => setReceivedApplications((prev) =>
+                                      prev.map((a) => a.id === app.id ? { ...a, status: "accepted" } : a)
+                                    )}
+                                    onDiscard={() => setReceivedApplications((prev) =>
+                                      prev.map((a) => a.id === app.id ? { ...a, status: "rejected" } : a)
+                                    )}
+                                    onDelete={(id) => setReceivedApplications((prev) =>
+                                      prev.filter((a) => a.id !== id)
+                                    )}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </>
                     )}
                   </div>
 
@@ -376,11 +431,33 @@ export default function MarketplacePage() {
                     {sentApplications.length === 0 ? (
                       <div className="marketplace-empty">No applications sent yet.</div>
                     ) : (
-                      <div className="marketplace-applications-list">
-                        {sentApplications.map((app) => (
-                          <ApplicationCard key={app.id} app={app} variant="sent" />
-                        ))}
-                      </div>
+                      <>
+                        {(["accepted", "pending", "withdrawn", "rejected"] as const).map((status) => {
+                          const group = sentApplications.filter((a) => a.status === status);
+                          if (group.length === 0) return null;
+                          return (
+                            <div key={status} className="marketplace-status-group">
+                              <div className={`marketplace-status-group__label marketplace-status-group__label--${status}`}>
+                                <span className="marketplace-status-group__dot" />
+                                {status === "rejected" ? "Declined" : status.charAt(0).toUpperCase() + status.slice(1)}
+                                <span className="marketplace-status-group__count">{group.length}</span>
+                              </div>
+                              <div className="marketplace-applications-list">
+                                {group.map((app) => (
+                                  <ApplicationCard
+                                    key={app.id}
+                                    app={app}
+                                    variant="sent"
+                                    onDelete={(id) => setSentApplications((prev) =>
+                                      prev.filter((a) => a.id !== id)
+                                    )}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </>
                     )}
                   </div>
                 </div>
@@ -407,10 +484,11 @@ export default function MarketplacePage() {
               ) : (
                 <>
                   <div className="marketplace-orders">
-                    {paginatedOrders.map((order) => (
+                    {paginatedOrders.map((order, idx) => (
                       <div
                         key={order.id}
                         className="mp-card"
+                        ref={(el) => { cardsRef.current[idx] = el; }}
                         onClick={() => navigate(`/marketplace/${order.slug}`)}
                       >
                         <div className="mp-card__head">

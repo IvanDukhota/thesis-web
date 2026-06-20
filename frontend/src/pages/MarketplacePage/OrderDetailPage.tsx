@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getOrder, deleteOrder, type OrderDetail } from "../../api/marketplace";
+import { apiAddContact } from "../../api/contactsApi";
 import Header from "../../components/layout/Header/Header";
 import ImageModal from "../../components/features/chat/ImageModal/ImageModal";
 import EditOrderModal from "../../components/features/marketplace/EditOrderModal/EditOrderModal";
@@ -20,6 +21,7 @@ export default function OrderDetailPage() {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isApplyOpen, setIsApplyOpen] = useState(false);
+  const [isContacting, setIsContacting] = useState(false);
 
   useEffect(() => {
     const loadOrder = async () => {
@@ -81,6 +83,13 @@ export default function OrderDetailPage() {
   };
 
   const lightboxCurrent = lightboxImages.find((img) => img.id === lightboxImageId);
+
+  const handleContactClient = async () => {
+    if (!order?.buyer) return;
+    setIsContacting(true);
+    await apiAddContact(order.buyer.id);
+    navigate('/chat');
+  };
 
   const handleDeleteConfirm = async () => {
     setIsDeleting(true);
@@ -312,8 +321,12 @@ export default function OrderDetailPage() {
                 >
                   {order.has_applied ? "Applied" : "Apply Now"}
                 </button>
-                <button className="order-detail-btn order-detail-btn--secondary">
-                  Contact Client
+                <button
+                  className="order-detail-btn order-detail-btn--secondary"
+                  onClick={handleContactClient}
+                  disabled={isContacting}
+                >
+                  {isContacting ? "Opening…" : "Contact Client"}
                 </button>
               </div>
             )}

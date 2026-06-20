@@ -136,7 +136,7 @@ export default function SingleProjectPage() {
                         </div>
                         {project.order_info?.deadline && (
                             <div className="spp-deadline-block">
-                                <span className="spp-deadline-label">Deadline</span>
+                                <span className="spp-deadline-label">Deadline:</span>
                                 <span className="spp-deadline-value">{project.order_info.deadline}</span>
                             </div>
                         )}

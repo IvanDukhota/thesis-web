@@ -222,6 +222,7 @@ export type OrderApplication = {
   order: string;
   order_title: string;
   order_slug: string;
+  order_buyer: Buyer;
   applicant: Buyer;
   team: string | null;
   message: string;
@@ -295,6 +296,13 @@ export async function acceptApplication(id: string): Promise<OrderApplication> {
 export async function rejectApplication(id: string): Promise<OrderApplication> {
   return apiRequest<OrderApplication>(`/marketplace/applications/${id}/reject/`, {
     method: 'POST',
+    auth: true,
+  });
+}
+
+export async function deleteApplication(id: string): Promise<void> {
+  await apiRequest<void>(`/marketplace/applications/${id}/`, {
+    method: 'DELETE',
     auth: true,
   });
 }

@@ -1,6 +1,9 @@
-import { useState } from "react";
-import { RiArrowDownSLine, RiArrowUpSLine, RiCheckLine, RiFolderLine, RiGroupLine, RiTaskLine } from "react-icons/ri";
-import { acceptApplication, rejectApplication, getApplicantStats, getPublicTeamStats, type OrderApplication, type ApplicantStats, type PublicTeamStats } from "../../../../api/marketplace";
+import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { RiArrowDownSLine, RiArrowUpSLine, RiCheckLine, RiFolderLine, RiGroupLine, RiTaskLine, RiDeleteBin6Line, RiMessage3Line } from "react-icons/ri";
+import { acceptApplication, rejectApplication, deleteApplication, getApplicantStats, getPublicTeamStats, type OrderApplication, type ApplicantStats, type PublicTeamStats } from "../../../../api/marketplace";
+import { apiAddContact } from "../../../../api/contactsApi";
+import ConfirmModal from "../../../shared/ui/ConfirmModal/ConfirmModal";
 import "./application-card.css";
 
 type Props = {
@@ -8,6 +11,7 @@ type Props = {
   variant: "received" | "sent";
   onApprove?: (id: string) => void;
   onDiscard?: (id: string) => void;
+  onDelete?: (id: string) => void;
 };
 
 function timeAgo(dateStr: string) {
@@ -48,8 +52,29 @@ function ProjectList({ projects, type }: { projects: { id: string; name: string;
   );
 }
 
-export default function ApplicationCard({ app, variant, onApprove, onDiscard }: Props) {
+export default function ApplicationCard({ app, variant, onApprove, onDiscard, onDelete }: Props) {
+  const navigate = useNavigate();
   const [expanded, setExpanded] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const card = cardRef.current;
+    if (!card) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.unobserve(card);
+        }
+      },
+      { threshold: 0.06 }
+    );
+    observer.observe(card);
+    return () => observer.disconnect();
+  }, []);
   const [soloStats, setSoloStats] = useState<ApplicantStats | null>(null);
   const [teamStats, setTeamStats] = useState<PublicTeamStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(false);
@@ -101,12 +126,45 @@ export default function ApplicationCard({ app, variant, onApprove, onDiscard }: 
     }
   };
 
+  const handleContact = async () => {
+    const target = variant === "received" ? app.applicant : app.order_buyer;
+    if (!target) return;
+    await apiAddContact(target.id);
+    navigate('/chat');
+  };
+
+  const handleDeleteConfirm = async () => {
+    setIsDeleting(true);
+    try {
+      await deleteApplication(app.id);
+      onDelete?.(app.id);
+    } catch {
+      // silently ignore
+    } finally {
+      setIsDeleting(false);
+      setIsDeleteOpen(false);
+    }
+  };
+
   const isTeam = !!app.team;
   const avatarLetter = isTeam ? "T" : (app.applicant.full_name?.charAt(0) || app.applicant.nickname?.charAt(0) || "?").toUpperCase();
   const showActions = variant === "received" && app.status === "pending";
+  const showDelete = app.status === "withdrawn" || app.status === "rejected";
 
   return (
-    <div className={`appc-card ${expanded ? "appc-card--expanded" : ""}`}>
+    <>
+    <ConfirmModal
+      isOpen={isDeleteOpen}
+      title="Delete Application"
+      message="Are you sure you want to delete this application? This action cannot be undone."
+      confirmText="Delete"
+      cancelText="Cancel"
+      variant="danger"
+      isLoading={isDeleting}
+      onConfirm={handleDeleteConfirm}
+      onCancel={() => setIsDeleteOpen(false)}
+    />
+    <div className={`appc-card${expanded ? " appc-card--expanded" : ""}${isVisible ? " appc-card--visible" : ""}`} ref={cardRef}>
       <div className="appc-header" onClick={toggle}>
         <div className="appc-left">
           <div className={`appc-avatar ${isTeam ? "appc-avatar--team" : ""}`}>
@@ -137,23 +195,14 @@ export default function ApplicationCard({ app, variant, onApprove, onDiscard }: 
         </div>
         <div className="appc-right">
           <StatusBadge status={app.status} />
-          {showActions && (
-            <div className="appc-actions-row" onClick={(e) => e.stopPropagation()}>
-              <button
-                className="appc-btn appc-btn--approve"
-                disabled={!!actionLoading}
-                onClick={handleApprove}
-              >
-                {actionLoading === "approve" ? "…" : "Approve"}
-              </button>
-              <button
-                className="appc-btn appc-btn--discard"
-                disabled={!!actionLoading}
-                onClick={handleDiscard}
-              >
-                {actionLoading === "discard" ? "…" : "Discard"}
-              </button>
-            </div>
+          {showDelete && (
+            <button
+              className="appc-delete-btn"
+              onClick={(e) => { e.stopPropagation(); setIsDeleteOpen(true); }}
+              title="Delete application"
+            >
+              <RiDeleteBin6Line size={15} />
+            </button>
           )}
           <span className="appc-chevron">
             {expanded ? <RiArrowUpSLine size={18} /> : <RiArrowDownSLine size={18} />}
@@ -243,9 +292,35 @@ export default function ApplicationCard({ app, variant, onApprove, onDiscard }: 
                 <span className="appc-empty-note">No cover letter provided</span>
               </div>
             )}
+
+            <div className="appc-actions-bottom" onClick={(e) => e.stopPropagation()}>
+              <button className="appc-btn appc-btn--message" onClick={handleContact}>
+                <RiMessage3Line size={13} />
+                {variant === "received" ? "Message" : "Contact Client"}
+              </button>
+              {showActions && (
+                <>
+                  <button
+                    className="appc-btn appc-btn--approve"
+                    disabled={!!actionLoading}
+                    onClick={handleApprove}
+                  >
+                    {actionLoading === "approve" ? "…" : "Approve"}
+                  </button>
+                  <button
+                    className="appc-btn appc-btn--discard"
+                    disabled={!!actionLoading}
+                    onClick={handleDiscard}
+                  >
+                    {actionLoading === "discard" ? "…" : "Discard"}
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
     </div>
+    </>
   );
 }

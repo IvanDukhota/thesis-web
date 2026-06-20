@@ -193,6 +193,16 @@
   border-color: rgba(139, 92, 246, 0.4);
 }
 
+.apm-input[type="number"]::-webkit-outer-spin-button,
+.apm-input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.apm-input[type="number"] {
+  -moz-appearance: textfield;
+}
+
 .apm-input:disabled,
 .apm-textarea:disabled {
   opacity: 0.5;

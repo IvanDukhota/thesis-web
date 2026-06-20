@@ -233,11 +233,12 @@ class OrderApplicationListSerializer(serializers.ModelSerializer):
     applicant = UserSerializer(read_only=True)
     order_title = serializers.CharField(source='order.title', read_only=True)
     order_slug = serializers.CharField(source='order.slug', read_only=True)
+    order_buyer = UserSerializer(source='order.buyer', read_only=True)
 
     class Meta:
         model = OrderApplication
         fields = [
-            'id', 'order', 'order_title', 'order_slug', 'applicant', 'team',
+            'id', 'order', 'order_title', 'order_slug', 'order_buyer', 'applicant', 'team',
             'message', 'proposed_price', 'proposed_days', 'status', 'created_at'
         ]
 

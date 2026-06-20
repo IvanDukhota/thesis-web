@@ -1,40 +1,55 @@
+@keyframes oim-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+@keyframes oim-slide-up {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
 .oim-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(0, 0, 0, 0.72);
+    backdrop-filter: blur(4px);
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1000;
+    z-index: 900;
     padding: 20px;
+    animation: oim-fade-in 0.2s ease both;
 }
 
 .oim-modal {
-    background: #0f0f11;
+    background: #0d0d11;
     border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 14px;
+    border-radius: 12px;
     width: 100%;
-    max-width: 560px;
-    max-height: 80vh;
+    max-width: 420px;
+    max-height: 74vh;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.85);
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.7);
+    animation: oim-slide-up 0.25s ease both;
 }
 
+/* ── Header ── */
 .oim-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 16px 20px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    padding: 11px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
     flex-shrink: 0;
 }
 
 .oim-title {
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 600;
-    color: #e4e4e7;
-    letter-spacing: -0.01em;
+    color: #71717a;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
 }
 
 .oim-close {
@@ -54,73 +69,80 @@
     background: rgba(255, 255, 255, 0.05);
 }
 
+/* ── Body ── */
 .oim-body {
-    padding: 20px;
+    padding: 14px 16px;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 10px;
+    flex: 1;
 }
 
-.oim-body::-webkit-scrollbar {
-    width: 4px;
-}
-
+.oim-body::-webkit-scrollbar { width: 4px; }
 .oim-body::-webkit-scrollbar-thumb {
     background: #27272a;
     border-radius: 4px;
 }
 
 .oim-order-title {
-    font-size: 18px;
+    font-size: 15px;
     font-weight: 700;
     color: #f4f4f5;
     letter-spacing: -0.02em;
     margin: 0;
+    line-height: 1.3;
 }
 
-.oim-meta-row {
-    display: flex;
-    flex-wrap: wrap;
+.oim-description {
+    font-size: 12.5px;
+    color: #71717a;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    margin: 0;
+}
+
+/* ── Stats grid ── */
+.oim-stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: 8px;
 }
 
-.oim-meta-item {
+.oim-stat {
     display: flex;
-    align-items: center;
-    gap: 5px;
-    padding: 6px 11px;
+    flex-direction: column;
+    gap: 3px;
+    padding: 7px 11px;
     border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    background: rgba(255, 255, 255, 0.02);
-    color: #71717a;
+    background: rgba(255, 255, 255, 0.025);
+    border: 1px solid rgba(255, 255, 255, 0.07);
 }
 
-.oim-meta-item--deadline {
-    border-color: rgba(251, 191, 36, 0.15);
-    background: rgba(251, 191, 36, 0.04);
-}
-
-.oim-meta-item--deadline .oim-meta-label,
-.oim-meta-item--deadline .oim-meta-value {
-    color: #fbbf24;
-}
-
-.oim-meta-item svg {
-    flex-shrink: 0;
-}
-
-.oim-meta-label {
-    font-size: 11.5px;
+.oim-stat-label {
+    font-size: 10px;
+    font-weight: 600;
     color: #52525b;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
 }
 
-.oim-meta-value {
+.oim-stat-value {
     font-size: 12.5px;
     font-weight: 600;
     color: #d4d4d8;
+    letter-spacing: -0.01em;
 }
 
+.oim-stat--deadline {
+    border-color: rgba(251, 191, 36, 0.18);
+    background: rgba(251, 191, 36, 0.04);
+}
+
+.oim-stat--deadline .oim-stat-label { color: #92400e; }
+.oim-stat--deadline .oim-stat-value { color: #fbbf24; }
+
+/* ── Tags ── */
 .oim-tags-row {
     display: flex;
     align-items: center;
@@ -137,46 +159,61 @@
     font-size: 11.5px;
     padding: 2px 9px;
     border-radius: 5px;
-    background: rgba(139, 92, 246, 0.08);
-    border: 1px solid rgba(139, 92, 246, 0.15);
+    background: rgba(109, 40, 217, 0.08);
+    border: 1px solid rgba(139, 92, 246, 0.18);
     color: #a78bfa;
 }
 
+/* ── Section label ── */
 .oim-section-label {
-    font-size: 11px;
+    font-size: 10.5px;
     font-weight: 600;
     color: #52525b;
     text-transform: uppercase;
-    letter-spacing: 0.07em;
-    margin-bottom: -8px;
+    letter-spacing: 0.08em;
+    margin-bottom: -6px;
 }
 
-.oim-description {
-    font-size: 13.5px;
-    color: #71717a;
-    line-height: 1.65;
-    white-space: pre-wrap;
-    margin: 0;
-}
-
+/* ── Images ── */
 .oim-images-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
     gap: 8px;
 }
 
 .oim-image-wrap {
+    position: relative;
     display: block;
     border-radius: 8px;
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.06);
     aspect-ratio: 1;
+    cursor: pointer;
     transition: border-color 0.15s;
 }
 
-.oim-image-wrap:hover {
-    border-color: rgba(139, 92, 246, 0.3);
+.oim-image-wrap:hover { border-color: rgba(139, 92, 246, 0.3); }
+
+.oim-image-expand {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    background: rgba(0, 0, 0, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #e4e4e7;
+    font-size: 12px;
+    width: 24px;
+    height: 24px;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.15s;
+    pointer-events: none;
 }
+
+.oim-image-wrap:hover .oim-image-expand { opacity: 1; }
 
 .oim-image {
     width: 100%;
@@ -185,6 +222,7 @@
     display: block;
 }
 
+/* ── Files ── */
 .oim-files-list {
     display: flex;
     flex-direction: column;
@@ -211,10 +249,7 @@
     color: #c4b5fd;
 }
 
-.oim-file-item svg {
-    color: #52525b;
-    flex-shrink: 0;
-}
+.oim-file-item svg { color: #52525b; flex-shrink: 0; }
 
 .oim-file-name {
     overflow: hidden;
@@ -222,15 +257,44 @@
     white-space: nowrap;
 }
 
-/* ── Abandon section ── */
-.oim-abandon-section {
-    margin-top: 4px;
-    padding-top: 16px;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
+/* ── Footer (abandon) ── */
+.oim-footer {
+    padding: 10px 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    flex-shrink: 0;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.oim-footer-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.oim-contact-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    color: #71717a;
+    font-size: 13px;
+    font-family: inherit;
+    padding: 7px 14px;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.oim-contact-btn:hover {
+    color: #a1a1aa;
+    border-color: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.04);
 }
 
 .oim-abandon-btn {
-    background: none;
+    background: rgba(239, 68, 68, 0.06);
     border: 1px solid rgba(239, 68, 68, 0.2);
     border-radius: 8px;
     color: #f87171;
@@ -242,18 +306,16 @@
 }
 
 .oim-abandon-btn:hover {
-    background: rgba(239, 68, 68, 0.07);
+    background: rgba(239, 68, 68, 0.11);
     border-color: rgba(239, 68, 68, 0.35);
 }
 
+/* ── Confirm box (replaces footer content) ── */
 .oim-confirm-box {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    padding: 14px;
-    border: 1px solid rgba(239, 68, 68, 0.2);
-    border-radius: 10px;
-    background: rgba(239, 68, 68, 0.04);
+    width: 100%;
 }
 
 .oim-confirm-header {
@@ -262,10 +324,7 @@
     gap: 7px;
 }
 
-.oim-confirm-icon {
-    color: #f87171;
-    flex-shrink: 0;
-}
+.oim-confirm-icon { color: #f87171; flex-shrink: 0; }
 
 .oim-confirm-title {
     font-size: 13.5px;
@@ -298,10 +357,7 @@
 }
 
 .oim-confirm-cancel:disabled,
-.oim-confirm-abandon:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
+.oim-confirm-abandon:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .oim-confirm-cancel {
     background: none;

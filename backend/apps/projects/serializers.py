@@ -70,6 +70,14 @@ class ProjectSerializer(serializers.ModelSerializer):
             ext = name.rsplit('.', 1)[-1].lower() if '.' in name else ''
             file_type = 'image' if ext in ('jpg', 'jpeg', 'png', 'gif', 'webp', 'svg') else 'file'
             attachments.append({'url': url, 'filename': name, 'file_type': file_type})
+        buyer = None
+        if order.buyer:
+            b = order.buyer
+            try:
+                avatar_url = b.avatar.url if b.avatar else None
+            except Exception:
+                avatar_url = None
+            buyer = {'id': b.id, 'email': b.email, 'full_name': b.full_name, 'avatar': avatar_url}
         return {
             'title': order.title,
             'description': order.description,
@@ -79,6 +87,7 @@ class ProjectSerializer(serializers.ModelSerializer):
             'category': order.category.name if order.category else None,
             'tags': [t.name for t in order.tags.all()],
             'attachments': attachments,
+            'buyer': buyer,
         }
 
 

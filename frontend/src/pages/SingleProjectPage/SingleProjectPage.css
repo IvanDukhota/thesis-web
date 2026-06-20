@@ -165,25 +165,23 @@
 
 .spp-deadline-block {
     display: flex;
-    flex-direction: column;
-    align-items: flex-start;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
     padding: 5px 14px;
-    min-width: 130px;
     border: 1px solid rgba(251, 191, 36, 0.15);
     border-radius: 8px;
     background: rgba(251, 191, 36, 0.04);
 }
 
 .spp-deadline-label {
-    font-size: 10px;
-    font-weight: 600;
+    font-size: 12.5px;
+    font-weight: 500;
     color: #a16207;
-    text-transform: uppercase;
-    letter-spacing: 0.07em;
 }
 
 .spp-deadline-value {
-    font-size: 13px;
+    font-size: 12.5px;
     font-weight: 600;
     color: #fbbf24;
     letter-spacing: -0.01em;

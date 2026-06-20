@@ -591,3 +591,17 @@ class OrderApplicationViewSet(viewsets.ModelViewSet):
 
         serializer = self.get_serializer(application)
         return Response(serializer.data)
+
+    def destroy(self, request, *args, **kwargs):
+        application = self.get_object()
+        is_applicant = application.applicant == request.user
+        is_buyer = application.order.buyer == request.user
+        if not (is_applicant or is_buyer):
+            return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+        deletable = {OrderApplication.WITHDRAWN, OrderApplication.REJECTED}
+        if application.status not in deletable:
+            return Response(
+                {'error': 'Only withdrawn or rejected applications can be deleted'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return super().destroy(request, *args, **kwargs)

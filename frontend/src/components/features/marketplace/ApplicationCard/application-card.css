@@ -1,9 +1,16 @@
 .appc-card {
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.07);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.02);
+  background: #111115;
   overflow: hidden;
-  transition: border-color 0.18s;
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.35s ease, transform 0.35s ease, border-color 0.18s;
+}
+
+.appc-card--visible {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .appc-card--expanded {
@@ -137,6 +144,23 @@
   background: rgba(113, 113, 122, 0.1);
   border: 1px solid rgba(113, 113, 122, 0.2);
   color: #71717a;
+}
+
+.appc-delete-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  color: rgba(239, 68, 68, 0.5);
+  display: flex;
+  align-items: center;
+  transition: color 0.15s, background 0.15s;
+}
+
+.appc-delete-btn:hover {
+  color: #f87171;
+  background: rgba(239, 68, 68, 0.08);
 }
 
 .appc-chevron {
@@ -348,10 +372,13 @@
 }
 
 /* ── Action buttons ── */
-.appc-actions-row {
+.appc-actions-bottom {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  padding-top: 12px;
+  margin-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .appc-btn {
@@ -388,4 +415,20 @@
 
 .appc-btn--discard:not(:disabled):hover {
   background: rgba(239, 68, 68, 0.15);
+}
+
+.appc-btn--message {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border-color: rgba(255, 255, 255, 0.08);
+  color: #71717a;
+  margin-right: auto;
+}
+
+.appc-btn--message:hover {
+  color: #a1a1aa;
+  border-color: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.04);
 }

@@ -121,6 +121,7 @@ export default function ChatsPage() {
   const [chats, setChats] = useState<Chat[]>([]);
   const [activeRecipientId, setActiveRecipientId] = useState<number | null>(null);
   const [activeChatData, setActiveChatData] = useState<Chat | null>(null);
+  const [pendingChatTitle, setPendingChatTitle] = useState<string | null>(null);
 
   const [messages, setMessages] = useState<LocalMessage[]>([]);
   const [messageText, setMessageText] = useState("");
@@ -347,6 +348,7 @@ export default function ChatsPage() {
 
         if (isNewChat) {
           void getChat(incomingChatId).then((newChat) => {
+            setActiveChatData(newChat);
             setChats((prev) => {
               if (prev.some((c) => c.id === newChat.id)) return prev;
               return [{ ...newChat, updated_at: payload.sent_at }, ...prev].sort(
@@ -479,11 +481,14 @@ export default function ChatsPage() {
       if (event.type === "chat.deleted") {
         const deletedChatId = String(event.chat_id);
 
-        // Получаем название чата перед удалением
         const deletedChat = chats.find((chat) => chat.id === deletedChatId);
         const chatTitle = deletedChat?.title || "Chat";
 
         setChats((prev) => prev.filter((chat) => chat.id !== deletedChatId));
+
+        if (deletedChat?.type === "direct") {
+          void getContactsWithoutChats().then(setContactsWithoutChats);
+        }
 
         if (activeChatIdRef.current === deletedChatId) {
           setActiveChatId(null);
@@ -541,6 +546,7 @@ export default function ChatsPage() {
       }
     };
   }, []);
+
 
   // Управляет скроллом при загрузке сообщений и изменении их количества
   useEffect(() => {
@@ -900,8 +906,8 @@ export default function ChatsPage() {
         translate: autoTranslateEnabled,
       });
 
-      // Сохраняем полную информацию о чате с members
       setActiveChatData(chatData.chat);
+      setPendingChatTitle(null);
 
       let recipientReadPos = 0;
       if (chatData.chat.members) {
@@ -960,6 +966,7 @@ export default function ChatsPage() {
     setActiveChatId(null);
     setActiveRecipientId(contact.id);
     setActiveChatData(null);
+    setPendingChatTitle(contact.full_name);
     setMessages([]);
     setChatLoading(false);
 
@@ -1936,7 +1943,7 @@ export default function ChatsPage() {
       <section className="chat-main">
         {activeChatId || activeRecipientId || messages.length > 0 ? (
           <>
-            <div className="chat-main__header">
+            <div className="chat-main__header" key={activeChatId || activeRecipientId || 'empty'}>
               <div
                 className="chat-main__avatar"
                 onClick={() => activeChatData && setIsChatProfileModalOpen(true)}
@@ -1944,9 +1951,12 @@ export default function ChatsPage() {
                 title={activeChatData ? "Открыть профиль чата" : undefined}
               >
                 {activeChatId
-                  ? (chats.find((c) => c.id === activeChatId)?.title || "?").charAt(0).toUpperCase()
+                  ? (chats.find((c) => c.id === activeChatId)?.title
+                      || activeChatData?.title
+                      || pendingChatTitle
+                      || "?").charAt(0).toUpperCase()
                   : activeRecipientId
-                    ? (contactsWithoutChats.find((c) => c.id === activeRecipientId)?.full_name || "?").charAt(0).toUpperCase()
+                    ? (contactsWithoutChats.find((c) => c.id === activeRecipientId)?.full_name || pendingChatTitle || "?").charAt(0).toUpperCase()
                     : "?"}
               </div>
 
@@ -1956,9 +1966,12 @@ export default function ChatsPage() {
               >
                 <div className="chat-main__name">
                   {activeChatId
-                    ? chats.find((c) => c.id === activeChatId)?.title || "Unknown chat"
+                    ? (chats.find((c) => c.id === activeChatId)?.title
+                        || activeChatData?.title
+                        || pendingChatTitle
+                        || "Unknown chat")
                     : activeRecipientId
-                      ? contactsWithoutChats.find((c) => c.id === activeRecipientId)?.full_name || "New chat"
+                      ? (contactsWithoutChats.find((c) => c.id === activeRecipientId)?.full_name || pendingChatTitle || "New chat")
                       : "New chat"}
                 </div>
                 <div className="chat-main__status">
