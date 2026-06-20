@@ -34,17 +34,47 @@ class UserSerializer(serializers.ModelSerializer):
 
 class OrderAttachmentSerializer(serializers.ModelSerializer):
     url = serializers.SerializerMethodField()
+    file_type = serializers.SerializerMethodField()
+    filename = serializers.SerializerMethodField()
 
     class Meta:
         model = OrderAttachment
-        fields = ['id', 'url', 'uploaded_at']
+        fields = ['id', 'url', 'file_type', 'filename', 'uploaded_at']
 
     def get_url(self, obj):
-        request = self.context.get('request')
-        if obj.file and hasattr(obj.file, 'url'):
-            if request:
-                return request.build_absolute_uri(obj.file.url)
-            return obj.file.url
+        try:
+            request = self.context.get('request')
+            if obj.file and hasattr(obj.file, 'url'):
+                url = obj.file.url
+                if request:
+                    return request.build_absolute_uri(url)
+                return url
+        except Exception:
+            pass
+        return None
+
+    def get_file_type(self, obj):
+        try:
+            if not obj.file or not obj.file.name:
+                return 'file'
+            filename = obj.file.name.lower()
+            image_extensions = ('.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.svg')
+            video_extensions = ('.mp4', '.avi', '.mov', '.wmv', '.flv', '.mkv', '.webm')
+            if filename.endswith(image_extensions):
+                return 'image'
+            elif filename.endswith(video_extensions):
+                return 'video'
+        except Exception:
+            pass
+        return 'file'
+
+    def get_filename(self, obj):
+        try:
+            if obj.file and obj.file.name:
+                import os
+                return os.path.basename(obj.file.name)
+        except Exception:
+            pass
         return None
 
 
@@ -52,14 +82,39 @@ class OrderListSerializer(serializers.ModelSerializer):
     buyer = UserSerializer(read_only=True)
     tags = TagSerializer(many=True, read_only=True)
     category_name = serializers.CharField(source='category.name', read_only=True)
+    images_count = serializers.SerializerMethodField()
+    videos_count = serializers.SerializerMethodField()
+    files_count = serializers.SerializerMethodField()
+    similarity_percentage = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
         fields = [
             'id', 'slug', 'title', 'price', 'estimated_days',
             'status', 'applications_count', 'views_count', 'buyer',
-            'category_name', 'tags', 'created_at'
+            'category_name', 'tags', 'images_count', 'videos_count', 'files_count',
+            'created_at', 'similarity_percentage',
         ]
+
+    def get_similarity_percentage(self, obj):
+        val = getattr(obj, 'similarity_percentage', None)
+        if val is None:
+            return None
+        return round(float(val), 1)
+
+    def get_images_count(self, obj):
+        image_extensions = ('.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.svg')
+        return sum(1 for att in obj.attachments.all() if att.file.name.lower().endswith(image_extensions))
+
+    def get_videos_count(self, obj):
+        video_extensions = ('.mp4', '.avi', '.mov', '.wmv', '.flv', '.mkv', '.webm')
+        return sum(1 for att in obj.attachments.all() if att.file.name.lower().endswith(video_extensions))
+
+    def get_files_count(self, obj):
+        image_extensions = ('.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.svg')
+        video_extensions = ('.mp4', '.avi', '.mov', '.wmv', '.flv', '.mkv', '.webm')
+        all_extensions = image_extensions + video_extensions
+        return sum(1 for att in obj.attachments.all() if not att.file.name.lower().endswith(all_extensions))
 
 
 class OrderDetailSerializer(serializers.ModelSerializer):
@@ -133,9 +188,9 @@ class OrderCreateUpdateSerializer(serializers.ModelSerializer):
                 file=attachment_file
             )
 
-        # TODO: Запустить Celery-задание для расчета embedding
-        # from .tasks import calculate_order_embedding
-        # calculate_order_embedding.delay(str(order.id))
+        # Запускаем Celery-задание для расчета embedding асинхронно
+        from .tasks import calculate_order_embedding
+        calculate_order_embedding.delay(str(order.id))
 
         return order
 
@@ -167,9 +222,9 @@ class OrderCreateUpdateSerializer(serializers.ModelSerializer):
                     file=attachment_file
                 )
 
-        # TODO: Запустить Celery-задание для обновления embedding
-        # from .tasks import calculate_order_embedding
-        # calculate_order_embedding.delay(str(instance.id))
+        # Запускаем Celery-задание для обновления embedding асинхронно
+        from .tasks import calculate_order_embedding
+        calculate_order_embedding.delay(str(instance.id))
 
         return instance
 
@@ -183,7 +238,7 @@ class OrderApplicationListSerializer(serializers.ModelSerializer):
         model = OrderApplication
         fields = [
             'id', 'order', 'order_title', 'order_slug', 'applicant', 'team',
-            'proposed_price', 'proposed_days', 'status', 'created_at'
+            'message', 'proposed_price', 'proposed_days', 'status', 'created_at'
         ]
 
 

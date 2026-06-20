@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "apps.tasks",
     "apps.stats",
     "apps.marketplace",
+    "apps.kanban",
 ]
 
 MIDDLEWARE = [
@@ -233,4 +234,9 @@ CACHES = {
 TRANSLATION_SERVICE_URL = os.getenv(
     'TRANSLATION_SERVICE_URL',
     'http://localhost:8001'
+)
+
+EMBEDDING_SERVICE_URL = os.getenv(
+    'EMBEDDING_SERVICE_URL',
+    'http://localhost:8002'
 )

@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { RiCheckLine, RiCloseLine, RiNotification3Line } from 'react-icons/ri';
-import { apiAcceptInvitation, apiDeclineInvitation, apiGetInvitations } from '../../../api/invitationsApi';
-import { apiGetNotifications, apiMarkNotificationRead } from '../../../api/notificationsApi';
+import { apiAcceptInvitation, apiDeclineInvitation } from '../../../api/invitationsApi';
+import { apiMarkNotificationRead } from '../../../api/notificationsApi';
+import { useRealtime } from '../../../providers/RealtimeProvider';
 import './NotificationsPanel.css';
 
 function timeAgo(dateStr) {
@@ -12,29 +14,17 @@ function timeAgo(dateStr) {
     return `${Math.floor(diff / 86400)}d ago`;
 }
 
-export function NotificationsPanel({ open, onCountChange }) {
-    const [invitations, setInvitations] = useState([]);
-    const [notifications, setNotifications] = useState([]);
-    const [loading, setLoading] = useState(false);
+export function NotificationsPanel({ open }) {
+    const navigate = useNavigate();
+    const { notifications, removeNotification } = useRealtime();
     const [actionLoading, setActionLoading] = useState(null);
-
-    useEffect(() => {
-        if (!open) return;
-        setLoading(true);
-        Promise.all([apiGetInvitations(), apiGetNotifications()]).then(([invRes, notifRes]) => {
-            setLoading(false);
-            if (invRes.ok) setInvitations(invRes.data);
-            if (notifRes.ok) setNotifications(notifRes.data);
-        });
-    }, [open]);
 
     const handleAccept = async (inv) => {
         setActionLoading(inv.id);
         const { ok } = await apiAcceptInvitation(inv.id);
         setActionLoading(null);
         if (ok) {
-            setInvitations(prev => prev.filter(i => i.id !== inv.id));
-            onCountChange?.(-1);
+            removeNotification(inv.id);
             window.dispatchEvent(new Event('teamInviteAccepted'));
         }
     };
@@ -43,23 +33,20 @@ export function NotificationsPanel({ open, onCountChange }) {
         setActionLoading(inv.id);
         const { ok } = await apiDeclineInvitation(inv.id);
         setActionLoading(null);
-        if (ok) {
-            setInvitations(prev => prev.filter(i => i.id !== inv.id));
-            onCountChange?.(-1);
-        }
+        if (ok) removeNotification(inv.id);
     };
 
     const handleDismissNotif = async (notif) => {
         setActionLoading(notif.id);
         const { ok } = await apiMarkNotificationRead(notif.id);
         setActionLoading(null);
-        if (ok) {
-            setNotifications(prev => prev.filter(n => n.id !== notif.id));
-            onCountChange?.(-1);
-        }
+        if (ok) removeNotification(notif.id);
     };
 
-    const isEmpty = invitations.length === 0 && notifications.length === 0;
+    const handleApplicationClick = (notif) => {
+        removeNotification(notif.id);
+        navigate('/marketplace', { state: { tab: 'applications' } });
+    };
 
     return (
         <div className={`np-dropdown ${open ? 'np-dropdown--open' : ''}`}>
@@ -68,70 +55,167 @@ export function NotificationsPanel({ open, onCountChange }) {
             </div>
 
             <div className="np-body">
-                {loading ? (
-                    <div className="np-empty">
-                        <span>Loading...</span>
-                    </div>
-                ) : isEmpty ? (
+                {notifications.length === 0 ? (
                     <div className="np-empty">
                         <RiNotification3Line size={26} />
                         <span>No notifications</span>
                     </div>
                 ) : (
-                    <>
-                        {invitations.map(inv => (
-                            <div key={inv.id} className="np-item">
-                                <div className="np-item-top">
-                                    <div className="np-avatar">{inv.invited_by.username[0].toUpperCase()}</div>
-                                    <div className="np-item-info">
-                                        <span className="np-from">{inv.invited_by.username}</span>
-                                        <span className="np-time">{timeAgo(inv.created_at)}</span>
+                    notifications.map((item) => {
+                        if (item.kind === 'invitation') {
+                            return (
+                                <div key={item.id} className="np-item">
+                                    <div className="np-item-top">
+                                        <div className="np-avatar">{item.invited_by.username[0].toUpperCase()}</div>
+                                        <div className="np-item-info">
+                                            <span className="np-from">{item.invited_by.username}</span>
+                                            <span className="np-time">{timeAgo(item.created_at)}</span>
+                                        </div>
+                                    </div>
+                                    <p className="np-text">
+                                        Invited you to join <strong>{item.team.name}</strong>
+                                    </p>
+                                    <div className="np-actions">
+                                        <button
+                                            className="np-accept-btn"
+                                            onClick={() => handleAccept(item)}
+                                            disabled={actionLoading === item.id}
+                                        >
+                                            <RiCheckLine size={12} />
+                                            Accept
+                                        </button>
+                                        <button
+                                            className="np-decline-btn"
+                                            onClick={() => handleDecline(item)}
+                                            disabled={actionLoading === item.id}
+                                        >
+                                            <RiCloseLine size={12} />
+                                            Decline
+                                        </button>
                                     </div>
                                 </div>
-                                <p className="np-text">
-                                    Invited you to join <strong>{inv.team.name}</strong>
-                                </p>
-                                <div className="np-actions">
-                                    <button
-                                        className="np-accept-btn"
-                                        onClick={() => handleAccept(inv)}
-                                        disabled={actionLoading === inv.id}
-                                    >
-                                        <RiCheckLine size={12} />
-                                        Accept
-                                    </button>
-                                    <button
-                                        className="np-decline-btn"
-                                        onClick={() => handleDecline(inv)}
-                                        disabled={actionLoading === inv.id}
-                                    >
-                                        <RiCloseLine size={12} />
-                                        Decline
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
+                            );
+                        }
 
-                        {notifications.map(notif => (
-                            <div key={notif.id} className="np-item np-item--info">
-                                <div className="np-item-top">
-                                    <div className="np-avatar np-avatar--project">P</div>
-                                    <div className="np-item-info">
-                                        <span className="np-from">{notif.title}</span>
-                                        <span className="np-time">{timeAgo(notif.created_at)}</span>
+                        if (item.kind === 'general') {
+                            return (
+                                <div key={item.id} className="np-item np-item--info">
+                                    <div className="np-item-top">
+                                        <div className="np-avatar np-avatar--project">P</div>
+                                        <div className="np-item-info">
+                                            <span className="np-from">{item.title}</span>
+                                            <span className="np-time">{timeAgo(item.created_at)}</span>
+                                        </div>
+                                        <button
+                                            className="np-dismiss-btn"
+                                            onClick={() => handleDismissNotif(item)}
+                                            disabled={actionLoading === item.id}
+                                        >
+                                            <RiCloseLine size={13} />
+                                        </button>
                                     </div>
-                                    <button
-                                        className="np-dismiss-btn"
-                                        onClick={() => handleDismissNotif(notif)}
-                                        disabled={actionLoading === notif.id}
-                                    >
-                                        <RiCloseLine size={13} />
-                                    </button>
+                                    <p className="np-text">{item.body}</p>
                                 </div>
-                                <p className="np-text">{notif.body}</p>
-                            </div>
-                        ))}
-                    </>
+                            );
+                        }
+
+                        if (item.kind === 'new_application') {
+                            return (
+                                <div
+                                    key={item.id}
+                                    className="np-item np-item--application"
+                                    onClick={() => handleApplicationClick(item)}
+                                    style={{ cursor: 'pointer' }}
+                                >
+                                    <div className="np-item-top">
+                                        <div className="np-avatar np-avatar--application">A</div>
+                                        <div className="np-item-info">
+                                            <span className="np-from">{item.applicant_name}</span>
+                                            <span className="np-time">{timeAgo(item.created_at)}</span>
+                                        </div>
+                                    </div>
+                                    <p className="np-text">
+                                        Applied for <strong>{item.order_title}</strong>
+                                    </p>
+                                </div>
+                            );
+                        }
+
+                        if (item.kind === 'application_accepted') {
+                            return (
+                                <div
+                                    key={item.id}
+                                    className="np-item np-item--accepted"
+                                    onClick={() => { removeNotification(item.id); navigate(`/projects/${item.project_id}`); }}
+                                    style={{ cursor: 'pointer' }}
+                                >
+                                    <div className="np-item-top">
+                                        <div className="np-avatar np-avatar--accepted">✓</div>
+                                        <div className="np-item-info">
+                                            <span className="np-from">Application Accepted</span>
+                                            <span className="np-time">{timeAgo(item.created_at)}</span>
+                                        </div>
+                                    </div>
+                                    <p className="np-text">
+                                        Your application for <strong>{item.order_title}</strong> was accepted. Project created!
+                                    </p>
+                                </div>
+                            );
+                        }
+
+                        if (item.kind === 'application_rejected') {
+                            return (
+                                <div key={item.id} className="np-item np-item--rejected">
+                                    <div className="np-item-top">
+                                        <div className="np-avatar np-avatar--rejected">✕</div>
+                                        <div className="np-item-info">
+                                            <span className="np-from">Application Declined</span>
+                                            <span className="np-time">{timeAgo(item.created_at)}</span>
+                                        </div>
+                                        <button
+                                            className="np-dismiss-btn"
+                                            onClick={(e) => { e.stopPropagation(); removeNotification(item.id); }}
+                                        >
+                                            <RiCloseLine size={13} />
+                                        </button>
+                                    </div>
+                                    <p className="np-text">
+                                        Your application for <strong>{item.order_title}</strong> was declined.
+                                    </p>
+                                </div>
+                            );
+                        }
+
+                        if (item.kind === 'order_abandoned') {
+                            return (
+                                <div
+                                    key={item.id}
+                                    className="np-item np-item--abandoned"
+                                    onClick={() => { removeNotification(item.id); navigate(`/marketplace/${item.order_slug}`); }}
+                                    style={{ cursor: 'pointer' }}
+                                >
+                                    <div className="np-item-top">
+                                        <div className="np-avatar np-avatar--abandoned">!</div>
+                                        <div className="np-item-info">
+                                            <span className="np-from">Order Abandoned</span>
+                                            <span className="np-time">{timeAgo(item.created_at)}</span>
+                                        </div>
+                                        <button
+                                            className="np-dismiss-btn"
+                                            onClick={(e) => { e.stopPropagation(); removeNotification(item.id); }}
+                                        >
+                                            <RiCloseLine size={13} />
+                                        </button>
+                                    </div>
+                                    <p className="np-text">
+                                        <strong>{item.abandoned_by}</strong> abandoned <strong>{item.order_title}</strong>. Order is open again.
+                                    </p>
+                                </div>
+                            );
+                        }
+
+                        return null;
+                    })
                 )}
             </div>
         </div>

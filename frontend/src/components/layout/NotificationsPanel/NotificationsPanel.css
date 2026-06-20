@@ -244,6 +244,15 @@
     background: linear-gradient(135deg, #1e3a5f, #1d4ed8);
 }
 
+.np-avatar--application {
+    background: linear-gradient(135deg, #1a2e1a, #15803d);
+}
+
+.np-item--application:hover {
+    border-color: rgba(34, 197, 94, 0.15);
+    background: rgba(34, 197, 94, 0.03);
+}
+
 .np-dismiss-btn {
     background: none;
     border: none;
@@ -266,4 +275,43 @@
 .np-dismiss-btn:disabled {
     opacity: 0.4;
     cursor: not-allowed;
+}
+
+.np-avatar--accepted {
+    background: linear-gradient(135deg, #14532d, #16a34a);
+    font-size: 13px;
+}
+
+.np-avatar--rejected {
+    background: linear-gradient(135deg, #7f1d1d, #b91c1c);
+    font-size: 13px;
+}
+
+.np-item--accepted:hover {
+    border-color: rgba(34, 197, 94, 0.2);
+    background: rgba(34, 197, 94, 0.04);
+}
+
+.np-item--rejected {
+    border-color: rgba(239, 68, 68, 0.08);
+}
+
+.np-item--rejected:hover {
+    border-color: rgba(239, 68, 68, 0.18);
+    background: rgba(239, 68, 68, 0.03);
+}
+
+.np-avatar--abandoned {
+    background: linear-gradient(135deg, #78350f, #b45309);
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.np-item--abandoned {
+    border-color: rgba(245, 158, 11, 0.1);
+}
+
+.np-item--abandoned:hover {
+    border-color: rgba(245, 158, 11, 0.2);
+    background: rgba(245, 158, 11, 0.03);
 }

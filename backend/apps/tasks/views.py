@@ -1,3 +1,8 @@
+import json
+
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+from django.core.serializers.json import DjangoJSONEncoder
 from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -5,6 +10,16 @@ from rest_framework.views import APIView
 from apps.projects.models import Project, ProjectMember
 from .models import Task
 from .serializers import TaskSerializer
+
+
+def _broadcast_kanban(project_id, payload):
+    layer = get_channel_layer()
+    if layer:
+        safe_payload = json.loads(json.dumps(payload, cls=DjangoJSONEncoder))
+        async_to_sync(layer.group_send)(
+            f"kanban_{project_id}",
+            {"type": "kanban_event", "payload": safe_payload},
+        )
 
 
 def _get_project_and_member(project_pk, user):
@@ -38,7 +53,13 @@ class TaskListCreateView(APIView):
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         task = serializer.save(project=project, created_by=request.user)
-        return Response(TaskSerializer(task).data, status=status.HTTP_201_CREATED)
+        task_data = TaskSerializer(task).data
+        _broadcast_kanban(pk, {
+            "type": "task.created",
+            "task": task_data,
+            "user_id": request.user.id,
+        })
+        return Response(task_data, status=status.HTTP_201_CREATED)
 
 
 class TaskDetailView(APIView):
@@ -64,6 +85,11 @@ class TaskDetailView(APIView):
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         serializer.save()
+        _broadcast_kanban(pk, {
+            "type": "task.updated",
+            "task": serializer.data,
+            "user_id": request.user.id,
+        })
         return Response(serializer.data)
 
     def delete(self, request, pk, task_pk):
@@ -72,5 +98,11 @@ class TaskDetailView(APIView):
             return Response(status=status.HTTP_404_NOT_FOUND)
         if not member.role or not (member.role.is_owner or member.role.can_delete):
             return Response({'detail': 'Permission denied.'}, status=status.HTTP_403_FORBIDDEN)
+        task_id = str(task.id)
         task.delete()
+        _broadcast_kanban(pk, {
+            "type": "task.deleted",
+            "task_id": task_id,
+            "user_id": request.user.id,
+        })
         return Response(status=status.HTTP_204_NO_CONTENT)

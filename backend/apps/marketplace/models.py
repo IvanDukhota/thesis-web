@@ -97,12 +97,14 @@ class Order(models.Model):
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
     CANCELLED = "cancelled"
+    STOPPED = "stopped"
 
     STATUS_CHOICES = [
         (OPEN, "Open"),
         (IN_PROGRESS, "In Progress"),
         (COMPLETED, "Completed"),
         (CANCELLED, "Cancelled"),
+        (STOPPED, "Stopped"),
     ]
 
     id = models.UUIDField(
@@ -187,6 +189,8 @@ class Order(models.Model):
     def save(self, *args, **kwargs):
         if not self.slug:
             base_slug = slugify(self.title)[:200]
+            if not base_slug:
+                base_slug = str(self.id or uuid.uuid4())[:12]
 
             slug = base_slug
             counter = 1
@@ -220,6 +224,7 @@ class OrderAttachment(models.Model):
 
     file = models.FileField(
         upload_to="marketplace/orders/",
+        storage=lambda: __import__('config.storage', fromlist=['OrderAttachmentStorage']).OrderAttachmentStorage(),
     )
 
     uploaded_at = models.DateTimeField(auto_now_add=True)

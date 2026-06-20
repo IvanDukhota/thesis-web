@@ -31,7 +31,7 @@ function DeleteConfirm({ name, onConfirm, onCancel, deleting }) {
     );
 }
 
-export function ProjectSettingsModal({ project, myRole, onClose, onSave, onDelete }) {
+export function ProjectSettingsModal({ project, myRole, onClose, onSave, onDelete, isMarketplace = false }) {
     const [name, setName] = useState(project.name);
     const [desc, setDesc] = useState(project.description || '');
     const [localRoles, setLocalRoles] = useState(
@@ -77,10 +77,15 @@ export function ProjectSettingsModal({ project, myRole, onClose, onSave, onDelet
     }));
 
     const handleSave = async () => {
-        if (!name.trim()) { setNameErr(true); return; }
+        if (!isMarketplace && !name.trim()) { setNameErr(true); return; }
         setSaving(true);
         setSaveError('');
-        const result = await onSave({ name: name.trim(), description: desc.trim(), roles: localRoles, deletedIds });
+        const result = await onSave({
+            name: isMarketplace ? project.name : name.trim(),
+            description: isMarketplace ? (project.description || '') : desc.trim(),
+            roles: localRoles,
+            deletedIds,
+        });
         setSaving(false);
         if (!result?.ok) { setSaveError('Failed to save changes.'); return; }
         onClose();
@@ -104,31 +109,33 @@ export function ProjectSettingsModal({ project, myRole, onClose, onSave, onDelet
                     </div>
 
                     <div className="psm-body">
-                        <div className="psm-section">
-                            <div className="psm-field">
-                                <label className="psm-label">Project name <span className="psm-required">*</span></label>
-                                <input
-                                    className={`psm-input ${nameErr ? 'psm-input--error' : ''}`}
-                                    value={name}
-                                    onChange={e => { setName(e.target.value); setNameErr(false); }}
-                                />
-                                {nameErr && <span className="psm-error">Name is required</span>}
+                        {!isMarketplace && (
+                            <div className="psm-section">
+                                <div className="psm-field">
+                                    <label className="psm-label">Project name <span className="psm-required">*</span></label>
+                                    <input
+                                        className={`psm-input ${nameErr ? 'psm-input--error' : ''}`}
+                                        value={name}
+                                        onChange={e => { setName(e.target.value); setNameErr(false); }}
+                                    />
+                                    {nameErr && <span className="psm-error">Name is required</span>}
+                                </div>
+                                <div className="psm-field">
+                                    <label className="psm-label">Description</label>
+                                    <textarea
+                                        className="psm-textarea"
+                                        rows={3}
+                                        value={desc}
+                                        onChange={e => setDesc(e.target.value)}
+                                        placeholder="Describe the project..."
+                                    />
+                                </div>
                             </div>
-                            <div className="psm-field">
-                                <label className="psm-label">Description</label>
-                                <textarea
-                                    className="psm-textarea"
-                                    rows={3}
-                                    value={desc}
-                                    onChange={e => setDesc(e.target.value)}
-                                    placeholder="Describe the project..."
-                                />
-                            </div>
-                        </div>
+                        )}
 
                         {isTeam && (
                             <>
-                                <div className="psm-divider" />
+                                {!isMarketplace && <div className="psm-divider" />}
                                 <div className="psm-section">
                                     <div className="psm-section-head">
                                         <span className="psm-section-title">Roles & permissions</span>
@@ -185,7 +192,7 @@ export function ProjectSettingsModal({ project, myRole, onClose, onSave, onDelet
                             </>
                         )}
 
-                        {isOwner && (
+                        {isOwner && !isMarketplace && (
                             <>
                                 <div className="psm-divider" />
                                 <div className="psm-section">

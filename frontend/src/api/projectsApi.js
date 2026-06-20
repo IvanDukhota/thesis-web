@@ -83,3 +83,9 @@ export function apiDeleteProjectRole(projectId, roleId) {
         method: 'DELETE', headers: auth(),
     });
 }
+
+export function apiAbandonProject(projectId) {
+    return request(`/api/projects/${projectId}/abandon/`, {
+        method: 'POST', headers: auth(),
+    });
+}

@@ -53,6 +53,7 @@ services:
       - AWS_S3_CUSTOM_DOMAIN=localhost:9000/teamhub-media
       - AWS_S3_USE_SSL=false
       - TRANSLATION_SERVICE_URL=http://translation-service:8001
+      - EMBEDDING_SERVICE_URL=http://embedding-service:8002
       - SECRET_KEY=${SECRET_KEY:-django-insecure-change-this-in-production}
       - ALLOWED_HOSTS=localhost,127.0.0.1,backend
       - CORS_ALLOW_ALL_ORIGINS=true
@@ -66,9 +67,9 @@ services:
     command: >
       sh -c "python manage.py migrate &&
              python manage.py collectstatic --noinput &&
-             daphne -b 0.0.0.0 -p 8000 config.asgi:application"
+             uvicorn config.asgi:application --reload --host 0.0.0.0 --port 8000"
 
-  # Celery Worker (обработка переводов)
+  # Celery Worker (обработка переводов и эмбеддингов)
   celery:
     build: ./backend
     container_name: teamhub-celery
@@ -81,6 +82,7 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - TRANSLATION_SERVICE_URL=http://translation-service:8001
+      - EMBEDDING_SERVICE_URL=http://embedding-service:8002
       - USE_S3=true
       - AWS_S3_ENDPOINT_URL=http://minio:9000
       - AWS_ACCESS_KEY_ID=minioadmin
@@ -90,7 +92,22 @@ services:
     depends_on:
       - db
       - redis
-    command: celery -A config worker -l info -Q translation_high,translation_medium,translation_low
+    command: celery -A config worker -l info -Q translation_high,translation_medium,translation_low,celery
+
+  # Embedding Service (FastAPI + multilingual-e5-base)
+  embedding-service:
+    build: ./embedding-service
+    container_name: teamhub-embedding
+    ports:
+      - "8002:8002"
+    environment:
+      - PYTHONUNBUFFERED=1
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
 
   # Translation Service (FastAPI + NLLB-200)
   translation-service:

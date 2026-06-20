@@ -3,12 +3,14 @@ from .views import (
     ProjectListCreateView, ProjectDetailView,
     ProjectMemberListView, ProjectMemberDetailView,
     ProjectRoleListView, ProjectRoleDetailView,
+    ProjectAbandonView,
 )
 from apps.tasks.views import TaskListCreateView, TaskDetailView
 
 urlpatterns = [
     path('', ProjectListCreateView.as_view(), name='project-list-create'),
     path('<uuid:pk>/', ProjectDetailView.as_view(), name='project-detail'),
+    path('<uuid:pk>/abandon/', ProjectAbandonView.as_view(), name='project-abandon'),
     path('<uuid:pk>/members/', ProjectMemberListView.as_view(), name='project-members'),
     path('<uuid:pk>/members/<uuid:member_pk>/', ProjectMemberDetailView.as_view(), name='project-member-detail'),
     path('<uuid:pk>/roles/', ProjectRoleListView.as_view(), name='project-roles'),

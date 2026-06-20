@@ -1,7 +1,9 @@
-import { useState, useRef, useImperativeHandle, forwardRef, useEffect } from 'react';
+import { useState, useRef, useImperativeHandle, forwardRef, useEffect, useCallback } from 'react';
 import { TaskCard } from '../TaskCard/TaskCard';
 import { EditTaskModal } from '../EditTaskModal/EditTaskModal';
 import { apiGetTasks, apiUpdateTask, apiDeleteTask } from '../../../../api/tasksApi';
+import { useAuth } from '../../../../context/AuthContext';
+import { useKanbanSocket } from './useKanbanSocket';
 import './KanbanBoard.css';
 
 const COLUMNS = ['To Do', 'In Progress', 'Testing', 'Finished'];
@@ -17,6 +19,7 @@ function groupByColumn(tasks) {
 }
 
 export const KanbanBoard = forwardRef(function KanbanBoard({ projectId, projectType, canEdit = true, canDelete = false, members = [] }, ref) {
+    const { user } = useAuth();
     const [tasks, setTasks] = useState(emptyBoard());
     const [loading, setLoading] = useState(true);
     const [dragId, setDragId] = useState(null);
@@ -33,6 +36,42 @@ export const KanbanBoard = forwardRef(function KanbanBoard({ projectId, projectT
         });
     }, [projectId]);
 
+    const handleKanbanEvent = useCallback((event) => {
+        if (event.user_id === user?.id) return;
+
+        if (event.type === 'task.created') {
+            const task = event.task;
+            const col = COLUMNS.includes(task.column) ? task.column : 'To Do';
+            setTasks(prev => {
+                if (prev[col].some(t => t.id === task.id)) return prev;
+                return { ...prev, [col]: [...prev[col], task] };
+            });
+        } else if (event.type === 'task.updated') {
+            const task = event.task;
+            const newCol = COLUMNS.includes(task.column) ? task.column : 'To Do';
+            setTasks(prev => {
+                const srcCol = Object.keys(prev).find(c => prev[c].some(t => t.id === task.id));
+                if (!srcCol) return prev;
+                if (srcCol === newCol) {
+                    return { ...prev, [srcCol]: prev[srcCol].map(t => t.id === task.id ? { ...t, ...task } : t) };
+                }
+                return {
+                    ...prev,
+                    [srcCol]: prev[srcCol].filter(t => t.id !== task.id),
+                    [newCol]: [...prev[newCol], { ...task, column: newCol }],
+                };
+            });
+        } else if (event.type === 'task.deleted') {
+            setTasks(prev => {
+                const col = Object.keys(prev).find(c => prev[c].some(t => t.id === event.task_id));
+                if (!col) return prev;
+                return { ...prev, [col]: prev[col].filter(t => t.id !== event.task_id) };
+            });
+        }
+    }, [user?.id]);
+
+    useKanbanSocket(projectId, handleKanbanEvent);
+
     useImperativeHandle(ref, () => ({
         addTask: (task) => {
             setTasks(prev => {
@@ -41,6 +80,8 @@ export const KanbanBoard = forwardRef(function KanbanBoard({ projectId, projectT
             });
         },
     }));
+
+    if (loading) return null;
 
     const handleEditSave = (updatedTask, newCol) => {
         setTasks(prev => {
@@ -94,25 +135,6 @@ export const KanbanBoard = forwardRef(function KanbanBoard({ projectId, projectT
         setDragOver(null);
         dragColRef.current = null;
     };
-
-    if (loading) {
-        return (
-            <div className="kb-board kb-board--loading">
-                {COLUMNS.map(col => (
-                    <div key={col} className="kb-column">
-                        <div className="kb-col-header">
-                            <span className="kb-col-title">{col}</span>
-                            <span className="kb-col-count">–</span>
-                        </div>
-                        <div className="kb-col-body kb-col-body--loading">
-                            <div className="kb-skeleton" />
-                            <div className="kb-skeleton kb-skeleton--short" />
-                        </div>
-                    </div>
-                ))}
-            </div>
-        );
-    }
 
     return (
         <>

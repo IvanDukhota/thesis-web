@@ -1,78 +1,55 @@
 from celery import shared_task
 from django.core.exceptions import ObjectDoesNotExist
+import logging
+import requests
+
+logger = logging.getLogger(__name__)
 
 
 @shared_task
 def calculate_order_embedding(order_id):
-    """
-    Асинхронная задача для расчета вектора признаков заказа.
-
-    TODO: Реализовать:
-    1. Получить данные заказа (title, description, tags, category)
-    2. Объединить текстовые данные
-    3. Использовать модель эмбеддингов (например, sentence-transformers)
-    4. Сохранить вектор в векторную БД (PostgreSQL с pgvector)
-    5. Обновить поле vector_embedding в модели Order
-
-    Args:
-        order_id (str): UUID заказа
-
-    Returns:
-        dict: Результат выполнения задачи
-    """
     try:
         from .models import Order
+        from django.conf import settings
 
         order = Order.objects.get(id=order_id)
 
-        # TODO: Здесь будет логика расчета эмбеддингов
-        # Пример:
-        # text = f"{order.title} {order.description} {' '.join([tag.name for tag in order.tags.all()])}"
-        # embedding = calculate_embedding(text)
-        # save_to_vector_db(order_id, embedding)
-        # order.vector_embedding = embedding
-        # order.save(update_fields=['vector_embedding'])
+        tags_text = ' '.join([tag.name for tag in order.tags.all()])
+        category_text = order.category.name if order.category else ''
 
+        text_parts = [
+            f"Title: {order.title}",
+            f"Description: {order.description}",
+        ]
+        if tags_text:
+            text_parts.append(f"Skills: {tags_text}")
+        if category_text:
+            text_parts.append(f"Category: {category_text}")
+
+        combined_text = "passage: " + ". ".join(text_parts)
+
+        embedding_url = getattr(settings, 'EMBEDDING_SERVICE_URL', 'http://localhost:8002')
+        resp = requests.post(
+            f"{embedding_url}/embed",
+            json={"text": combined_text},
+            timeout=60,
+        )
+        resp.raise_for_status()
+
+        embedding = resp.json()['embedding']
+        order.embedding = embedding
+        order.save(update_fields=['embedding'])
+
+        logger.info(f"Successfully calculated embedding for order {order_id}")
         return {
             'status': 'success',
             'order_id': str(order_id),
-            'message': 'Embedding calculation placeholder - to be implemented'
+            'embedding_dim': len(embedding),
         }
 
     except ObjectDoesNotExist:
-        return {
-            'status': 'error',
-            'order_id': str(order_id),
-            'message': 'Order not found'
-        }
+        logger.error(f"Order {order_id} not found")
+        return {'status': 'error', 'order_id': str(order_id), 'message': 'Order not found'}
     except Exception as e:
-        return {
-            'status': 'error',
-            'order_id': str(order_id),
-            'message': str(e)
-        }
-
-
-@shared_task
-def search_similar_orders(query_text, limit=10):
-    """
-    Асинхронная задача для поиска похожих заказов по векторному сходству.
-
-    TODO: Реализовать:
-    1. Преобразовать query_text в вектор
-    2. Выполнить поиск по векторной БД (cosine similarity)
-    3. Вернуть список похожих заказов
-
-    Args:
-        query_text (str): Текст запроса
-        limit (int): Максимальное количество результатов
-
-    Returns:
-        list: Список ID похожих заказов
-    """
-    # TODO: Реализовать векторный поиск
-    return {
-        'status': 'success',
-        'message': 'Vector search placeholder - to be implemented',
-        'results': []
-    }
+        logger.exception(f"Error calculating embedding for order {order_id}")
+        return {'status': 'error', 'order_id': str(order_id), 'message': str(e)}

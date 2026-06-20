@@ -21,6 +21,7 @@
     transition: border-color 0.22s, background 0.22s, transform 0.22s;
     opacity: 0;
     animation: pcCardFadeUp 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    min-width: 0;
 }
 
 .pc-card:nth-child(1) { animation-delay: 0.05s; }
@@ -51,6 +52,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    min-width: 0;
 }
 
 .pc-status {

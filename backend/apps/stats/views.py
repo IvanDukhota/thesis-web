@@ -62,3 +62,72 @@ class TeamStatsView(APIView):
             },
             'members': member_stats,
         })
+
+
+class ApplicantStatsView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, user_id):
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        try:
+            user = User.objects.get(pk=user_id)
+        except User.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        project_ids = ProjectMember.objects.filter(user=user).values_list('project_id', flat=True)
+        tasks = Task.objects.filter(assignee=user.username, project_id__in=project_ids)
+        projects = Project.objects.filter(id__in=project_ids).order_by('-created_at')
+
+        return Response({
+            'projects_count': projects.count(),
+            'recent_projects': [
+                {'id': str(p.id), 'name': p.name, 'type': p.type}
+                for p in projects[:4]
+            ],
+            'tasks': {
+                'total': tasks.count(),
+                'finished': tasks.filter(column='Finished').count(),
+                'in_progress': tasks.filter(column='In Progress').count(),
+            },
+        })
+
+
+class PublicTeamStatsView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, team_id):
+        from apps.teams.models import Team
+        try:
+            team = Team.objects.get(pk=team_id)
+        except Team.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        members_qs = TeamMember.objects.filter(team_id=team_id).select_related('user')
+        tasks = Task.objects.filter(project__team_id=team_id)
+        projects = Project.objects.filter(team_id=team_id).order_by('-created_at')
+
+        member_list = []
+        for m in members_qs:
+            member_list.append({
+                'username': m.user.username,
+                'tasks_completed': tasks.filter(assignee=m.user.username, column='Finished').count(),
+            })
+        member_list.sort(key=lambda x: x['tasks_completed'], reverse=True)
+
+        return Response({
+            'team_name': team.name,
+            'team_description': team.description,
+            'members_count': members_qs.count(),
+            'projects_count': projects.count(),
+            'recent_projects': [
+                {'id': str(p.id), 'name': p.name}
+                for p in projects[:4]
+            ],
+            'tasks': {
+                'total': tasks.count(),
+                'finished': tasks.filter(column='Finished').count(),
+                'in_progress': tasks.filter(column='In Progress').count(),
+            },
+            'members': member_list[:6],
+        })

@@ -1,12 +1,13 @@
 import './SingleProjectPage.css';
 import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { RiSettings3Line, RiAddLine, RiTeamLine, RiArrowRightSLine } from 'react-icons/ri';
+import { RiSettings3Line, RiAddLine, RiTeamLine, RiArrowRightSLine, RiInformationLine } from 'react-icons/ri';
 import Header from '../../components/layout/Header/Header';
 import { KanbanBoard } from '../../components/features/projects/KanbanBoard/KanbanBoard';
 import { MembersPanel } from '../../components/features/projects/MembersPanel/MembersPanel';
 import { ProjectSettingsModal } from '../../components/features/projects/ProjectSettingsModal/ProjectSettingsModal';
 import { CreateTaskModal } from '../../components/features/projects/CreateTaskModal/CreateTaskModal';
+import { OrderInfoModal } from '../../components/features/projects/OrderInfoModal/OrderInfoModal';
 import {
     apiGetProject, apiUpdateProject, apiDeleteProject,
     apiCreateProjectRole, apiUpdateProjectRole, apiDeleteProjectRole,
@@ -33,6 +34,7 @@ export default function SingleProjectPage() {
     const [showSettings, setShowSettings] = useState(false);
     const [showCreateTask, setShowCreateTask] = useState(false);
     const [showMembers, setShowMembers] = useState(false);
+    const [showOrderInfo, setShowOrderInfo] = useState(false);
     const [projectMembers, setProjectMembers] = useState([]);
     const kanbanRef = useRef(null);
 
@@ -88,6 +90,8 @@ export default function SingleProjectPage() {
     const canEdit = myRole?.is_owner || myRole?.can_edit;
     const canCreate = myRole?.is_owner || myRole?.can_create;
     const canDelete = myRole?.is_owner || myRole?.can_delete;
+    const isMarketplaceProject = !!project?.order_info;
+    const showGear = canEdit && !(isMarketplaceProject && project?.type === 'solo');
 
     if (loading) return <div className="spp-root"><Header /></div>;
     if (!project) return (
@@ -119,12 +123,23 @@ export default function SingleProjectPage() {
                     <div className="spp-topbar-left">
                         <div className="spp-project-info">
                             <span className="spp-project-name">{project.name}</span>
-                            {canEdit && (
+                            {showGear && (
                                 <button className="spp-settings-btn" onClick={() => setShowSettings(true)}>
                                     <RiSettings3Line size={15} />
                                 </button>
                             )}
+                            {project.order_info && (
+                                <button className="spp-order-info-btn" onClick={() => setShowOrderInfo(true)} title="Order details">
+                                    <RiInformationLine size={15} />
+                                </button>
+                            )}
                         </div>
+                        {project.order_info?.deadline && (
+                            <div className="spp-deadline-block">
+                                <span className="spp-deadline-label">Deadline</span>
+                                <span className="spp-deadline-value">{project.order_info.deadline}</span>
+                            </div>
+                        )}
                     </div>
                     <div className="spp-topbar-right">
                         {canCreate && (
@@ -155,13 +170,14 @@ export default function SingleProjectPage() {
                 </div>
             </div>
 
-            {showSettings && canEdit && (
+            {showSettings && showGear && (
                 <ProjectSettingsModal
                     project={project}
                     myRole={myRole}
                     onClose={() => setShowSettings(false)}
                     onSave={handleSaveSettings}
                     onDelete={handleDeleteProject}
+                    isMarketplace={isMarketplaceProject}
                 />
             )}
 
@@ -182,6 +198,15 @@ export default function SingleProjectPage() {
                     projectId={project.id}
                     projectType={project.type}
                     members={projectMembers}
+                />
+            )}
+
+            {showOrderInfo && project.order_info && (
+                <OrderInfoModal
+                    orderInfo={project.order_info}
+                    projectId={project.id}
+                    onClose={() => setShowOrderInfo(false)}
+                    onAbandon={() => navigate('/projects')}
                 />
             )}
         </div>

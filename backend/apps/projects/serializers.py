@@ -35,13 +35,14 @@ class ProjectSerializer(serializers.ModelSerializer):
     roles = ProjectRoleSerializer(many=True, read_only=True)
     task_count = serializers.SerializerMethodField()
     done_count = serializers.SerializerMethodField()
+    order_info = serializers.SerializerMethodField()
 
     class Meta:
         model = Project
         fields = [
             'id', 'name', 'description', 'type', 'status',
             'team', 'created_by', 'created_at', 'updated_at',
-            'project_members', 'roles', 'task_count', 'done_count',
+            'project_members', 'roles', 'task_count', 'done_count', 'order_info',
         ]
         read_only_fields = ['id', 'created_by', 'created_at', 'updated_at']
 
@@ -50,6 +51,35 @@ class ProjectSerializer(serializers.ModelSerializer):
 
     def get_done_count(self, obj):
         return obj.tasks.filter(column='Finished').count()
+
+    def get_order_info(self, obj):
+        from datetime import timedelta
+        order = obj.order
+        if not order:
+            return None
+        deadline = None
+        if obj.created_at and order.estimated_days:
+            deadline = (obj.created_at + timedelta(days=order.estimated_days)).date().isoformat()
+        attachments = []
+        for att in order.attachments.all():
+            try:
+                url = att.file.url
+            except Exception:
+                url = None
+            name = att.file.name.split('/')[-1] if att.file.name else ''
+            ext = name.rsplit('.', 1)[-1].lower() if '.' in name else ''
+            file_type = 'image' if ext in ('jpg', 'jpeg', 'png', 'gif', 'webp', 'svg') else 'file'
+            attachments.append({'url': url, 'filename': name, 'file_type': file_type})
+        return {
+            'title': order.title,
+            'description': order.description,
+            'price': str(order.price),
+            'estimated_days': order.estimated_days,
+            'deadline': deadline,
+            'category': order.category.name if order.category else None,
+            'tags': [t.name for t in order.tags.all()],
+            'attachments': attachments,
+        }
 
 
 class ProjectCreateSerializer(serializers.ModelSerializer):

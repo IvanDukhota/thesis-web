@@ -254,7 +254,21 @@ export default function TeamsPage() {
     const canEditTeam = currentMember?.is_admin || currentRole?.can_edit_team || false;
     const canCreateProjects = currentMember?.is_admin || currentRole?.can_create_projects || false;
 
-    if (teamLoading) return <div className="teamspage"><Header ref={headerRef} /></div>;
+    if (teamLoading) return (
+        <div className="teamspage">
+            <Header ref={headerRef} />
+            <div className="teamspage-board-wrap">
+                <div className="teamspage-board-topbar">
+                    <div className="tp-skel-title" />
+                </div>
+                <div className="teamspage-board">
+                    <div className="teamspage-col"><div className="tp-skel-panel" /></div>
+                    <div className="teamspage-col"><div className="tp-skel-panel" /></div>
+                    <div className="teamspage-col teamspage-col--lg"><div className="tp-skel-panel" /></div>
+                </div>
+            </div>
+        </div>
+    );
 
     return (
         <div className="teamspage">

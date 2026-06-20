@@ -1,21 +1,41 @@
-import { useEffect, useState } from "react";
-import { getOrders, getTags, type OrderListItem, type Tag, type OrderFilters } from "../../api/marketplace";
+import { useEffect, useState, useRef } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { RiImageLine, RiVideoLine, RiFileLine, RiAddLine, RiArrowRightSLine } from "react-icons/ri";
+import { getOrders, getMyOrders, getReceivedApplications, getSentApplications, getTags, aiSearch, type OrderListItem, type Tag, type OrderFilters, type OrderApplication } from "../../api/marketplace";
 import Header from "../../components/layout/Header/Header";
-import TagSelectionModal from "./TagSelectionModal";
-import FiltersDrawer from "./FiltersDrawer";
-import CreateProjectModal from "./CreateProjectModal";
+import TagSelectionModal from "../../components/features/marketplace/TagSelectionModal/TagSelectionModal";
+import FiltersDrawer from "../../components/features/marketplace/FiltersDrawer/FiltersDrawer";
+import CreateProjectModal from "../../components/features/marketplace/CreateJobModal/CreateJobModal";
+import ApplicationCard from "../../components/features/marketplace/ApplicationCard/ApplicationCard";
 import "./marketplace.css";
 
 const PAGE_SIZE = 20;
 
+type TabType = "all" | "my-orders" | "applications";
+
 export default function MarketplacePage() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [activeTab, setActiveTab] = useState<TabType>(
+    (location.state as { tab?: TabType } | null)?.tab ?? "all"
+  );
+
+  useEffect(() => {
+    const tab = (location.state as { tab?: TabType } | null)?.tab;
+    if (tab) setActiveTab(tab);
+  }, [location.state]);
   const [orders, setOrders] = useState<OrderListItem[]>([]);
+  const [receivedApplications, setReceivedApplications] = useState<OrderApplication[]>([]);
+  const [sentApplications, setSentApplications] = useState<OrderApplication[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [isAiSearch, setIsAiSearch] = useState(false);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
 
+  const [recoError, setRecoError] = useState<'NO_USER_HISTORY' | 'NO_RECOMMENDATIONS_MATCH' | null>(null);
   const [isTagModalOpen, setIsTagModalOpen] = useState(false);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -32,11 +52,7 @@ export default function MarketplacePage() {
   useEffect(() => {
     const loadInitialData = async () => {
       try {
-        const [ordersData, tagsData] = await Promise.all([
-          getOrders(),
-          getTags(100),
-        ]);
-        setOrders(ordersData);
+        const tagsData = await getTags(100);
         setTags(tagsData);
       } finally {
         setLoading(false);
@@ -46,21 +62,62 @@ export default function MarketplacePage() {
   }, []);
 
   useEffect(() => {
-    const loadOrders = async () => {
+    const timer = setTimeout(() => setDebouncedQuery(searchQuery.trim()), 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    const loadData = async () => {
       setLoading(true);
+      setRecoError(null);
       try {
-        const ordersData = await getOrders({
-          ...filters,
-          search: searchQuery,
-          tags: selectedTags.map((tag) => tag.slug),
-        });
-        setOrders(ordersData);
+        if (activeTab === "all") {
+          if (debouncedQuery) {
+            const results = await aiSearch(debouncedQuery, {
+              category: filters.category,
+              tags: selectedTags.map((tag) => tag.slug),
+              min_price: filters.min_price,
+              max_price: filters.max_price,
+            });
+            setOrders(results);
+            setIsAiSearch(true);
+          } else {
+            const ordersData = await getOrders({
+              ...filters,
+              tags: selectedTags.map((tag) => tag.slug),
+            });
+            setOrders(ordersData);
+            setIsAiSearch(false);
+          }
+        } else if (activeTab === "my-orders") {
+          const myOrdersData = await getMyOrders();
+          setOrders(myOrdersData);
+        } else if (activeTab === "applications") {
+          const [received, sent] = await Promise.all([
+            getReceivedApplications(),
+            getSentApplications(),
+          ]);
+          setReceivedApplications(received);
+          setSentApplications(sent);
+        }
+      } catch (e) {
+        if (e instanceof Error) {
+          try {
+            const parsed = JSON.parse(e.message);
+            if (parsed.error === 'NO_USER_HISTORY' || parsed.error === 'NO_RECOMMENDATIONS_MATCH') {
+              setRecoError(parsed.error);
+              setOrders([]);
+            }
+          } catch {
+            // non-reco error, ignore
+          }
+        }
       } finally {
         setLoading(false);
       }
     };
-    void loadOrders();
-  }, [filters, searchQuery, selectedTags]);
+    void loadData();
+  }, [activeTab, filters, debouncedQuery, selectedTags]);
 
   const handleRemoveTag = (tagToRemove: Tag) => {
     setSelectedTags((prev) => prev.filter((tag) => tag.id !== tagToRemove.id));
@@ -198,12 +255,16 @@ export default function MarketplacePage() {
             price: newOrder.price,
             estimated_days: newOrder.estimated_days,
             status: newOrder.status,
-            applications_count: newOrder.applications_count,
-            views_count: newOrder.views_count,
+            applications_count: newOrder.applications_count || 0,
+            views_count: newOrder.views_count || 0,
             buyer: newOrder.buyer,
-            category_name: newOrder.category.name,
-            tags: newOrder.tags,
+            category_name: newOrder.category?.name || '',
+            tags: newOrder.tags || [],
+            images_count: 0,
+            videos_count: 0,
+            files_count: 0,
             created_at: newOrder.created_at,
+            similarity_percentage: null,
           };
           setOrders((prev) => [listItem, ...prev]);
           setIsCreateModalOpen(false);
@@ -211,20 +272,43 @@ export default function MarketplacePage() {
       />
 
       <div className="marketplace-container">
+        <div className="marketplace-tabs">
+          <button
+            className={activeTab === "all" ? "marketplace-tab marketplace-tab--active" : "marketplace-tab"}
+            onClick={() => setActiveTab("all")}
+          >
+            All Orders
+          </button>
+          <button
+            className={activeTab === "my-orders" ? "marketplace-tab marketplace-tab--active" : "marketplace-tab"}
+            onClick={() => setActiveTab("my-orders")}
+          >
+            My Orders
+          </button>
+          <button
+            className={activeTab === "applications" ? "marketplace-tab marketplace-tab--active" : "marketplace-tab"}
+            onClick={() => setActiveTab("applications")}
+          >
+            Applications
+          </button>
+        </div>
         <div className="marketplace-header">
           <div className="marketplace-search-row">
-            <input
-              type="text"
-              className="marketplace-search"
-              placeholder="Search jobs, technologies, skills…"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+            <div className="marketplace-search-wrap">
+              <input
+                type="text"
+                className="marketplace-search"
+                placeholder="Search jobs, technologies, skills…"
+                value={searchQuery}
+                onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+              />
+              {isAiSearch && <span className="marketplace-ai-badge">AI</span>}
+            </div>
             <button
               className="marketplace-create-button"
               onClick={() => setIsCreateModalOpen(true)}
             >
-              + Post Job
+              <RiAddLine size={15} /> Post Job
             </button>
           </div>
 
@@ -244,18 +328,15 @@ export default function MarketplacePage() {
             <button
               className="marketplace-tag marketplace-tag--add"
               onClick={() => setIsTagModalOpen(true)}
-              title="Add skill filter"
+              title="Filter by skill"
             >
-              +
+              + Skills
             </button>
-          </div>
-
-          <div className="marketplace-filters-row">
             <button
               className="marketplace-filters-button"
               onClick={() => setIsFiltersOpen(true)}
             >
-              Filters
+              Filters <RiArrowRightSLine size={14} />
             </button>
           </div>
         </div>
@@ -265,7 +346,61 @@ export default function MarketplacePage() {
             <div className="marketplace-loading">Loading…</div>
           ) : (
             <>
-              {paginatedOrders.length === 0 ? (
+              {activeTab === "applications" ? (
+                <div className="marketplace-applications">
+                  <div className="marketplace-applications-section">
+                    <h2 className="marketplace-applications-title">Received Applications</h2>
+                    {receivedApplications.length === 0 ? (
+                      <div className="marketplace-empty">No applications received yet.</div>
+                    ) : (
+                      <div className="marketplace-applications-list">
+                        {receivedApplications.map((app) => (
+                          <ApplicationCard
+                            key={app.id}
+                            app={app}
+                            variant="received"
+                            onApprove={() => setReceivedApplications((prev) =>
+                              prev.map((a) => a.id === app.id ? { ...a, status: "accepted" } : a)
+                            )}
+                            onDiscard={() => setReceivedApplications((prev) =>
+                              prev.map((a) => a.id === app.id ? { ...a, status: "rejected" } : a)
+                            )}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="marketplace-applications-section">
+                    <h2 className="marketplace-applications-title">Sent Applications</h2>
+                    {sentApplications.length === 0 ? (
+                      <div className="marketplace-empty">No applications sent yet.</div>
+                    ) : (
+                      <div className="marketplace-applications-list">
+                        {sentApplications.map((app) => (
+                          <ApplicationCard key={app.id} app={app} variant="sent" />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : recoError === 'NO_USER_HISTORY' ? (
+                <div className="marketplace-reco-notice">
+                  <div className="marketplace-reco-notice__icon">&#9733;</div>
+                  <div className="marketplace-reco-notice__title">No recommendation history</div>
+                  <div className="marketplace-reco-notice__text">
+                    Apply to orders and get them accepted to unlock personalized recommendations.
+                  </div>
+                </div>
+              ) : recoError === 'NO_RECOMMENDATIONS_MATCH' ? (
+                <div className="marketplace-reco-notice">
+                  <div className="marketplace-reco-notice__icon">&#9733;</div>
+                  <div className="marketplace-reco-notice__title">No matches found</div>
+                  <div className="marketplace-reco-notice__text">
+                    No open orders match your profile closely enough. Check back later or explore all orders.
+                  </div>
+                </div>
+              ) : paginatedOrders.length === 0 ? (
                 <div className="marketplace-empty">
                   No jobs found. Try adjusting your filters or post a new job.
                 </div>
@@ -273,15 +408,26 @@ export default function MarketplacePage() {
                 <>
                   <div className="marketplace-orders">
                     {paginatedOrders.map((order) => (
-                      <div key={order.id} className="mp-card">
+                      <div
+                        key={order.id}
+                        className="mp-card"
+                        onClick={() => navigate(`/marketplace/${order.slug}`)}
+                      >
                         <div className="mp-card__head">
                           <h3 className="mp-card__title">{order.title}</h3>
-                          <span className="mp-card__date">
-                            {formatDate(order.created_at)}
-                          </span>
+                          <div className="mp-card__head-right">
+                            {filters.sort === 'recommendations' && order.similarity_percentage != null && (
+                              <span className="mp-card__match-badge">
+                                {order.similarity_percentage}% match
+                              </span>
+                            )}
+                            <span className="mp-card__date">
+                              {formatDate(order.created_at)}
+                            </span>
+                          </div>
                         </div>
 
-                        {order.tags.length > 0 && (
+                        {order.tags && order.tags.length > 0 && (
                           <div className="mp-card__tags">
                             {order.tags.slice(0, 5).map((tag) => (
                               <span key={tag.id} className="mp-card__tag">
@@ -305,26 +451,46 @@ export default function MarketplacePage() {
                             <span className="mp-card__stat-label">Delivery</span>
                             <span className="mp-card__stat-value">{order.estimated_days}d</span>
                           </div>
-                          <div className="mp-card__stat">
-                            <span className="mp-card__stat-label">Applied</span>
-                            <span className="mp-card__stat-value">{order.applications_count}</span>
-                          </div>
+                          {activeTab === "my-orders" ? (
+                            <div className="mp-card__stat">
+                              <span className="mp-card__stat-label">Applied</span>
+                              <span className="mp-card__stat-value">{order.applications_count}</span>
+                            </div>
+                          ) : (
+                            <div className="mp-card__stat mp-card__stat--attachments">
+                              {(order.images_count || 0) > 0 && (
+                                <span className="mp-card__attach-item">
+                                  <RiImageLine size={12} />
+                                  <span>{order.images_count}</span>
+                                </span>
+                              )}
+                              {(order.videos_count || 0) > 0 && (
+                                <span className="mp-card__attach-item">
+                                  <RiVideoLine size={12} />
+                                  <span>{order.videos_count}</span>
+                                </span>
+                              )}
+                              {(order.files_count || 0) > 0 && (
+                                <span className="mp-card__attach-item">
+                                  <RiFileLine size={12} />
+                                  <span>{order.files_count}</span>
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </div>
 
                         <div className="mp-card__buyer">
                           <div className="mp-card__buyer-avatar">
-                            {order.buyer.full_name.charAt(0).toUpperCase()}
+                            {order.buyer?.full_name?.charAt(0).toUpperCase() || '?'}
                           </div>
-                          <span className="mp-card__buyer-name">{order.buyer.full_name}</span>
+                          <span className="mp-card__buyer-name">{order.buyer?.full_name || 'Unknown'}</span>
                           <span className="mp-card__buyer-label">Client</span>
                         </div>
 
                         <div className="mp-card__actions">
                           <button className="mp-card__btn mp-card__btn--primary">
-                            Apply Now
-                          </button>
-                          <button className="mp-card__btn mp-card__btn--secondary">
-                            Contact
+                            View Details
                           </button>
                         </div>
                       </div>

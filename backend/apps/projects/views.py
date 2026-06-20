@@ -23,8 +23,9 @@ def _role_info(member):
 
 
 def _prefetch_project(pk):
-    return Project.objects.prefetch_related(
-        'project_members__user', 'project_members__role', 'roles'
+    return Project.objects.select_related('order__category').prefetch_related(
+        'project_members__user', 'project_members__role', 'roles',
+        'order__attachments', 'order__tags',
     ).get(pk=pk)
 
 
@@ -36,12 +37,14 @@ class ProjectListCreateView(APIView):
         if team_id:
             if not TeamMember.objects.filter(team_id=team_id, user=request.user).exists():
                 return Response(status=status.HTTP_403_FORBIDDEN)
-            projects = Project.objects.filter(team_id=team_id).prefetch_related(
-                'project_members__user', 'project_members__role', 'roles')
+            projects = Project.objects.filter(team_id=team_id).select_related('order__category').prefetch_related(
+                'project_members__user', 'project_members__role', 'roles',
+                'order__attachments', 'order__tags')
         else:
             pids = ProjectMember.objects.filter(user=request.user).values_list('project_id', flat=True)
-            projects = Project.objects.filter(id__in=pids).prefetch_related(
-                'project_members__user', 'project_members__role', 'roles')
+            projects = Project.objects.filter(id__in=pids).select_related('order__category').prefetch_related(
+                'project_members__user', 'project_members__role', 'roles',
+                'order__attachments', 'order__tags')
         return Response(ProjectSerializer(projects, many=True).data)
 
     @transaction.atomic
@@ -263,6 +266,76 @@ class ProjectRoleListView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         role = serializer.save(project=project)
         return Response(ProjectRoleSerializer(role).data, status=status.HTTP_201_CREATED)
+
+
+class ProjectAbandonView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        import uuid as _uuid
+        from django.utils import timezone
+        from apps.marketplace.models import Order, OrderApplication
+
+        try:
+            project = Project.objects.select_related('order__buyer').get(pk=pk)
+        except Project.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        if not ProjectMember.objects.filter(project=project, user=request.user).exists():
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+        if not project.order:
+            return Response({'error': 'Not a marketplace project'}, status=status.HTTP_400_BAD_REQUEST)
+
+        order = project.order
+        buyer = order.buyer
+        order_title = order.title
+        order_slug = order.slug
+
+        abandoned_by_name = request.user.full_name or request.user.username
+
+        with transaction.atomic():
+            OrderApplication.objects.filter(
+                order=order,
+                status=OrderApplication.ACCEPTED,
+            ).update(status=OrderApplication.WITHDRAWN)
+
+            order.status = Order.OPEN
+            order.save(update_fields=['status'])
+
+            project.delete()
+
+            Notification.objects.create(
+                user=buyer,
+                type='order_abandoned',
+                title='Order Abandoned',
+                body=f'{abandoned_by_name} abandoned "{order_title}". The order is open for new applications.',
+                project=None,
+            )
+
+        try:
+            from channels.layers import get_channel_layer
+            from asgiref.sync import async_to_sync
+
+            async_to_sync(get_channel_layer().group_send)(
+                f"user_{buyer.id}",
+                {
+                    "type": "app.event",
+                    "payload": {
+                        "type": "notification.order_abandoned",
+                        "id": str(_uuid.uuid4()),
+                        "order_title": order_title,
+                        "order_slug": order_slug,
+                        "abandoned_by": abandoned_by_name,
+                        "created_at": timezone.now().isoformat(),
+                    },
+                },
+            )
+        except Exception as _e:
+            import logging
+            logging.getLogger(__name__).error("WS notify failed for order_abandoned: %s", _e)
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class ProjectRoleDetailView(APIView):

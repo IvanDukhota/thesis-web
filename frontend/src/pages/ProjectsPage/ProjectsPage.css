@@ -3,6 +3,40 @@ html {
     scrollbar-gutter: stable;
 }
 
+@keyframes pp-skel-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+.pp-skel-title {
+    width: 160px;
+    height: 24px;
+    border-radius: 7px;
+    background: rgba(255, 255, 255, 0.07);
+    animation: pp-skel-pulse 1.6s ease-in-out infinite;
+}
+
+.pp-skel-label {
+    width: 60px;
+    height: 12px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.06);
+    animation: pp-skel-pulse 1.6s ease-in-out infinite;
+}
+
+.pp-skel-card {
+    width: 100%;
+    height: 88px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    animation: pp-skel-pulse 1.6s ease-in-out infinite;
+}
+
+.pp-skel-card--short {
+    height: 68px;
+}
+
 .projectspage {
     min-height: 100vh;
     width: 100%;
@@ -133,7 +167,7 @@ html {
 
 .pp-board {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 40px;
     min-height: 480px;
     position: relative;

@@ -34,6 +34,18 @@ if USE_S3:
             if not use_ssl and url.startswith('https://'):
                 url = url.replace('https://', 'http://', 1)
             return url
+
+    class OrderAttachmentStorage(S3Boto3Storage):
+        location = 'orders'
+        file_overwrite = False
+        default_acl = 'public-read'
+        custom_domain = custom_domain
+
+        def url(self, name, parameters=None, expire=None, http_method=None):
+            url = super().url(name, parameters, expire, http_method)
+            if not use_ssl and url.startswith('https://'):
+                url = url.replace('https://', 'http://', 1)
+            return url
 else:
     class AvatarStorage(FileSystemStorage):
         def __init__(self, *args, **kwargs):
@@ -45,4 +57,10 @@ else:
         def __init__(self, *args, **kwargs):
             kwargs['location'] = os.path.join(settings.MEDIA_ROOT, 'attachments')
             kwargs['base_url'] = 'http://localhost:8000/media/attachments/'
+            super().__init__(*args, **kwargs)
+
+    class OrderAttachmentStorage(FileSystemStorage):
+        def __init__(self, *args, **kwargs):
+            kwargs['location'] = os.path.join(settings.MEDIA_ROOT, 'orders')
+            kwargs['base_url'] = 'http://localhost:8000/media/orders/'
             super().__init__(*args, **kwargs)

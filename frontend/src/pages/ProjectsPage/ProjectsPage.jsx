@@ -112,17 +112,18 @@ export default function ProjectsPage() {
 
     useEffect(() => {
         window.scrollTo(0, 0);
-        Promise.all([apiGetMyProjects(), apiGetMyTeam()]).then(([proj, team]) => {
-            if (proj.ok) setProjects(proj.data);
-            if (team.ok) {
-                setTeamId(team.data.id);
-                const myMember = (team.data.members || []).find(m => m.username === user?.username);
-                const myRole = myMember
-                    ? (team.data.roles || []).find(r => r.name === myMember.role_name)
-                    : null;
-                setCanCreateTeamProject(myMember?.is_admin || myRole?.can_create_projects || false);
-            }
+        apiGetMyProjects().then(({ ok, data }) => {
+            if (ok) setProjects(data);
             setLoading(false);
+        });
+        apiGetMyTeam().then(({ ok, data: teamData }) => {
+            if (!ok) return;
+            setTeamId(teamData.id);
+            const myMember = (teamData.members || []).find(m => m.username === user?.username);
+            const myRole = myMember
+                ? (teamData.roles || []).find(r => r.name === myMember.role_name)
+                : null;
+            setCanCreateTeamProject(myMember?.is_admin || myRole?.can_create_projects || false);
         });
     }, [user]);
 
@@ -134,7 +135,32 @@ export default function ProjectsPage() {
     const team = projects.filter(p => p.type === 'team');
     const hasProjects = projects.length > 0;
 
-    if (loading) return <div className="projectspage"><Header /></div>;
+    if (loading) return (
+        <div className="projectspage">
+            <Header />
+            <div className="pp-board-wrap">
+                <div className="pp-board-header">
+                    <div className="pp-skel-title" />
+                </div>
+                <div className="pp-board">
+                    <div className="pp-column">
+                        <div className="pp-column-header"><div className="pp-skel-label" /></div>
+                        <div className="pp-column-list">
+                            <div className="pp-skel-card" />
+                            <div className="pp-skel-card pp-skel-card--short" />
+                        </div>
+                    </div>
+                    <div className="pp-board-divider" />
+                    <div className="pp-column">
+                        <div className="pp-column-header"><div className="pp-skel-label" /></div>
+                        <div className="pp-column-list">
+                            <div className="pp-skel-card" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
 
     return (
         <div className="projectspage">

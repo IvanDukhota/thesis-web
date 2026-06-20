@@ -10,12 +10,10 @@ import {
 import { VscLayout } from 'react-icons/vsc';
 import { NotificationsPanel } from '../NotificationsPanel/NotificationsPanel';
 import { useAuth } from '../../../context/AuthContext';
-import { useRealtime } from '../../../chat/providers/RealtimeProvider';
-import { apiGetInvitations } from '../../../api/invitationsApi';
-import { apiGetNotifications } from '../../../api/notificationsApi';
+import { useRealtime } from '../../../providers/RealtimeProvider';
 
 const NAV_LINKS = [
-    { label: "Projects", path: '/projects' },
+    { label: "Projects", path: '/projects' },   
     { label: "Teams", path: '/teams' },
     { label: "Marketplace", path: '/marketplace' },
     { label: "Chat", path: '/chat' },
@@ -26,23 +24,13 @@ const Header = forwardRef(function Header(_, ref) {
     const [open, setOpen] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
     const [showLogout, setShowLogout] = useState(false);
-    const [notifCount, setNotifCount] = useState(0);
     const { user, logout } = useAuth();
-    const { toast, clearToast } = useRealtime();
-
-    useEffect(() => {
-        if (!user) return;
-        Promise.all([apiGetInvitations(), apiGetNotifications()]).then(([invRes, notifRes]) => {
-            const invCount = invRes.ok ? invRes.data.length : 0;
-            const notifCount = notifRes.ok ? notifRes.data.length : 0;
-            setNotifCount(invCount + notifCount);
-        });
-    }, [user]);
+    const { toast, clearToast, notifications } = useRealtime();
+    const notifCount = notifications.length;
 
     useImperativeHandle(ref, () => ({
         openNotifications: () => {
             setShowNotifications(true);
-            setNotifCount(0);
         },
     }));
 
@@ -134,19 +122,13 @@ const Header = forwardRef(function Header(_, ref) {
                             <div className="notif-wrapper" ref={notifRef}>
                                 <button
                                     className={`header-bell ${showNotifications ? 'header-bell--active' : ''}`}
-                                    onClick={() => {
-                                        setShowNotifications(v => !v);
-                                        setNotifCount(0);
-                                    }}
+                                    onClick={() => setShowNotifications(v => !v)}
                                     aria-label="Notifications"
                                 >
                                     <RiBellLine size={17} />
                                     {notifCount > 0 && <span className="header-bell-badge">{notifCount}</span>}
                                 </button>
-                                <NotificationsPanel
-                                    open={showNotifications}
-                                    onCountChange={delta => setNotifCount(c => Math.max(0, c + delta))}
-                                />
+                                <NotificationsPanel open={showNotifications} />
                             </div>
 
                             <div className="profile-wrapper" ref={dropdownRef}>

@@ -52,6 +52,27 @@ class InvitationListCreateView(APIView):
 
         TeamInvitation.objects.filter(team=team, invited_user=invited_user).delete()
         invitation = TeamInvitation.objects.create(team=team, invited_user=invited_user, invited_by=request.user)
+
+        try:
+            from channels.layers import get_channel_layer
+            from asgiref.sync import async_to_sync
+            async_to_sync(get_channel_layer().group_send)(
+                f"user_{invited_user.id}",
+                {
+                    "type": "app.event",
+                    "payload": {
+                        "type": "notification.new_invitation",
+                        "id": str(invitation.id),
+                        "team": {"id": str(team.id), "name": team.name},
+                        "invited_by": {"id": request.user.id, "username": request.user.username},
+                        "created_at": invitation.created_at.isoformat(),
+                    },
+                },
+            )
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error("WS notify failed for new_invitation: %s", e)
+
         return Response(TeamInvitationSerializer(invitation).data, status=status.HTTP_201_CREATED)
 
 

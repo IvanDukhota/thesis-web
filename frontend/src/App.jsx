@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { RealtimeProvider } from './chat/providers/RealtimeProvider';
+import { RealtimeProvider } from './providers/RealtimeProvider';
 import MainPage from './pages/MainPage/MainPage';
 import ProfilePage from './pages/ProfilePage/ProfilePage';
 import AuthPage from './pages/AuthPage/AuthPage';
@@ -9,7 +9,8 @@ import TeamsPage from './pages/TeamsPage/TeamsPage';
 import ProjectsPage from './pages/ProjectsPage/ProjectsPage';
 import SingleProjectPage from './pages/SingleProjectPage/SingleProjectPage';
 import MarketplacePage from './pages/MarketplacePage';
-import ChatPage from './chat/ChatPage';
+import OrderDetailPage from './pages/MarketplacePage/OrderDetailPage';
+import ChatPage from './pages/ChatPage/ChatPage';
 import DarkVeil from './components/layout/DarkVeil/DarkVeil';
 import { darkVeilConfig } from './components/config/PagesConfig';
 
@@ -30,6 +31,7 @@ function AppRoutes() {
             <Route path="/projects" element={<ProtectedRoute><ProjectsPage /></ProtectedRoute>} />
             <Route path="/projects/:id" element={<ProtectedRoute><SingleProjectPage /></ProtectedRoute>} />
             <Route path="/marketplace" element={<ProtectedRoute><MarketplacePage /></ProtectedRoute>} />
+            <Route path="/marketplace/:slug" element={<ProtectedRoute><OrderDetailPage /></ProtectedRoute>} />
             <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
         </Routes>
     );

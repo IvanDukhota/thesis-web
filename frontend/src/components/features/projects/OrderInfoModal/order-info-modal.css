@@ -1,0 +1,327 @@
+.oim-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+}
+
+.oim-modal {
+    background: #0f0f11;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    width: 100%;
+    max-width: 560px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.85);
+}
+
+.oim-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    flex-shrink: 0;
+}
+
+.oim-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #e4e4e7;
+    letter-spacing: -0.01em;
+}
+
+.oim-close {
+    background: none;
+    border: none;
+    color: #52525b;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    padding: 3px;
+    border-radius: 5px;
+    transition: color 0.15s, background 0.15s;
+}
+
+.oim-close:hover {
+    color: #a1a1aa;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.oim-body {
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.oim-body::-webkit-scrollbar {
+    width: 4px;
+}
+
+.oim-body::-webkit-scrollbar-thumb {
+    background: #27272a;
+    border-radius: 4px;
+}
+
+.oim-order-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #f4f4f5;
+    letter-spacing: -0.02em;
+    margin: 0;
+}
+
+.oim-meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.oim-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 11px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.02);
+    color: #71717a;
+}
+
+.oim-meta-item--deadline {
+    border-color: rgba(251, 191, 36, 0.15);
+    background: rgba(251, 191, 36, 0.04);
+}
+
+.oim-meta-item--deadline .oim-meta-label,
+.oim-meta-item--deadline .oim-meta-value {
+    color: #fbbf24;
+}
+
+.oim-meta-item svg {
+    flex-shrink: 0;
+}
+
+.oim-meta-label {
+    font-size: 11.5px;
+    color: #52525b;
+}
+
+.oim-meta-value {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #d4d4d8;
+}
+
+.oim-tags-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.oim-tags-icon {
+    color: #52525b;
+    flex-shrink: 0;
+}
+
+.oim-tag {
+    font-size: 11.5px;
+    padding: 2px 9px;
+    border-radius: 5px;
+    background: rgba(139, 92, 246, 0.08);
+    border: 1px solid rgba(139, 92, 246, 0.15);
+    color: #a78bfa;
+}
+
+.oim-section-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #52525b;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    margin-bottom: -8px;
+}
+
+.oim-description {
+    font-size: 13.5px;
+    color: #71717a;
+    line-height: 1.65;
+    white-space: pre-wrap;
+    margin: 0;
+}
+
+.oim-images-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 8px;
+}
+
+.oim-image-wrap {
+    display: block;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    aspect-ratio: 1;
+    transition: border-color 0.15s;
+}
+
+.oim-image-wrap:hover {
+    border-color: rgba(139, 92, 246, 0.3);
+}
+
+.oim-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.oim-files-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.oim-file-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.02);
+    color: #a1a1aa;
+    text-decoration: none;
+    font-size: 13px;
+    transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+.oim-file-item:hover {
+    border-color: rgba(139, 92, 246, 0.2);
+    background: rgba(139, 92, 246, 0.04);
+    color: #c4b5fd;
+}
+
+.oim-file-item svg {
+    color: #52525b;
+    flex-shrink: 0;
+}
+
+.oim-file-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ── Abandon section ── */
+.oim-abandon-section {
+    margin-top: 4px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.oim-abandon-btn {
+    background: none;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    border-radius: 8px;
+    color: #f87171;
+    font-size: 13px;
+    font-family: inherit;
+    padding: 7px 16px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.oim-abandon-btn:hover {
+    background: rgba(239, 68, 68, 0.07);
+    border-color: rgba(239, 68, 68, 0.35);
+}
+
+.oim-confirm-box {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    border-radius: 10px;
+    background: rgba(239, 68, 68, 0.04);
+}
+
+.oim-confirm-header {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.oim-confirm-icon {
+    color: #f87171;
+    flex-shrink: 0;
+}
+
+.oim-confirm-title {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #fca5a5;
+}
+
+.oim-confirm-text {
+    font-size: 12.5px;
+    color: #71717a;
+    line-height: 1.55;
+    margin: 0;
+}
+
+.oim-confirm-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.oim-confirm-cancel,
+.oim-confirm-abandon {
+    height: 30px;
+    padding: 0 14px;
+    border-radius: 7px;
+    font-size: 12.5px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.oim-confirm-cancel:disabled,
+.oim-confirm-abandon:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.oim-confirm-cancel {
+    background: none;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #71717a;
+}
+
+.oim-confirm-cancel:not(:disabled):hover {
+    color: #a1a1aa;
+    border-color: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.oim-confirm-abandon {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    color: #fca5a5;
+}
+
+.oim-confirm-abandon:not(:disabled):hover {
+    background: rgba(239, 68, 68, 0.18);
+    border-color: rgba(239, 68, 68, 0.4);
+}
