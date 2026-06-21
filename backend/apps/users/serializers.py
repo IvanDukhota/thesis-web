@@ -87,12 +87,13 @@ class RegisterSerializer(serializers.ModelSerializer):
 class ProfileUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ["language", "gender", "age", "region"]
+        fields = ["language", "gender", "age", "region", "avatar"]
         extra_kwargs = {
             "language": {"required": False},
             "gender": {"required": False},
             "age": {"required": False, "allow_null": True},
             "region": {"required": False},
+            "avatar": {"required": False},
         }
 
 

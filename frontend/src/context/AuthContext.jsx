@@ -55,8 +55,8 @@ export function AuthProvider({ children }) {
         return { ok: true };
     };
 
-    const updateProfile = async (data) => {
-        const { ok, data: userData } = await apiUpdateProfile(data);
+    const updateProfile = async (data, avatarFile = null) => {
+        const { ok, data: userData } = await apiUpdateProfile(data, avatarFile);
         if (ok) setUser(userData);
         return { ok, data: userData };
     };

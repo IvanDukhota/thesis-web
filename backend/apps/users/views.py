@@ -46,8 +46,8 @@ class MeView(APIView):
     def patch(self, request):
         serializer = ProfileUpdateSerializer(request.user, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(UserSerializer(request.user).data)
+        user = serializer.save()
+        return Response(UserSerializer(user, context={'request': request}).data)
 
 
 class UserDirectoryView(APIView):

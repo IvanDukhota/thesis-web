@@ -9,7 +9,7 @@ import './ProfileLeft.css';
 import '../ProfileModal/EditProfileModal.css';
 
 const LANGUAGE_LABELS = {
-    en: 'English', uk: 'Ukrainian', ru: 'Russian',
+    en: 'English', uk: 'Ukrainian',
     de: 'German', fr: 'French', es: 'Spanish', pl: 'Polish',
 };
 

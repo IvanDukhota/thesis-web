@@ -35,8 +35,22 @@ export function apiRefresh(refresh) {
     });
 }
 
-export function apiUpdateProfile(data) {
+export async function apiUpdateProfile(data, avatarFile = null) {
     const access = localStorage.getItem('access');
+    if (avatarFile) {
+        const fd = new FormData();
+        Object.entries(data).forEach(([k, v]) => {
+            if (v != null) fd.append(k, String(v));
+        });
+        fd.append('avatar', avatarFile);
+        const res = await fetch('/api/users/me/', {
+            method: 'PATCH',
+            headers: { Authorization: `Bearer ${access}` },
+            body: fd,
+        });
+        const d = await res.json().catch(() => ({}));
+        return { ok: res.ok, data: d, status: res.status };
+    }
     return request('/api/users/me/', {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${access}` },

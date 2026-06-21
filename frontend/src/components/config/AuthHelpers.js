@@ -3,7 +3,6 @@ export const onlyLetters = (v) => v.replace(/[0-9]/g, '');
 export const LANGUAGES = [
     { value: 'en', label: 'English' },
     { value: 'uk', label: 'Ukrainian' },
-    { value: 'ru', label: 'Russian' },
     { value: 'de', label: 'German' },
     { value: 'fr', label: 'French' },
     { value: 'es', label: 'Spanish' },

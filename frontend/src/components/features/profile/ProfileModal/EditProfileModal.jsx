@@ -22,7 +22,6 @@ const REGIONS = [
 const LANGUAGES = [
     { value: 'en', label: 'English' },
     { value: 'uk', label: 'Ukrainian' },
-    { value: 'ru', label: 'Russian' },
     { value: 'de', label: 'German' },
     { value: 'fr', label: 'French' },
     { value: 'es', label: 'Spanish' },
@@ -116,6 +115,8 @@ export function EditProfileModal({ onClose }) {
         age: user?.age ? String(user.age) : '',
         region: user?.region || '',
     });
+    const [avatarFile, setAvatarFile] = useState(null);
+    const [avatarPreview, setAvatarPreview] = useState(null);
     const [showConfirm, setShowConfirm] = useState(false);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
@@ -127,7 +128,19 @@ export function EditProfileModal({ onClose }) {
         age: user?.age ? String(user.age) : '',
         region: user?.region || '',
     };
-    const isDirty = JSON.stringify(form) !== JSON.stringify(initial);
+    const isDirty = JSON.stringify(form) !== JSON.stringify(initial) || avatarFile !== null;
+
+    useEffect(() => {
+        return () => { if (avatarPreview) URL.revokeObjectURL(avatarPreview); };
+    }, [avatarPreview]);
+
+    const handleAvatarChange = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        if (avatarPreview) URL.revokeObjectURL(avatarPreview);
+        setAvatarFile(file);
+        setAvatarPreview(URL.createObjectURL(file));
+    };
 
     const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
 
@@ -144,7 +157,7 @@ export function EditProfileModal({ onClose }) {
             gender: form.gender || '',
             age: form.age ? parseInt(form.age) : null,
             region: form.region || '',
-        });
+        }, avatarFile);
         setSaving(false);
         if (ok) onClose();
         else setError('Failed to save. Please try again.');
@@ -167,14 +180,14 @@ export function EditProfileModal({ onClose }) {
                 <div className="epm-body">
                     <div className="epm-avatar-row">
                         <div className="epm-avatar-wrap">
-                            {user?.avatar
-                                ? <img src={user.avatar} alt="avatar" className="epm-avatar-img" />
+                            {(avatarPreview || user?.avatar)
+                                ? <img src={avatarPreview || user.avatar} alt="avatar" className="epm-avatar-img" />
                                 : <div className="epm-avatar-placeholder">{user?.username?.[0]?.toUpperCase() || 'U'}</div>
                             }
                             <button className="epm-avatar-upload-btn" onClick={() => fileRef.current?.click()}>
                                 <RiUpload2Line size={13} />
                             </button>
-                            <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} />
+                            <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleAvatarChange} />
                         </div>
                         <div className="epm-avatar-hint">
                             <p className="epm-avatar-hint-title">Profile photo</p>

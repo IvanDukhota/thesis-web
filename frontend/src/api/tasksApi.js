@@ -38,3 +38,37 @@ export function apiDeleteTask(projectId, taskId) {
         headers: auth(),
     });
 }
+
+export async function apiUploadTaskFile(projectId, taskId, file) {
+    const fd = new FormData();
+    fd.append('file', file);
+    const res = await fetch(`/api/projects/${projectId}/tasks/${taskId}/files/`, {
+        method: 'POST',
+        headers: auth(),
+        body: fd,
+    });
+    const data = await res.json().catch(() => ({}));
+    return { ok: res.ok, data };
+}
+
+export function apiDeleteTaskFile(projectId, taskId, fileId) {
+    return request(`/api/projects/${projectId}/tasks/${taskId}/files/${fileId}/`, {
+        method: 'DELETE',
+        headers: auth(),
+    });
+}
+
+export async function apiUpdateTaskFileContent(projectId, taskId, fileId, content, filename) {
+    const blob = new Blob([content], { type: 'text/plain' });
+    const file = new File([blob], filename, { type: 'text/plain' });
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('original_name', filename);
+    const res = await fetch(`/api/projects/${projectId}/tasks/${taskId}/files/${fileId}/`, {
+        method: 'PATCH',
+        headers: auth(),
+        body: fd,
+    });
+    const data = await res.json().catch(() => ({}));
+    return { ok: res.ok, data };
+}

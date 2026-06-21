@@ -1,4 +1,4 @@
-import { RiUser3Line, RiCalendarLine } from 'react-icons/ri';
+import { RiUser3Line, RiCalendarLine, RiAttachmentLine } from 'react-icons/ri';
 import './TaskCard.css';
 
 const formatDeadline = (dateStr) => {
@@ -30,7 +30,7 @@ export function TaskCard({ task, onDragStart, onEdit, canEdit = true }) {
                 </span>
             )}
             <p className="tc-title">{task.title}</p>
-            {task.desc && <p className="tc-desc">{task.desc}</p>}
+            {task.description && <p className="tc-desc">{task.description}</p>}
             <div className="tc-hint">{canEdit ? 'Double click to edit' : 'Double click to view'}</div>
             <div className="tc-footer">
                 {task.assignee && (
@@ -43,7 +43,14 @@ export function TaskCard({ task, onDragStart, onEdit, canEdit = true }) {
                         <RiCalendarLine size={11} /> {formatDeadline(task.deadline)}
                     </span>
                 )}
-                {task.tag && <span className="tc-tag">{task.tag}</span>}
+                <div className="tc-footer-right">
+                    {task.files?.length > 0 && (
+                        <span className="tc-attachments">
+                            <RiAttachmentLine size={11} /> {task.files.length}
+                        </span>
+                    )}
+                    {task.tag && <span className="tc-tag">{task.tag}</span>}
+                </div>
             </div>
         </div>
     );

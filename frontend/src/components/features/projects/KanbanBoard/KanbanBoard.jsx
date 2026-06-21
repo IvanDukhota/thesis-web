@@ -86,7 +86,7 @@ export const KanbanBoard = forwardRef(function KanbanBoard({ projectId, projectT
     const handleEditSave = (updatedTask, newCol) => {
         setTasks(prev => {
             const srcCol = editingTask.col;
-            const payload = { title: updatedTask.title, priority: updatedTask.priority || '', column: newCol, assignee: updatedTask.assignee || '', deadline: updatedTask.deadline || null, tag: updatedTask.tag || '' };
+            const payload = { title: updatedTask.title, description: updatedTask.description || '', priority: updatedTask.priority || '', column: newCol, assignee: updatedTask.assignee || '', deadline: updatedTask.deadline || null, tag: updatedTask.tag || '' };
             apiUpdateTask(projectId, updatedTask.id, payload);
             if (srcCol === newCol) {
                 return { ...prev, [srcCol]: prev[srcCol].map(t => t.id === updatedTask.id ? { ...t, ...updatedTask } : t) };
@@ -98,6 +98,16 @@ export const KanbanBoard = forwardRef(function KanbanBoard({ projectId, projectT
             };
         });
         setEditingTask(null);
+    };
+
+    const handleFilesChanged = (newFiles) => {
+        if (!editingTask) return;
+        const taskId = editingTask.task.id;
+        setTasks(prev => {
+            const col = Object.keys(prev).find(c => prev[c].some(t => t.id === taskId));
+            if (!col) return prev;
+            return { ...prev, [col]: prev[col].map(t => t.id === taskId ? { ...t, files: newFiles } : t) };
+        });
     };
 
     const handleDeleteTask = (taskId) => {
@@ -174,10 +184,12 @@ export const KanbanBoard = forwardRef(function KanbanBoard({ projectId, projectT
                 <EditTaskModal
                     task={editingTask.task}
                     currentCol={editingTask.col}
+                    projectId={projectId}
                     projectType={projectType}
                     onClose={() => setEditingTask(null)}
                     onSave={handleEditSave}
                     onDelete={handleDeleteTask}
+                    onFilesChanged={handleFilesChanged}
                     readOnly={!canEdit}
                     canDelete={canDelete}
                     members={members}

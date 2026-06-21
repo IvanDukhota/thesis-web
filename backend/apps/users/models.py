@@ -3,10 +3,12 @@ from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.db import models
 
+from config.storage import AvatarStorage
+
 
 def user_avatar_path(instance, filename):
-    ext = filename.split('.')[-1]
-    return f'users/user_{instance.id}/avatar.{ext}'
+    ext = filename.rsplit('.', 1)[-1].lower()
+    return f'user_{instance.id}.{ext}'
 
 
 class UserManager(BaseUserManager):
@@ -58,7 +60,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     email = models.EmailField(unique=True)
     username = models.CharField(max_length=50, unique=True)
-    avatar = models.ImageField(upload_to=user_avatar_path, blank=True, null=True)
+    avatar = models.ImageField(upload_to=user_avatar_path, storage=AvatarStorage, blank=True, null=True)
 
     language = models.CharField(max_length=10, default='en', choices=LANGUAGE_CHOICES)
     gender = models.CharField(max_length=20, blank=True, default='', choices=GENDER_CHOICES)

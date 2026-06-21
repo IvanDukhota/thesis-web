@@ -5,7 +5,7 @@ from .views import (
     ProjectRoleListView, ProjectRoleDetailView,
     ProjectAbandonView,
 )
-from apps.tasks.views import TaskListCreateView, TaskDetailView
+from apps.tasks.views import TaskListCreateView, TaskDetailView, TaskFileListView, TaskFileDetailView
 
 urlpatterns = [
     path('', ProjectListCreateView.as_view(), name='project-list-create'),
@@ -17,4 +17,6 @@ urlpatterns = [
     path('<uuid:pk>/roles/<uuid:role_pk>/', ProjectRoleDetailView.as_view(), name='project-role-detail'),
     path('<uuid:pk>/tasks/', TaskListCreateView.as_view(), name='project-tasks'),
     path('<uuid:pk>/tasks/<uuid:task_pk>/', TaskDetailView.as_view(), name='project-task-detail'),
+    path('<uuid:pk>/tasks/<uuid:task_pk>/files/', TaskFileListView.as_view(), name='task-files'),
+    path('<uuid:pk>/tasks/<uuid:task_pk>/files/<uuid:file_pk>/', TaskFileDetailView.as_view(), name='task-file-detail'),
 ]
