@@ -20,7 +20,7 @@ export default function AuthPage() {
     const navigate = useNavigate();
 
     useEffect(() => {
-        if (!loading && user) navigate('/', { replace: true });
+        if (!loading && user) navigate(user.is_staff ? '/admin' : '/', { replace: true });
     }, [user, loading, navigate]);
 
     useEffect(() => {

@@ -25,8 +25,9 @@ class UserSerializer(serializers.ModelSerializer):
             "region",
             "created_at",
             "is_contact",
+            "is_staff",
         ]
-        read_only_fields = ["id", "created_at", "full_name", "is_contact"]
+        read_only_fields = ["id", "created_at", "full_name", "is_contact", "is_staff"]
 
     def get_avatar(self, obj):
         if obj.avatar:

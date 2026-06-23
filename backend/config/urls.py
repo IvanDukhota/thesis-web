@@ -18,6 +18,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
+import django_prometheus.urls
 from apps.common.views import health_check
 from apps.messages.views import MessageCreateView, TranslationRequestView, MessageDeleteView, MessageEditView
 
@@ -37,6 +38,8 @@ urlpatterns = [
     path('api/notifications/', include('apps.notifications.urls')),
     path('api/stats/', include('apps.stats.urls')),
     path('api/marketplace/', include('apps.marketplace.urls')),
+    path('api/admin-panel/', include('apps.admin_panel.urls')),
+    path('', include(django_prometheus.urls)),
 ]
 
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

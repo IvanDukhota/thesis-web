@@ -52,3 +52,4 @@ langid==1.1.6
 whitenoise==6.7.0
 pgvector==0.3.6
 numpy==1.26.4
+django-prometheus==2.3.1

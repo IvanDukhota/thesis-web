@@ -14,6 +14,7 @@ ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
 
 INSTALLED_APPS = [
     "daphne",
+    "django_prometheus",
 
     'django.contrib.admin',
     'django.contrib.auth',
@@ -41,9 +42,11 @@ INSTALLED_APPS = [
     "apps.stats",
     "apps.marketplace",
     "apps.kanban",
+    "apps.admin_panel",
 ]
 
 MIDDLEWARE = [
+    'django_prometheus.middleware.PrometheusBeforeMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     "corsheaders.middleware.CorsMiddleware",
@@ -53,7 +56,32 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'apps.admin_panel.middleware.RequestLoggingMiddleware',
+    'django_prometheus.middleware.PrometheusAfterMiddleware',
 ]
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "plain": {
+            "format": "%(message)s",
+        },
+    },
+    "handlers": {
+        "stdout": {
+            "class": "logging.StreamHandler",
+            "formatter": "plain",
+        },
+    },
+    "loggers": {
+        "request_log": {
+            "handlers": ["stdout"],
+            "level": "INFO",
+            "propagate": False,
+        },
+    },
+}
 
 ROOT_URLCONF = 'config.urls'
 

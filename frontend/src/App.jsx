@@ -11,6 +11,7 @@ import SingleProjectPage from './pages/SingleProjectPage/SingleProjectPage';
 import MarketplacePage from './pages/MarketplacePage';
 import OrderDetailPage from './pages/MarketplacePage/OrderDetailPage';
 import ChatPage from './pages/ChatPage/ChatPage';
+import AdminPage from './pages/AdminPage/AdminPage';
 import DarkVeil from './components/layout/DarkVeil/DarkVeil';
 import { darkVeilConfig } from './components/config/PagesConfig';
 
@@ -21,11 +22,20 @@ function ProtectedRoute({ children }) {
     return children;
 }
 
+function AdminRoute({ children }) {
+    const { user, loading } = useAuth();
+    if (loading) return null;
+    if (!user) return <Navigate to="/auth" replace />;
+    if (!user.is_staff) return <Navigate to="/" replace />;
+    return children;
+}
+
 function AppRoutes() {
     return (
         <Routes>
             <Route path="/" element={<MainPage />} />
             <Route path="/auth" element={<AuthPage />} />
+            <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
             <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
             <Route path="/teams" element={<ProtectedRoute><TeamsPage /></ProtectedRoute>} />
             <Route path="/projects" element={<ProtectedRoute><ProjectsPage /></ProtectedRoute>} />
