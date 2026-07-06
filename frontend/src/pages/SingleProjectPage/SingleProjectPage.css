@@ -19,7 +19,7 @@
     display: flex;
     flex-direction: column;
     flex: 1;
-    padding: 100px 32px 24px;
+    padding: 120px 32px 24px;
     gap: 18px;
     min-height: 0;
 }
@@ -145,4 +145,44 @@
 
 .spp-create-task-btn:hover {
     opacity: 0.85;
+}
+
+.spp-order-info-btn {
+    background: none;
+    border: none;
+    color: #52525b;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    padding: 2px;
+    border-radius: 4px;
+    transition: color 0.15s;
+}
+
+.spp-order-info-btn:hover {
+    color: #a78bfa;
+}
+
+.spp-deadline-block {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 14px;
+    border: 1px solid rgba(251, 191, 36, 0.15);
+    border-radius: 8px;
+    background: rgba(251, 191, 36, 0.04);
+}
+
+.spp-deadline-label {
+    font-size: 12.5px;
+    font-weight: 500;
+    color: #a16207;
+}
+
+.spp-deadline-value {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #fbbf24;
+    letter-spacing: -0.01em;
 }

@@ -1,5 +1,3 @@
-import os
-import dj_database_url
 from pathlib import Path
 from dotenv import load_dotenv
 from .base import *
@@ -10,9 +8,13 @@ load_dotenv(dotenv_path=env_path)
 DEBUG = True
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0', 'backend']
 
-# DATABASES = {
-#     'default': dj_database_url.config(
-#         default='postgres://user:password@localhost:5432/teamhub_db',
-#         conn_max_age=600
-#     )
-# }
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'TeamHub',
+        'USER': 'postgres',
+        'PASSWORD': 'root',
+        'HOST': 'localhost',
+        'PORT': '5432',
+    }
+}

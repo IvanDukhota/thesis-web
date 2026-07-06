@@ -9,26 +9,28 @@ import {
 } from 'react-icons/ri';
 import { VscLayout } from 'react-icons/vsc';
 import { NotificationsPanel } from '../NotificationsPanel/NotificationsPanel';
+import { useAuth } from '../../../context/AuthContext';
+import { useRealtime } from '../../../providers/RealtimeProvider';
 
 const NAV_LINKS = [
-    { label: "Projects", path: '/projects' },
+    { label: "Projects", path: '/projects' },   
     { label: "Teams", path: '/teams' },
-    { label: "Marketplace", path: null },
-    { label: "Chat", path: null },
+    { label: "Marketplace", path: '/marketplace' },
+    { label: "Chat", path: '/chat' },
 ];
-
-const NOTIF_COUNT = 4;
 
 const Header = forwardRef(function Header(_, ref) {
     const [hidden, setHidden] = useState(false);
     const [open, setOpen] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
     const [showLogout, setShowLogout] = useState(false);
-    const [notifCount, setNotifCount] = useState(NOTIF_COUNT);
+    const { user, logout } = useAuth();
+    const { toast, clearToast, notifications } = useRealtime();
+    const notifCount = notifications.length;
+
     useImperativeHandle(ref, () => ({
         openNotifications: () => {
             setShowNotifications(true);
-            setNotifCount(0);
         },
     }));
 
@@ -80,12 +82,14 @@ const Header = forwardRef(function Header(_, ref) {
     };
 
     const handleSignOut = () => {
+        logout();
         navigate('/auth', { replace: true });
     };
 
-    const DROPDOWN_ITEMS = [
-        { icon: <RiUser3Line size={15} />, label: "Profile", action: goToProfile },
-    ];
+    const handleNavClick = (path) => {
+        if (!user) { navigate('/auth'); return; }
+        if (path) navigate(path);
+    };
 
     return (
         <>
@@ -99,12 +103,12 @@ const Header = forwardRef(function Header(_, ref) {
 
                 <nav className="header-nav">
                     {NAV_LINKS.map(({ label, path }) => {
-                        const isActive = path && location.pathname.startsWith(path);
+                        const isActive = user && path && location.pathname.startsWith(path);
                         return (
                             <button
                                 key={label}
                                 className={`header-nav-btn ${isActive ? 'header-nav-btn--active' : ''}`}
-                                onClick={() => path && navigate(path)}
+                                onClick={() => handleNavClick(path)}
                             >
                                 {label}
                             </button>
@@ -113,47 +117,50 @@ const Header = forwardRef(function Header(_, ref) {
                 </nav>
 
                 <div className="header-right">
-                    <div className="notif-wrapper" ref={notifRef}>
-                        <button
-                            className={`header-bell ${showNotifications ? 'header-bell--active' : ''}`}
-                            onClick={() => {
-                                setShowNotifications(v => !v);
-                                setNotifCount(0);
-                            }}
-                            aria-label="Notifications"
-                        >
-                            <RiBellLine size={17} />
-                            {notifCount > 0 && <span className="header-bell-badge">{notifCount}</span>}
-                        </button>
-                        <NotificationsPanel open={showNotifications} />
-                    </div>
-
-                    <div className="profile-wrapper" ref={dropdownRef}>
-                        <button
-                            ref={avatarRef}
-                            className={`header-avatar ${open ? "header-avatar--active" : ""}`}
-                            onClick={() => setOpen((v) => !v)}
-                            aria-label="Profile menu"
-                        >
-                            <RiUser3Line size={17} />
-                        </button>
-
-                        <div className={`header-dropdown ${open ? "header-dropdown--open" : ""}`}>
-                            {DROPDOWN_ITEMS.map(({ icon, label, action }) => (
-                                <button key={label} className="header-dropdown-item" onClick={action}>
-                                    <span className="header-dropdown-icon">{icon}</span>
-                                    {label}
+                    {user ? (
+                        <>
+                            <div className="notif-wrapper" ref={notifRef}>
+                                <button
+                                    className={`header-bell ${showNotifications ? 'header-bell--active' : ''}`}
+                                    onClick={() => setShowNotifications(v => !v)}
+                                    aria-label="Notifications"
+                                >
+                                    <RiBellLine size={17} />
+                                    {notifCount > 0 && <span className="header-bell-badge">{notifCount}</span>}
                                 </button>
-                            ))}
+                                <NotificationsPanel open={showNotifications} />
+                            </div>
 
-                            <div className="header-dropdown-divider" />
+                            <div className="profile-wrapper" ref={dropdownRef}>
+                                <button
+                                    ref={avatarRef}
+                                    className={`header-avatar ${open ? "header-avatar--active" : ""}`}
+                                    onClick={() => setOpen((v) => !v)}
+                                    aria-label="Profile menu"
+                                >
+                                    <RiUser3Line size={17} />
+                                </button>
 
-                            <button className="header-dropdown-item header-dropdown-item--logout" onClick={() => { setOpen(false); setShowLogout(true); }}>
-                                <span className="header-dropdown-icon"><RiLogoutBoxRLine size={15} /></span>
-                                Log out
-                            </button>
-                        </div>
-                    </div>
+                                <div className={`header-dropdown ${open ? "header-dropdown--open" : ""}`}>
+                                    <button className="header-dropdown-item" onClick={goToProfile}>
+                                        <span className="header-dropdown-icon"><RiUser3Line size={15} /></span>
+                                        Profile
+                                    </button>
+
+                                    <div className="header-dropdown-divider" />
+
+                                    <button className="header-dropdown-item header-dropdown-item--logout" onClick={() => { setOpen(false); setShowLogout(true); }}>
+                                        <span className="header-dropdown-icon"><RiLogoutBoxRLine size={15} /></span>
+                                        Log out
+                                    </button>
+                                </div>
+                            </div>
+                        </>
+                    ) : (
+                        <button className="header-signin-btn" onClick={() => navigate('/auth')}>
+                            Sign in
+                        </button>
+                    )}
                 </div>
             </header>
 
@@ -175,6 +182,12 @@ const Header = forwardRef(function Header(_, ref) {
                             <button className="logout-btn logout-btn--confirm" onClick={handleSignOut}>Sign out</button>
                         </div>
                     </div>
+                </div>
+            )}
+
+            {toast && (
+                <div className="app-toast" onClick={clearToast}>
+                    {toast}
                 </div>
             )}
         </>

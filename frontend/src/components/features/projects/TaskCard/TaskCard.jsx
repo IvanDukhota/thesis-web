@@ -1,4 +1,4 @@
-import { RiUser3Line, RiCalendarLine } from 'react-icons/ri';
+import { RiUser3Line, RiCalendarLine, RiAttachmentLine } from 'react-icons/ri';
 import './TaskCard.css';
 
 const formatDeadline = (dateStr) => {
@@ -13,15 +13,15 @@ const PRIORITY_CLASS = {
     low: 'tc-priority--low',
 };
 
-export function TaskCard({ task, onDragStart, onEdit }) {
+export function TaskCard({ task, onDragStart, onEdit, canEdit = true }) {
     return (
         <div
             className="tc-card"
-            draggable
-            onDragStart={(e) => {
+            draggable={canEdit}
+            onDragStart={canEdit ? (e) => {
                 e.dataTransfer.effectAllowed = 'move';
-                onDragStart(task.id);
-            }}
+                onDragStart(task.id, e.currentTarget.offsetHeight);
+            } : undefined}
             onDoubleClick={onEdit}
         >
             {task.priority && (
@@ -30,8 +30,8 @@ export function TaskCard({ task, onDragStart, onEdit }) {
                 </span>
             )}
             <p className="tc-title">{task.title}</p>
-            {task.desc && <p className="tc-desc">{task.desc}</p>}
-            <div className="tc-hint">Double click to edit</div>
+            {task.description && <p className="tc-desc">{task.description}</p>}
+            <div className="tc-hint">{canEdit ? 'Double click to edit' : 'Double click to view'}</div>
             <div className="tc-footer">
                 {task.assignee && (
                     <span className="tc-assignee">
@@ -43,7 +43,14 @@ export function TaskCard({ task, onDragStart, onEdit }) {
                         <RiCalendarLine size={11} /> {formatDeadline(task.deadline)}
                     </span>
                 )}
-                {task.tag && <span className="tc-tag">{task.tag}</span>}
+                <div className="tc-footer-right">
+                    {task.files?.length > 0 && (
+                        <span className="tc-attachments">
+                            <RiAttachmentLine size={11} /> {task.files.length}
+                        </span>
+                    )}
+                    {task.tag && <span className="tc-tag">{task.tag}</span>}
+                </div>
             </div>
         </div>
     );

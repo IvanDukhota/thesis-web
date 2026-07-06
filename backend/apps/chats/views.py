@@ -225,7 +225,7 @@ class ChatDetailView(APIView):
         )
 
     def _enqueue_translations(self, messages, target_language, user_id, scenario, anchor_position):
-        from apps.messages.tasks import translate_message_high, translate_message_medium, translate_message_low, has_translatable_text
+        from apps.messages.tasks import translate_message_high, translate_message_medium, translate_message_low, has_translatable_text, send_translation_ready_event
         from apps.messages.models import MessageTranslation
 
         print(f"Enqueueing translations for {len(messages)} messages to {target_language}, scenario={scenario}, anchor={anchor_position}")
@@ -244,11 +244,14 @@ class ChatDetailView(APIView):
                 continue
 
             if not has_translatable_text(message.text):
-                print(f"Message {message.id} has no translatable text, skipping")
+                print(f"Message {message.id} has no translatable text, sending original text")
+                send_translation_ready_event(str(message.id), target_language, message.text or '', user_id)
                 continue
 
-            if message.source_language == target_language:
-                print(f"Message {message.id} source language is the same as target language {target_language}, skipping")
+            # Skip translation if source language matches target (but not if source is 'unknown')
+            if message.source_language == target_language and message.source_language != 'unknown':
+                print(f"Message {message.id} source language is the same as target language {target_language}, sending original text")
+                send_translation_ready_event(str(message.id), target_language, message.text or '', user_id)
                 continue
 
             if str(message.sender_id) == str(user_id):

@@ -24,10 +24,13 @@ def has_translatable_text(text: str) -> bool:
     if not text or len(text.strip()) == 0:
         return False
 
+    # Remove URLs
     text_no_urls = re.sub(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', '', text)
 
-    text_cleaned = re.sub(r'[\d\s\.,!?;:\-_\(\)\[\]{}]', '', text_no_urls)
+    # Remove digits, whitespace, and common punctuation
+    text_cleaned = re.sub(r'[\d\s\.,!?;:\-_\(\)\[\]{}"\']', '', text_no_urls)
 
+    # Check if at least 1 letter remains (relaxed from 2)
     if len(text_cleaned) < 2:
         return False
 
@@ -56,6 +59,11 @@ def detect_message_language(text: str) -> str:
             'kk': 'ru',
             'ar': 'ar',
         }
+
+        # If confidence is too low, mark as unknown and let the model auto-detect
+        if confidence < 0.5:
+            return 'unknown'
+
         return mapping.get(detected, 'en')
     except Exception as e:
         print(f"Language detection error: {e}")
@@ -98,7 +106,8 @@ def _translate_message(message_id: str, target_language: str, user_id: int):
 
         print(f"Translating message {message.text} from {message.source_language} to {target_language}")
 
-        if message.source_language == target_language:
+        # Skip translation if source language matches target (but not if source is 'unknown')
+        if message.source_language == target_language and message.source_language != 'unknown':
             print(f"Message {message_id} source language matches target language, sending original text")
             send_translation_ready_event(message_id, target_language, message.text, user_id)
             return

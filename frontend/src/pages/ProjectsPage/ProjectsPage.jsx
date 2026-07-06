@@ -4,6 +4,9 @@ import { RiAddLine, RiLayoutMasonryLine, RiTeamLine, RiBriefcase4Line, RiBarChar
 import Header from '../../components/layout/Header/Header';
 import { CreateProjectModal } from '../../components/features/projects/CreateProjectModal/CreateProjectModal';
 import { ProjectCard } from '../../components/features/projects/ProjectCard/ProjectCard';
+import { useAuth } from '../../context/AuthContext';
+import { apiGetMyProjects } from '../../api/projectsApi';
+import { apiGetMyTeam } from '../../api/teamsApi';
 
 const SLIDES = [
     {
@@ -92,7 +95,7 @@ function ProjectColumn({ title, projects }) {
             <div className="pp-column-list">
                 {projects.length === 0
                     ? <EmptyCol label={title.toLowerCase()} />
-                    : projects.map((p, i) => <ProjectCard key={i} project={p} />)
+                    : projects.map(p => <ProjectCard key={p.id} project={p} />)
                 }
             </div>
         </div>
@@ -100,19 +103,64 @@ function ProjectColumn({ title, projects }) {
 }
 
 export default function ProjectsPage() {
-    const [hasProjects, setHasProjects] = useState(false);
-    const [showModal, setShowModal] = useState(false);
+    const { user } = useAuth();
     const [projects, setProjects] = useState([]);
+    const [teamId, setTeamId] = useState(null);
+    const [canCreateTeamProject, setCanCreateTeamProject] = useState(false);
+    const [showModal, setShowModal] = useState(false);
+    const [loading, setLoading] = useState(true);
 
-    useEffect(() => { window.scrollTo(0, 0); }, []);
+    useEffect(() => {
+        window.scrollTo(0, 0);
+        apiGetMyProjects().then(({ ok, data }) => {
+            if (ok) setProjects(data);
+            setLoading(false);
+        });
+        apiGetMyTeam().then(({ ok, data: teamData }) => {
+            if (!ok) return;
+            setTeamId(teamData.id);
+            const myMember = (teamData.members || []).find(m => m.username === user?.username);
+            const myRole = myMember
+                ? (teamData.roles || []).find(r => r.name === myMember.role_name)
+                : null;
+            setCanCreateTeamProject(myMember?.is_admin || myRole?.can_create_projects || false);
+        });
+    }, [user]);
 
     const handleCreate = (project) => {
-        setProjects(prev => [...prev, project]);
-        setHasProjects(true);
+        setProjects(prev => [project, ...prev]);
     };
 
     const solo = projects.filter(p => p.type === 'solo');
     const team = projects.filter(p => p.type === 'team');
+    const hasProjects = projects.length > 0;
+
+    if (loading) return (
+        <div className="projectspage">
+            <Header />
+            <div className="pp-board-wrap">
+                <div className="pp-board-header">
+                    <div className="pp-skel-title" />
+                </div>
+                <div className="pp-board">
+                    <div className="pp-column">
+                        <div className="pp-column-header"><div className="pp-skel-label" /></div>
+                        <div className="pp-column-list">
+                            <div className="pp-skel-card" />
+                            <div className="pp-skel-card pp-skel-card--short" />
+                        </div>
+                    </div>
+                    <div className="pp-board-divider" />
+                    <div className="pp-column">
+                        <div className="pp-column-header"><div className="pp-skel-label" /></div>
+                        <div className="pp-column-list">
+                            <div className="pp-skel-card" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
 
     return (
         <div className="projectspage">
@@ -142,6 +190,8 @@ export default function ProjectsPage() {
                 <CreateProjectModal
                     onClose={() => setShowModal(false)}
                     onCreate={handleCreate}
+                    teamId={teamId}
+                    canCreateTeamProject={canCreateTeamProject}
                 />
             )}
         </div>

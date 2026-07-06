@@ -1,51 +1,63 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { RiBarChartBoxLine } from 'react-icons/ri';
+import { apiGetTeamStats } from '../../../../api/statsApi';
 import './TeamStats.css';
 
-const MEMBERS = [
-    { name: 'Alex K.', role: 'Admin', tasks: 24, done: 20, commits: 87, reviews: 12, hours: 64 },
-    { name: 'Maria S.', role: 'Developer', tasks: 18, done: 14, commits: 54, reviews: 8, hours: 48 },
-    { name: 'Ivan D.', role: 'Designer', tasks: 11, done: 11, commits: 12, reviews: 3, hours: 36 },
-    { name: 'Olha P.', role: 'Developer', tasks: 15, done: 9, commits: 43, reviews: 6, hours: 52 },
+const SEGMENTS = [
+    { key: 'finished',   label: 'Finished',    color: '#22c55e' },
+    { key: 'in_progress',label: 'In Progress',  color: '#7c3aed' },
+    { key: 'testing',    label: 'Testing',      color: '#f59e0b' },
+    { key: 'to_do',      label: 'To Do',        color: '#3f3f46' },
 ];
 
-const COLORS = ['#7c3aed', '#a78bfa', '#4ade80', '#facc15'];
+function DonutChart({ t, total }) {
+    const r = 36;
+    const circ = 2 * Math.PI * r;
+    const doneRate = total > 0 ? Math.round((t.finished / total) * 100) : 0;
 
-function DonutChart({ members }) {
-    const total = members.reduce((s, m) => s + m.done, 0);
-    const R = 48, C = 2 * Math.PI * R;
-
-    const slices = members.reduce((acc, m, i) => {
-        const pct = m.done / total;
-        const offset = acc.offset;
-        acc.items.push({ i, pct, offset });
-        acc.offset += pct;
-        return acc;
-    }, { items: [], offset: 0 }).items;
+    const computed = [];
+    let acc = 0;
+    for (const seg of SEGMENTS) {
+        const val = t[seg.key] ?? 0;
+        const len = total > 0 ? (val / total) * circ : 0;
+        computed.push({ ...seg, val, len, offset: acc });
+        acc += len;
+    }
 
     return (
         <div className="ts-donut-wrap">
-            <svg width="120" height="120" viewBox="0 0 120 120">
-                {slices.map(({ i, pct, offset }) => {
-                    const dash = pct * C;
-                    const gap = C - dash;
-                    return (
-                        <circle key={i} cx="60" cy="60" r={R} fill="none"
-                            stroke={COLORS[i]} strokeWidth="13"
-                            strokeDasharray={`${dash} ${gap}`}
-                            strokeDashoffset={-offset * C}
-                            style={{ transform: 'rotate(-90deg)', transformOrigin: '60px 60px' }}
+            <div className="ts-donut-svg-wrap">
+                <svg viewBox="0 0 100 100" className="ts-donut-svg">
+                    <circle cx="50" cy="50" r={r} fill="none"
+                        stroke="rgba(255,255,255,0.05)" strokeWidth="11" />
+                    {computed.map((seg, i) => seg.len > 0 && (
+                        <circle key={seg.key}
+                            cx="50" cy="50" r={r}
+                            fill="none"
+                            stroke={seg.color}
+                            strokeWidth="11"
+                            strokeLinecap="butt"
+                            className="ts-donut-seg"
+                            style={{
+                                strokeDashoffset: -seg.offset,
+                                '--seg-len': seg.len,
+                                '--seg-gap': circ - seg.len,
+                                animationDelay: `${i * 0.07}s`,
+                            }}
                         />
-                    );
-                })}
-                <text x="60" y="56" textAnchor="middle" fill="#e4e4e7" fontSize="15" fontWeight="600">{total}</text>
-                <text x="60" y="70" textAnchor="middle" fill="#52525b" fontSize="8">done</text>
-            </svg>
+                    ))}
+                </svg>
+                <div className="ts-donut-center">
+                    <span className="ts-donut-pct">{doneRate}%</span>
+                    <span className="ts-donut-sub">done</span>
+                </div>
+            </div>
             <div className="ts-donut-legend">
-                {members.map((m, i) => (
-                    <div key={i} className="ts-legend-item">
-                        <span className="ts-legend-dot" style={{ background: COLORS[i] }} />
-                        <span className="ts-legend-name">{m.name}</span>
-                        <span className="ts-legend-val">{m.done}</span>
+                {computed.map(seg => (
+                    <div key={seg.key} className="ts-legend-item">
+                        <div className="ts-legend-dot" style={{ background: seg.color }} />
+                        <span className="ts-legend-name">{seg.label}</span>
+                        <span className="ts-legend-val">{seg.val}</span>
                     </div>
                 ))}
             </div>
@@ -53,63 +65,152 @@ function DonutChart({ members }) {
     );
 }
 
-function BarChart({ members }) {
-    const max = Math.max(...members.map(m => m.commits));
+function MiniRing({ rate }) {
+    const r = 14;
+    const circ = 2 * Math.PI * r;
+    const filled = (rate / 100) * circ;
+    const color = rate >= 70 ? '#22c55e' : rate >= 40 ? '#f59e0b' : '#52525b';
     return (
-        <div className="ts-bar-wrap">
-            {members.map((m, i) => (
-                <div key={i} className="ts-bar-row">
-                    <span className="ts-bar-label">{m.name}</span>
-                    <div className="ts-bar-track">
-                        <div className="ts-bar-fill" style={{ width: `${(m.commits / max) * 100}%`, background: COLORS[i] }} />
-                    </div>
-                    <span className="ts-bar-val">{m.commits}</span>
-                </div>
-            ))}
-            <p className="ts-bar-caption">Commits this month</p>
+        <div className="ts-mini-ring">
+            <svg viewBox="0 0 36 36" width="34" height="34">
+                <circle cx="18" cy="18" r={r} fill="none"
+                    stroke="rgba(255,255,255,0.05)" strokeWidth="4" />
+                <circle cx="18" cy="18" r={r} fill="none"
+                    stroke={color} strokeWidth="4"
+                    strokeLinecap="round"
+                    className="ts-donut-seg"
+                    style={{
+                        strokeDashoffset: circ / 4,
+                        '--seg-len': filled,
+                        '--seg-gap': circ - filled,
+                    }}
+                />
+            </svg>
+            <span className="ts-mini-ring-val" style={{ color }}>{rate}%</span>
         </div>
     );
 }
 
-function TableChart({ members }) {
+function OverviewTab({ stats }) {
+    const t = stats.tasks;
+    const total = t.total;
+
     return (
-        <div className="ts-table-wrap">
-            <div className="ts-table-head">
-                <span>Member</span><span>Tasks</span><span>Done</span><span>Reviews</span><span>Hours</span>
+        <div className="ts-content">
+            <div className="ts-kpi-row">
+                <div className="ts-kpi">
+                    <span className="ts-kpi-val">{stats.projects_count}</span>
+                    <span className="ts-kpi-label">Projects</span>
+                </div>
+                <div className="ts-kpi">
+                    <span className="ts-kpi-val">{total}</span>
+                    <span className="ts-kpi-label">Total tasks</span>
+                </div>
+                <div className="ts-kpi">
+                    <span className="ts-kpi-val">{t.finished}</span>
+                    <span className="ts-kpi-label">Finished</span>
+                </div>
+                <div className="ts-kpi">
+                    <span className="ts-kpi-val">
+                        {total > 0 ? `${Math.round((t.finished / total) * 100)}%` : '0%'}
+                    </span>
+                    <span className="ts-kpi-label">Done rate</span>
+                </div>
             </div>
-            {members.map((m, i) => (
-                <div key={i} className="ts-table-row">
-                    <span className="ts-table-name" style={{ color: COLORS[i] }}>{m.name}</span>
-                    <span>{m.tasks}</span><span>{m.done}</span><span>{m.reviews}</span><span>{m.hours}h</span>
-                </div>
-            ))}
+
+            {total === 0 ? (
+                <p className="ts-no-tasks">No tasks in team projects yet</p>
+            ) : (
+                <DonutChart t={t} total={total} />
+            )}
         </div>
     );
 }
 
-const TABS = [
-    { id: 'donut', label: 'Completion' },
-    { id: 'bar', label: 'Commits' },
-    { id: 'table', label: 'Overview' },
-];
+function MembersTab({ stats }) {
+    const members = stats.members;
 
-export function TeamStats() {
-    const [active, setActive] = useState('donut');
+    if (members.length === 0) {
+        return <p className="ts-no-tasks">No members found</p>;
+    }
+
+    return (
+        <div className="ts-content ts-table-wrap">
+            <div className="ts-table-head">
+                <span>Member</span>
+                <span>Assigned</span>
+                <span>Done</span>
+                <span>Pending</span>
+                <span>Rate</span>
+            </div>
+            {members.map(m => {
+                const pending = m.assigned - m.completed;
+                const rate = m.assigned > 0 ? Math.round((m.completed / m.assigned) * 100) : 0;
+                return (
+                    <div key={m.username} className="ts-table-row">
+                        <span className="ts-table-name">{m.username}</span>
+                        <span>{m.assigned}</span>
+                        <span style={{ color: '#22c55e' }}>{m.completed}</span>
+                        <span style={{ color: '#71717a' }}>{pending}</span>
+                        <span>{m.assigned > 0 ? <MiniRing rate={rate} /> : '—'}</span>
+                    </div>
+                );
+            })}
+        </div>
+    );
+}
+
+export function TeamStats({ teamId }) {
+    const [stats, setStats] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [tab, setTab] = useState('overview');
+
+    useEffect(() => {
+        if (!teamId) return;
+        setLoading(true);
+        apiGetTeamStats(teamId).then(({ ok, data }) => {
+            if (ok) setStats(data);
+            setLoading(false);
+        });
+    }, [teamId]);
+
     return (
         <div className="ts-root">
             <div className="ts-header">
                 <span className="ts-title">Statistics</span>
-                <div className="ts-tabs">
-                    {TABS.map(t => (
-                        <button key={t.id} className={`ts-tab ${active === t.id ? 'ts-tab--active' : ''}`}
-                            onClick={() => setActive(t.id)}>{t.label}</button>
-                    ))}
-                </div>
+                {stats && (
+                    <div className="ts-tabs">
+                        <button
+                            className={`ts-tab ${tab === 'overview' ? 'ts-tab--active' : ''}`}
+                            onClick={() => setTab('overview')}
+                        >
+                            Overview
+                        </button>
+                        <button
+                            className={`ts-tab ${tab === 'members' ? 'ts-tab--active' : ''}`}
+                            onClick={() => setTab('members')}
+                        >
+                            Members
+                        </button>
+                    </div>
+                )}
             </div>
-            <div className="ts-body">
-                {active === 'donut' && <DonutChart members={MEMBERS} />}
-                {active === 'bar' && <BarChart members={MEMBERS} />}
-                {active === 'table' && <TableChart members={MEMBERS} />}
+
+            <div className={`ts-body ${stats ? 'ts-body--data' : ''}`}>
+                {loading && (
+                    <div className="ts-empty">
+                        <p className="ts-empty-text" style={{ color: '#3f3f46' }}>Loading...</p>
+                    </div>
+                )}
+                {!loading && !stats && (
+                    <div className="ts-empty">
+                        <RiBarChartBoxLine size={28} className="ts-empty-icon" />
+                        <p className="ts-empty-text">No data yet</p>
+                        <p className="ts-empty-sub">Statistics will appear once the team starts working on projects</p>
+                    </div>
+                )}
+                {!loading && stats && tab === 'overview' && <OverviewTab stats={stats} />}
+                {!loading && stats && tab === 'members' && <MembersTab stats={stats} />}
             </div>
         </div>
     );

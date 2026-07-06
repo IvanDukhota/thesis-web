@@ -3,6 +3,28 @@ html {
     scrollbar-gutter: stable;
 }
 
+@keyframes tp-skel-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+.tp-skel-title {
+    width: 180px;
+    height: 32px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.07);
+    animation: tp-skel-pulse 1.6s ease-in-out infinite;
+}
+
+.tp-skel-panel {
+    width: 100%;
+    height: 420px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    animation: tp-skel-pulse 1.6s ease-in-out infinite;
+}
+
 .teamspage {
     min-height: 100vh;
     width: 100%;
@@ -109,16 +131,130 @@ html {
     gap: 16px;
 }
 
+.teamspage-board-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
 .teamspage-board-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    width: 250px;
+    width: fit-content;
+    min-width: 120px;
     height: 40px;
     padding: 0 14px;
     border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 10px;
     background: rgba(255, 255, 255, 0.02);
+}
+
+.teamspage-leave-btn {
+    height: 28px;
+    padding: 0 12px;
+    border-radius: 6px;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    background: rgba(239, 68, 68, 0.05);
+    color: #f87171;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    white-space: nowrap;
+}
+
+.teamspage-leave-btn:hover {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.35);
+}
+
+.teamspage-confirm-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.teamspage-confirm {
+    width: 340px;
+    background: #0d0d0f;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 28px;
+    box-shadow: 0 32px 64px rgba(0, 0, 0, 0.9);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    animation: tpConfirmSlide 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes tpConfirmSlide {
+    from { opacity: 0; transform: scale(0.96) translateY(10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.teamspage-confirm-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #e4e4e7;
+    letter-spacing: -0.01em;
+}
+
+.teamspage-confirm-sub {
+    font-size: 13px;
+    color: #71717a;
+    line-height: 1.5;
+    margin-bottom: 6px;
+}
+
+.teamspage-confirm-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.teamspage-confirm-cancel {
+    height: 36px;
+    padding: 0 16px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    background: none;
+    color: #71717a;
+    font-size: 13px;
+    cursor: pointer;
+    transition: color 0.15s;
+}
+
+.teamspage-confirm-cancel:hover:not(:disabled) {
+    color: #a1a1aa;
+}
+
+.teamspage-confirm-leave {
+    height: 36px;
+    padding: 0 16px;
+    border-radius: 8px;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    background: rgba(239, 68, 68, 0.08);
+    color: #f87171;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.teamspage-confirm-leave:hover:not(:disabled) {
+    background: rgba(239, 68, 68, 0.15);
+}
+
+.teamspage-confirm-cancel:disabled,
+.teamspage-confirm-leave:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .teamspage-board-name {
@@ -129,6 +265,7 @@ html {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    max-width: 200px;
 }
 
 .teamspage-board-gear {

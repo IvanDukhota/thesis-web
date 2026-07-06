@@ -18,14 +18,17 @@ export default function Stepper({
   nextButtonText = 'Continue',
   disableStepIndicators = false,
   renderStepIndicator,
+  isProcessingExternal = false,
   ...rest
 }) {
   const [currentStep, setCurrentStep] = useState(initialStep);
   const [direction, setDirection] = useState(0);
+  const [isProcessing, setIsProcessing] = useState(false);
   const stepsArray = Children.toArray(children);
   const totalSteps = stepsArray.length;
   const isCompleted = currentStep > totalSteps;
   const isLastStep = currentStep === totalSteps;
+  const busy = isProcessing || isProcessingExternal;
 
   const updateStep = newStep => {
     setCurrentStep(newStep);
@@ -43,9 +46,11 @@ export default function Stepper({
     }
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (onBeforeNext) {
-      const ok = onBeforeNext(currentStep);
+      setIsProcessing(true);
+      const ok = await onBeforeNext(currentStep);
+      setIsProcessing(false);
       if (ok === false) return;
     }
     if (!isLastStep) {
@@ -54,9 +59,11 @@ export default function Stepper({
     }
   };
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
     if (onBeforeNext) {
-      const ok = onBeforeNext(currentStep);
+      setIsProcessing(true);
+      const ok = await onBeforeNext(currentStep);
+      setIsProcessing(false);
       if (ok === false) return;
     }
     setDirection(1);
@@ -122,9 +129,10 @@ export default function Stepper({
               <button
                 onClick={isLastStep ? handleComplete : handleNext}
                 className="next-button"
+                disabled={busy}
                 {...nextButtonProps}
               >
-                {isLastStep ? 'Complete' : nextButtonText}
+                {busy && isLastStep ? 'Creating...' : isLastStep ? 'Complete' : nextButtonText}
               </button>
             </div>
           </div>

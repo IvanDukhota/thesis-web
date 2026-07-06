@@ -224,16 +224,16 @@ class AppConsumer(AsyncJsonWebsocketConsumer):
                 "message_id": message_id,
             }
         )
-    
-        async def broadcast_message_edited(self, event):
-            message_data = event["message_data"]
 
-            await self.send_json(
-                {
-                    "type": "message.edited",
-                    "payload": message_data,
-                }
-            )
+    async def broadcast_message_edited(self, event):
+        message_data = event["message_data"]
+
+        await self.send_json(
+            {
+                "type": "message.edited",
+                "payload": message_data,
+            }
+        )
 
     async def send_notification(self, event):
         notification_type = event["notification_type"]

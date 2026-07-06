@@ -7,6 +7,15 @@ import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
   globalIgnores(['dist']),
+
+  // Node environment for Vite/PostCSS config files
+  {
+    files: ['*.config.js', '*.config.ts', '*.config.*.js'],
+    languageOptions: {
+      globals: { ...globals.browser, ...globals.node },
+    },
+  },
+
   {
     files: ['**/*.{js,jsx}'],
     plugins: {
@@ -32,6 +41,10 @@ export default defineConfig([
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
       'react/jsx-uses-vars': 'error',
       'react/prop-types': 'off',
+      // setLoading(true) before an async call is a valid pattern
+      'react-hooks/set-state-in-effect': 'off',
+      // Context files legitimately export both a Provider component and a hook
+      'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
     },
     settings: {
       react: { version: 'detect' },

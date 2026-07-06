@@ -1,24 +1,42 @@
 import { useState } from 'react';
 import { RiCloseLine, RiAddLine, RiCheckLine } from 'react-icons/ri';
+import { apiCreateProject } from '../../../../api/projectsApi';
+import { useAuth } from '../../../../context/AuthContext';
 import '../CreateTeamModal/CreateTeamModal.css';
 import './AddProjectModal.css';
 
-export function AddProjectModal({ members, onClose, onAdd }) {
+export function AddProjectModal({ teamId, members, onClose, onAdd }) {
+    const { user } = useAuth();
     const [name, setName] = useState('');
     const [desc, setDesc] = useState('');
     const [assigned, setAssigned] = useState([]);
     const [nameErr, setNameErr] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
 
-    const toggle = (memberName) =>
+    const toggle = (userId) => {
+        if (!userId) return;
         setAssigned(prev =>
-            prev.includes(memberName)
-                ? prev.filter(n => n !== memberName)
-                : [...prev, memberName]
+            prev.includes(userId) ? prev.filter(id => id !== userId) : [...prev, userId]
         );
+    };
 
-    const handleAdd = () => {
+    const handleAdd = async () => {
         if (!name.trim()) { setNameErr(true); return; }
-        onAdd({ name, desc, members: assigned, status: 'Active', tasks: 0, done: 0 });
+        setLoading(true);
+        const { ok, data } = await apiCreateProject({
+            name: name.trim(),
+            description: desc.trim(),
+            type: 'team',
+            team: teamId,
+            member_ids: assigned.filter(Boolean),
+        });
+        setLoading(false);
+        if (!ok) {
+            setError(data?.detail || data?.name?.[0] || 'Failed to create project.');
+            return;
+        }
+        onAdd(data);
         onClose();
     };
 
@@ -39,6 +57,7 @@ export function AddProjectModal({ members, onClose, onAdd }) {
                                 value={name}
                                 onChange={e => { setName(e.target.value); setNameErr(false); }}
                                 placeholder="my-project"
+                                autoFocus
                             />
                             {nameErr && <span className="ctm-error-text">Project name is required</span>}
                         </div>
@@ -52,6 +71,7 @@ export function AddProjectModal({ members, onClose, onAdd }) {
                                 rows={3}
                             />
                         </div>
+                        {error && <span className="ctm-error-text">{error}</span>}
                     </div>
 
                     <div className="ctm-divider" />
@@ -61,10 +81,10 @@ export function AddProjectModal({ members, onClose, onAdd }) {
                             <span className="ctm-section-title">Assign members</span>
                         </div>
                         <div className="apm-member-list">
-                            {members.map((m, i) => {
-                                const active = assigned.includes(m.name);
+                            {members.filter(m => m.name !== user?.username).map((m) => {
+                                const active = assigned.includes(m.userId);
                                 return (
-                                    <div key={i} className="apm-member-row">
+                                    <div key={m.id} className="apm-member-row">
                                         <div className="apm-avatar">{m.name[0].toUpperCase()}</div>
                                         <div className="apm-member-info">
                                             <span className="apm-member-name">{m.name}</span>
@@ -72,7 +92,7 @@ export function AddProjectModal({ members, onClose, onAdd }) {
                                         </div>
                                         <button
                                             className={`apm-assign-btn ${active ? 'apm-assign-btn--active' : ''}`}
-                                            onClick={() => toggle(m.name)}
+                                            onClick={() => toggle(m.userId)}
                                         >
                                             {active ? <RiCheckLine size={13} /> : <RiAddLine size={13} />}
                                         </button>
@@ -85,7 +105,9 @@ export function AddProjectModal({ members, onClose, onAdd }) {
 
                 <div className="ctm-footer">
                     <button className="ctm-btn ctm-btn--cancel" onClick={onClose}>Cancel</button>
-                    <button className="ctm-btn ctm-btn--create" onClick={handleAdd}>Add project</button>
+                    <button className="ctm-btn ctm-btn--create" onClick={handleAdd} disabled={loading}>
+                        {loading ? 'Creating...' : 'Add project'}
+                    </button>
                 </div>
             </div>
         </div>

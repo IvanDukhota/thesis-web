@@ -1,73 +1,145 @@
-import { useState, useRef, useImperativeHandle, forwardRef } from 'react';
+import { useState, useRef, useImperativeHandle, forwardRef, useEffect, useCallback } from 'react';
 import { TaskCard } from '../TaskCard/TaskCard';
 import { EditTaskModal } from '../EditTaskModal/EditTaskModal';
+import { apiGetTasks, apiUpdateTask, apiDeleteTask } from '../../../../api/tasksApi';
+import { useAuth } from '../../../../context/AuthContext';
+import { useKanbanSocket } from './useKanbanSocket';
 import './KanbanBoard.css';
 
 const COLUMNS = ['To Do', 'In Progress', 'Testing', 'Finished'];
 
-const INIT_TASKS = {
-    'To Do': [
-        { id: 1, title: 'Set up project structure', priority: 'high', assignee: 'Alex K.', tag: 'setup', deadline: '2025-05-10' },
-        { id: 2, title: 'Design database schema', priority: 'medium', assignee: 'Maria S.', tag: 'backend', deadline: '2025-05-14' },
-        { id: 3, title: 'Write API documentation', priority: 'low', assignee: null, tag: 'docs', deadline: null },
-    ],
-    'In Progress': [
-        { id: 4, title: 'Build auth endpoints', priority: 'high', assignee: 'Alex K.', tag: 'backend', deadline: '2025-05-08' },
-        { id: 5, title: 'Create UI components', priority: 'medium', assignee: 'Ivan D.', tag: 'frontend', deadline: '2025-05-12' },
-    ],
-    'Testing': [
-        { id: 6, title: 'Unit tests for auth', priority: 'medium', assignee: 'Olha P.', tag: 'testing', deadline: '2025-05-09' },
-    ],
-    'Finished': [
-        { id: 7, title: 'Project kickoff meeting', priority: 'low', assignee: null, tag: null, deadline: null },
-    ],
-};
+const emptyBoard = () => Object.fromEntries(COLUMNS.map(c => [c, []]));
 
-let nextId = 10;
+function groupByColumn(tasks) {
+    const board = emptyBoard();
+    tasks.forEach(t => {
+        if (board[t.column]) board[t.column].push(t);
+    });
+    return board;
+}
 
-export const KanbanBoard = forwardRef(function KanbanBoard(_, ref) {
-    const [tasks, setTasks] = useState(INIT_TASKS);
+export const KanbanBoard = forwardRef(function KanbanBoard({ projectId, projectType, canEdit = true, canDelete = false, members = [] }, ref) {
+    const { user } = useAuth();
+    const [tasks, setTasks] = useState(emptyBoard());
+    const [loading, setLoading] = useState(true);
     const [dragId, setDragId] = useState(null);
     const [dragOver, setDragOver] = useState(null);
+    const [dragCardHeight, setDragCardHeight] = useState(0);
     const [editingTask, setEditingTask] = useState(null);
     const dragColRef = useRef(null);
 
-    useImperativeHandle(ref, () => ({
-        addTask: ({ title, priority, deadline, assignee, tag, column }) => {
-            const col = COLUMNS.includes(column) ? column : 'To Do';
-            const task = { id: nextId++, title, priority, deadline, assignee, tag };
-            setTasks(prev => ({ ...prev, [col]: [...prev[col], task] }));
+    useEffect(() => {
+        if (!projectId) return;
+        setLoading(true);
+        apiGetTasks(projectId).then(({ ok, data }) => {
+            if (ok) setTasks(groupByColumn(data));
+            setLoading(false);
+        });
+    }, [projectId]);
+
+    const handleKanbanEvent = useCallback((event) => {
+        if (event.user_id === user?.id) return;
+
+        if (event.type === 'task.created') {
+            const task = event.task;
+            const col = COLUMNS.includes(task.column) ? task.column : 'To Do';
+            setTasks(prev => {
+                if (prev[col].some(t => t.id === task.id)) return prev;
+                return { ...prev, [col]: [...prev[col], task] };
+            });
+        } else if (event.type === 'task.updated') {
+            const task = event.task;
+            const newCol = COLUMNS.includes(task.column) ? task.column : 'To Do';
+            setTasks(prev => {
+                const srcCol = Object.keys(prev).find(c => prev[c].some(t => t.id === task.id));
+                if (!srcCol) return prev;
+                if (srcCol === newCol) {
+                    return { ...prev, [srcCol]: prev[srcCol].map(t => t.id === task.id ? { ...t, ...task } : t) };
+                }
+                return {
+                    ...prev,
+                    [srcCol]: prev[srcCol].filter(t => t.id !== task.id),
+                    [newCol]: [...prev[newCol], { ...task, column: newCol }],
+                };
+            });
+        } else if (event.type === 'task.deleted') {
+            setTasks(prev => {
+                const col = Object.keys(prev).find(c => prev[c].some(t => t.id === event.task_id));
+                if (!col) return prev;
+                return { ...prev, [col]: prev[col].filter(t => t.id !== event.task_id) };
+            });
         }
+    }, [user?.id]);
+
+    useKanbanSocket(projectId, handleKanbanEvent);
+
+    useImperativeHandle(ref, () => ({
+        addTask: (task) => {
+            setTasks(prev => {
+                const col = COLUMNS.includes(task.column) ? task.column : 'To Do';
+                return { ...prev, [col]: [...prev[col], task] };
+            });
+        },
     }));
+
+    if (loading) return null;
 
     const handleEditSave = (updatedTask, newCol) => {
         setTasks(prev => {
             const srcCol = editingTask.col;
+            const payload = { title: updatedTask.title, description: updatedTask.description || '', priority: updatedTask.priority || '', column: newCol, assignee: updatedTask.assignee || '', deadline: updatedTask.deadline || null, tag: updatedTask.tag || '' };
+            apiUpdateTask(projectId, updatedTask.id, payload);
             if (srcCol === newCol) {
-                return { ...prev, [srcCol]: prev[srcCol].map(t => t.id === updatedTask.id ? updatedTask : t) };
+                return { ...prev, [srcCol]: prev[srcCol].map(t => t.id === updatedTask.id ? { ...t, ...updatedTask } : t) };
             }
             return {
                 ...prev,
                 [srcCol]: prev[srcCol].filter(t => t.id !== updatedTask.id),
-                [newCol]: [...prev[newCol], updatedTask],
+                [newCol]: [...prev[newCol], { ...updatedTask, column: newCol }],
             };
         });
         setEditingTask(null);
     };
 
-    const handleDragStart = (id, col) => { setDragId(id); dragColRef.current = col; };
+    const handleFilesChanged = (newFiles) => {
+        if (!editingTask) return;
+        const taskId = editingTask.task.id;
+        setTasks(prev => {
+            const col = Object.keys(prev).find(c => prev[c].some(t => t.id === taskId));
+            if (!col) return prev;
+            return { ...prev, [col]: prev[col].map(t => t.id === taskId ? { ...t, files: newFiles } : t) };
+        });
+    };
+
+    const handleDeleteTask = (taskId) => {
+        apiDeleteTask(projectId, taskId);
+        setTasks(prev => {
+            const col = Object.keys(prev).find(c => prev[c].some(t => t.id === taskId));
+            if (!col) return prev;
+            return { ...prev, [col]: prev[col].filter(t => t.id !== taskId) };
+        });
+        setEditingTask(null);
+    };
+
+    const handleDragStart = (id, col, height) => {
+        if (!canEdit) return;
+        setDragId(id);
+        setDragCardHeight(height);
+        dragColRef.current = col;
+    };
 
     const handleDrop = (targetCol) => {
-        if (!dragId || !dragColRef.current) return;
+        if (!canEdit || !dragId || !dragColRef.current) return;
         const srcCol = dragColRef.current;
         if (srcCol !== targetCol) {
             setTasks(prev => {
                 const task = prev[srcCol].find(t => t.id === dragId);
                 if (!task) return prev;
+                apiUpdateTask(projectId, dragId, { column: targetCol });
                 return {
                     ...prev,
                     [srcCol]: prev[srcCol].filter(t => t.id !== dragId),
-                    [targetCol]: [...prev[targetCol], task],
+                    [targetCol]: [...prev[targetCol], { ...task, column: targetCol }],
                 };
             });
         }
@@ -84,7 +156,7 @@ export const KanbanBoard = forwardRef(function KanbanBoard(_, ref) {
                         key={col}
                         className={`kb-column ${dragOver === col ? 'kb-column--over' : ''}`}
                         onDragOver={e => { e.preventDefault(); setDragOver(col); }}
-                        onDragLeave={() => setDragOver(null)}
+                        onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setDragOver(null); }}
                         onDrop={() => handleDrop(col)}
                     >
                         <div className="kb-col-header">
@@ -97,11 +169,15 @@ export const KanbanBoard = forwardRef(function KanbanBoard(_, ref) {
                                 <TaskCard
                                     key={task.id}
                                     task={task}
-                                    onDragStart={(id) => handleDragStart(id, col)}
+                                    canEdit={canEdit}
+                                    onDragStart={(id, height) => handleDragStart(id, col, height)}
                                     onEdit={() => setEditingTask({ task, col })}
                                 />
                             ))}
-                            {tasks[col].length === 0 && (
+                            {dragOver === col && dragId && dragColRef.current !== col && (
+                                <div className="kb-drop-placeholder" style={{ height: dragCardHeight }} />
+                            )}
+                            {tasks[col].length === 0 && !(dragOver === col && dragId && dragColRef.current !== col) && (
                                 <div className="kb-col-empty">drop here</div>
                             )}
                         </div>
@@ -113,8 +189,15 @@ export const KanbanBoard = forwardRef(function KanbanBoard(_, ref) {
                 <EditTaskModal
                     task={editingTask.task}
                     currentCol={editingTask.col}
+                    projectId={projectId}
+                    projectType={projectType}
                     onClose={() => setEditingTask(null)}
                     onSave={handleEditSave}
+                    onDelete={handleDeleteTask}
+                    onFilesChanged={handleFilesChanged}
+                    readOnly={!canEdit}
+                    canDelete={canDelete}
+                    members={members}
                 />
             )}
         </>

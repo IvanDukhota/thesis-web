@@ -16,14 +16,18 @@ class UserSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "email",
-            "first_name",
-            "last_name",
+            "username",
             "full_name",
             "avatar",
+            "language",
+            "gender",
+            "age",
+            "region",
             "created_at",
             "is_contact",
+            "is_staff",
         ]
-        read_only_fields = ["id", "created_at", "full_name", "is_contact"]
+        read_only_fields = ["id", "created_at", "full_name", "is_contact", "is_staff"]
 
     def get_avatar(self, obj):
         if obj.avatar:
@@ -35,18 +39,27 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class RegisterSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True, min_length=8, style={"input_type": "password"})
-    password_confirm = serializers.CharField(write_only=True, min_length=8, style={"input_type": "password"})
+    password = serializers.CharField(write_only=True, min_length=6, style={"input_type": "password"})
+    password_confirm = serializers.CharField(write_only=True, min_length=6, style={"input_type": "password"})
 
     class Meta:
         model = User
         fields = [
             "email",
-            "first_name",
-            "last_name",
+            "username",
             "password",
             "password_confirm",
+            "language",
+            "gender",
+            "age",
+            "region",
         ]
+        extra_kwargs = {
+            "language": {"required": False},
+            "gender": {"required": False},
+            "age": {"required": False, "allow_null": True},
+            "region": {"required": False},
+        }
 
     def validate_email(self, value):
         email = value.lower().strip()
@@ -54,11 +67,14 @@ class RegisterSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("A user with this email already exists.")
         return email
 
-    def validate(self, attrs):
-        password = attrs.get("password")
-        password_confirm = attrs.get("password_confirm")
+    def validate_username(self, value):
+        value = value.strip()
+        if User.objects.filter(username__iexact=value).exists():
+            raise serializers.ValidationError("This username is already taken.")
+        return value
 
-        if password != password_confirm:
+    def validate(self, attrs):
+        if attrs.get("password") != attrs.get("password_confirm"):
             raise serializers.ValidationError({"password_confirm": "Passwords do not match."})
         return attrs
 
@@ -68,8 +84,22 @@ class RegisterSerializer(serializers.ModelSerializer):
         user = User.objects.create_user(password=password, **validated_data)
         return user
 
+
+class ProfileUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ["language", "gender", "age", "region", "avatar"]
+        extra_kwargs = {
+            "language": {"required": False},
+            "gender": {"required": False},
+            "age": {"required": False, "allow_null": True},
+            "region": {"required": False},
+            "avatar": {"required": False},
+        }
+
+
 class ContactCreateSerializer(serializers.ModelSerializer):
-    contact_id = serializers.IntegerField(write_only=True) 
+    contact_id = serializers.IntegerField(write_only=True)
 
     class Meta:
         model = UserContact
@@ -93,6 +123,5 @@ class ContactCreateSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         user = self.context["request"].user
         contact_user = self.context["contact_user"]
-
         contact, _ = UserContact.objects.get_or_create(owner=user, contact=contact_user)
         return contact

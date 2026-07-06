@@ -59,9 +59,12 @@ class MessageCreateView(APIView):
         text = request.data.get('text', '').strip()
         recipient_id = request.data.get('recipient_id')
         client_id = request.data.get('client_id')
+        reply_to_id = request.data.get('reply_to_id')
+        forwarded_from_id = request.data.get('forwarded_from_id')
         files = request.FILES.getlist('files')
 
-        if not text and not files:
+        # Allow empty message only if forwarding
+        if not text and not files and not forwarded_from_id:
             return Response(
                 {"detail": "Message must contain text or files."},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -121,6 +124,35 @@ class MessageCreateView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
+        # Validate reply_to_id if provided
+        reply_to_message = None
+        if reply_to_id:
+            try:
+                reply_to_message = Message.objects.get(
+                    id=reply_to_id,
+                    chat=chat,
+                    is_deleted=False,
+                )
+            except Message.DoesNotExist:
+                return Response(
+                    {"detail": "Reply target message not found."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+        # Validate forwarded_from_id if provided
+        forwarded_from_message = None
+        if forwarded_from_id:
+            try:
+                forwarded_from_message = Message.objects.get(
+                    id=forwarded_from_id,
+                    is_deleted=False,
+                )
+            except Message.DoesNotExist:
+                return Response(
+                    {"detail": "Forwarded message not found."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
         last_position = (
             Message.objects.filter(chat=chat)
             .aggregate(value=Max("position"))
@@ -129,6 +161,7 @@ class MessageCreateView(APIView):
         )
         next_position = last_position + 1
 
+        # Determine message type based on files or forwarded message attachments
         message_type = Message.MessageType.TEXT
         if files:
             first_file_type = validated_files[0]['attachment_type']
@@ -138,6 +171,12 @@ class MessageCreateView(APIView):
                 message_type = Message.MessageType.VIDEO
             else:
                 message_type = Message.MessageType.FILE
+        elif forwarded_from_message:
+            # If forwarding, inherit message type and text from original message
+            message_type = forwarded_from_message.type
+            # Copy original text if no new text provided
+            if not text:
+                text = forwarded_from_message.text
 
         message = Message.objects.create(
             chat=chat,
@@ -146,6 +185,8 @@ class MessageCreateView(APIView):
             type=message_type,
             text=text,
             client_id=client_id,
+            reply_to=reply_to_message,
+            forwarded_from=forwarded_from_message,
         )
 
         if files:
@@ -168,6 +209,20 @@ class MessageCreateView(APIView):
                     size=file.size,
                     width=file_data.get('width'),
                     height=file_data.get('height'),
+                )
+        elif forwarded_from_message:
+            # Copy attachments from forwarded message
+            for original_attachment in forwarded_from_message.attachments.all():
+                Attachment.objects.create(
+                    message=message,
+                    type=original_attachment.type,
+                    storage_key=original_attachment.storage_key,
+                    file_name=original_attachment.file_name,
+                    mime_type=original_attachment.mime_type,
+                    size=original_attachment.size,
+                    width=original_attachment.width,
+                    height=original_attachment.height,
+                    duration_sec=original_attachment.duration_sec,
                 )
 
         chat.save(update_fields=['updated_at'])
@@ -355,6 +410,7 @@ class TranslationRequestView(APIView):
         high_priority = request.data.get('high_priority', [])
         medium_priority = request.data.get('medium_priority', [])
         low_priority = request.data.get('low_priority', [])
+        force_retranslate = request.data.get('force_retranslate', False)
 
         if not chat_id:
             return Response(
@@ -397,14 +453,22 @@ class TranslationRequestView(APIView):
                 "skipped": []
             })
 
-        # Bulk query: find messages that already have translations
+        # Bulk query: find messages that already have translations (skip if force_retranslate)
         from .models import MessageTranslation
-        existing_translation_ids = set(
+        if force_retranslate:
+            # Delete existing translations for messages that need retranslation
             MessageTranslation.objects.filter(
                 message_id__in=all_message_ids,
                 target_language=target_language
-            ).values_list('message_id', flat=True)
-        )
+            ).delete()
+            existing_translation_ids = set()
+        else:
+            existing_translation_ids = set(
+                MessageTranslation.objects.filter(
+                    message_id__in=all_message_ids,
+                    target_language=target_language
+                ).values_list('message_id', flat=True)
+            )
 
         # Bulk query: get all messages to check source_language, sender, and text
         messages_dict = {
@@ -440,8 +504,8 @@ class TranslationRequestView(APIView):
                 send_translation_ready_event(str(message_id), target_language, message.text or '', user_id)
                 return True
 
-            # Skip if source language matches target language - send original text
-            if message.source_language == target_language:
+            # Skip if source language matches target language - send original text (but not if source is 'unknown')
+            if message.source_language == target_language and message.source_language != 'unknown':
                 from .tasks import send_translation_ready_event
                 send_translation_ready_event(str(message_id), target_language, message.text or '', user_id)
                 return True
@@ -482,6 +546,54 @@ class TranslationRequestView(APIView):
             "low": enqueued_low,
             "skipped": skipped_ids
         })
+
+
+class AIAssistantView(APIView):
+    """
+    POST /api/messages/assistant/
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        from .ai_assistant import generate_message_from_prompt, format_as_business, format_as_friendly
+
+        action = request.data.get('action')
+        text = request.data.get('text', '')
+        context_messages = request.data.get('context_messages', [])
+        user_nickname = request.user.full_name
+
+        if not action:
+            return Response(
+                {"detail": "action is required (generate/business/friendly)."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if not text:
+            return Response(
+                {"detail": "text is required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            if action == 'generate':
+                result_text = generate_message_from_prompt(text, context_messages, user_nickname)
+            elif action == 'business':
+                result_text = format_as_business(text, context_messages[-5:] if context_messages else [], user_nickname)
+            elif action == 'friendly':
+                result_text = format_as_friendly(text, context_messages[-5:] if context_messages else [], user_nickname)
+            else:
+                return Response(
+                    {"detail": "Invalid action. Must be one of: generate, business, friendly."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            return Response({"result": result_text})
+
+        except Exception as e:
+            return Response(
+                {"detail": f"AI assistant error: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class MessageDeleteView(APIView):
