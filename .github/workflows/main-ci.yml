@@ -57,6 +57,8 @@ jobs:
         run: |
           PGPASSWORD=ci_pass psql -h localhost -U ci_user -d template1 \
             -c "CREATE EXTENSION IF NOT EXISTS vector;"
+          PGPASSWORD=ci_pass psql -h localhost -U ci_user -d teamhub_ci \
+            -c "CREATE EXTENSION IF NOT EXISTS vector;"
 
       - name: Run database migrations
         working-directory: backend
