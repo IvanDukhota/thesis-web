@@ -55,7 +55,7 @@ jobs:
 
       - name: Enable pgvector extension
         run: |
-          PGPASSWORD=ci_pass psql -h localhost -U ci_user -d teamhub_ci \
+          PGPASSWORD=ci_pass psql -h localhost -U ci_user -d template1 \
             -c "CREATE EXTENSION IF NOT EXISTS vector;"
 
       - name: Run database migrations
