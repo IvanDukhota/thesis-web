@@ -103,6 +103,19 @@
     border-radius: 4px;
 }
 
+.kb-drop-placeholder {
+    border-radius: 9px;
+    border: 2px dashed rgba(139, 92, 246, 0.45);
+    background: rgba(109, 40, 217, 0.07);
+    flex-shrink: 0;
+    animation: kbPlaceholderIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes kbPlaceholderIn {
+    from { opacity: 0; transform: scaleY(0.7); }
+    to   { opacity: 1; transform: scaleY(1); }
+}
+
 .kb-col-empty {
     flex: 1;
     display: flex;

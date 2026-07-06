@@ -3,12 +3,93 @@ import { RiBarChartBoxLine } from 'react-icons/ri';
 import { apiGetTeamStats } from '../../../../api/statsApi';
 import './TeamStats.css';
 
-const COLUMNS = [
-    { key: 'finished', label: 'Finished', color: '#22c55e' },
-    { key: 'in_progress', label: 'In Progress', color: '#7c3aed' },
-    { key: 'testing', label: 'Testing', color: '#f59e0b' },
-    { key: 'to_do', label: 'To Do', color: '#3f3f46' },
+const SEGMENTS = [
+    { key: 'finished',   label: 'Finished',    color: '#22c55e' },
+    { key: 'in_progress',label: 'In Progress',  color: '#7c3aed' },
+    { key: 'testing',    label: 'Testing',      color: '#f59e0b' },
+    { key: 'to_do',      label: 'To Do',        color: '#3f3f46' },
 ];
+
+function DonutChart({ t, total }) {
+    const r = 36;
+    const circ = 2 * Math.PI * r;
+    const doneRate = total > 0 ? Math.round((t.finished / total) * 100) : 0;
+
+    const computed = [];
+    let acc = 0;
+    for (const seg of SEGMENTS) {
+        const val = t[seg.key] ?? 0;
+        const len = total > 0 ? (val / total) * circ : 0;
+        computed.push({ ...seg, val, len, offset: acc });
+        acc += len;
+    }
+
+    return (
+        <div className="ts-donut-wrap">
+            <div className="ts-donut-svg-wrap">
+                <svg viewBox="0 0 100 100" className="ts-donut-svg">
+                    <circle cx="50" cy="50" r={r} fill="none"
+                        stroke="rgba(255,255,255,0.05)" strokeWidth="11" />
+                    {computed.map((seg, i) => seg.len > 0 && (
+                        <circle key={seg.key}
+                            cx="50" cy="50" r={r}
+                            fill="none"
+                            stroke={seg.color}
+                            strokeWidth="11"
+                            strokeLinecap="butt"
+                            className="ts-donut-seg"
+                            style={{
+                                strokeDashoffset: -seg.offset,
+                                '--seg-len': seg.len,
+                                '--seg-gap': circ - seg.len,
+                                animationDelay: `${i * 0.07}s`,
+                            }}
+                        />
+                    ))}
+                </svg>
+                <div className="ts-donut-center">
+                    <span className="ts-donut-pct">{doneRate}%</span>
+                    <span className="ts-donut-sub">done</span>
+                </div>
+            </div>
+            <div className="ts-donut-legend">
+                {computed.map(seg => (
+                    <div key={seg.key} className="ts-legend-item">
+                        <div className="ts-legend-dot" style={{ background: seg.color }} />
+                        <span className="ts-legend-name">{seg.label}</span>
+                        <span className="ts-legend-val">{seg.val}</span>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+function MiniRing({ rate }) {
+    const r = 14;
+    const circ = 2 * Math.PI * r;
+    const filled = (rate / 100) * circ;
+    const color = rate >= 70 ? '#22c55e' : rate >= 40 ? '#f59e0b' : '#52525b';
+    return (
+        <div className="ts-mini-ring">
+            <svg viewBox="0 0 36 36" width="34" height="34">
+                <circle cx="18" cy="18" r={r} fill="none"
+                    stroke="rgba(255,255,255,0.05)" strokeWidth="4" />
+                <circle cx="18" cy="18" r={r} fill="none"
+                    stroke={color} strokeWidth="4"
+                    strokeLinecap="round"
+                    className="ts-donut-seg"
+                    style={{
+                        strokeDashoffset: circ / 4,
+                        '--seg-len': filled,
+                        '--seg-gap': circ - filled,
+                    }}
+                />
+            </svg>
+            <span className="ts-mini-ring-val" style={{ color }}>{rate}%</span>
+        </div>
+    );
+}
 
 function OverviewTab({ stats }) {
     const t = stats.tasks;
@@ -40,26 +121,7 @@ function OverviewTab({ stats }) {
             {total === 0 ? (
                 <p className="ts-no-tasks">No tasks in team projects yet</p>
             ) : (
-                <div className="ts-bars-section">
-                    <div className="ts-bar-wrap">
-                        {COLUMNS.map(col => {
-                            const val = t[col.key];
-                            const pct = total > 0 ? Math.round((val / total) * 100) : 0;
-                            return (
-                                <div key={col.key} className="ts-bar-row">
-                                    <span className="ts-bar-label">{col.label}</span>
-                                    <div className="ts-bar-track">
-                                        <div
-                                            className="ts-bar-fill"
-                                            style={{ width: `${pct}%`, background: col.color }}
-                                        />
-                                    </div>
-                                    <span className="ts-bar-val">{val}</span>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
+                <DonutChart t={t} total={total} />
             )}
         </div>
     );
@@ -90,9 +152,7 @@ function MembersTab({ stats }) {
                         <span>{m.assigned}</span>
                         <span style={{ color: '#22c55e' }}>{m.completed}</span>
                         <span style={{ color: '#71717a' }}>{pending}</span>
-                        <span style={{ color: rate >= 70 ? '#22c55e' : rate >= 40 ? '#f59e0b' : '#71717a' }}>
-                            {m.assigned > 0 ? `${rate}%` : '—'}
-                        </span>
+                        <span>{m.assigned > 0 ? <MiniRing rate={rate} /> : '—'}</span>
                     </div>
                 );
             })}

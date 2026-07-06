@@ -20,7 +20,7 @@ export function TaskCard({ task, onDragStart, onEdit, canEdit = true }) {
             draggable={canEdit}
             onDragStart={canEdit ? (e) => {
                 e.dataTransfer.effectAllowed = 'move';
-                onDragStart(task.id);
+                onDragStart(task.id, e.currentTarget.offsetHeight);
             } : undefined}
             onDoubleClick={onEdit}
         >

@@ -24,6 +24,7 @@ export const KanbanBoard = forwardRef(function KanbanBoard({ projectId, projectT
     const [loading, setLoading] = useState(true);
     const [dragId, setDragId] = useState(null);
     const [dragOver, setDragOver] = useState(null);
+    const [dragCardHeight, setDragCardHeight] = useState(0);
     const [editingTask, setEditingTask] = useState(null);
     const dragColRef = useRef(null);
 
@@ -120,9 +121,10 @@ export const KanbanBoard = forwardRef(function KanbanBoard({ projectId, projectT
         setEditingTask(null);
     };
 
-    const handleDragStart = (id, col) => {
+    const handleDragStart = (id, col, height) => {
         if (!canEdit) return;
         setDragId(id);
+        setDragCardHeight(height);
         dragColRef.current = col;
     };
 
@@ -154,7 +156,7 @@ export const KanbanBoard = forwardRef(function KanbanBoard({ projectId, projectT
                         key={col}
                         className={`kb-column ${dragOver === col ? 'kb-column--over' : ''}`}
                         onDragOver={e => { e.preventDefault(); setDragOver(col); }}
-                        onDragLeave={() => setDragOver(null)}
+                        onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setDragOver(null); }}
                         onDrop={() => handleDrop(col)}
                     >
                         <div className="kb-col-header">
@@ -168,11 +170,14 @@ export const KanbanBoard = forwardRef(function KanbanBoard({ projectId, projectT
                                     key={task.id}
                                     task={task}
                                     canEdit={canEdit}
-                                    onDragStart={(id) => handleDragStart(id, col)}
+                                    onDragStart={(id, height) => handleDragStart(id, col, height)}
                                     onEdit={() => setEditingTask({ task, col })}
                                 />
                             ))}
-                            {tasks[col].length === 0 && (
+                            {dragOver === col && dragId && dragColRef.current !== col && (
+                                <div className="kb-drop-placeholder" style={{ height: dragCardHeight }} />
+                            )}
+                            {tasks[col].length === 0 && !(dragOver === col && dragId && dragColRef.current !== col) && (
                                 <div className="kb-col-empty">drop here</div>
                             )}
                         </div>

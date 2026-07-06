@@ -9,7 +9,7 @@ import CreateProjectModal from "../../components/features/marketplace/CreateJobM
 import ApplicationCard from "../../components/features/marketplace/ApplicationCard/ApplicationCard";
 import "./marketplace.css";
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 11;
 
 type TabType = "all" | "my-orders" | "applications";
 

@@ -8,6 +8,7 @@ export type User = {
   avatar?: string;
   created_at: string;
   is_contact?: boolean;
+  language?: string;
 };
 
 export type UserDirectoryResponse = {

@@ -20,7 +20,7 @@ from django.contrib import admin
 from django.urls import include, path
 import django_prometheus.urls
 from apps.common.views import health_check
-from apps.messages.views import MessageCreateView, TranslationRequestView, MessageDeleteView, MessageEditView
+from apps.messages.views import MessageCreateView, TranslationRequestView, MessageDeleteView, MessageEditView, AIAssistantView
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -30,6 +30,7 @@ urlpatterns = [
     path("api/messages/direct/", MessageCreateView.as_view(), name="message-create-direct"),
     path("api/messages/<uuid:message_id>/edit/", MessageEditView.as_view(), name="message-edit"),
     path("api/messages/<uuid:message_id>/", MessageDeleteView.as_view(), name="message-delete"),
+    path("api/messages/assistant/", AIAssistantView.as_view(), name="ai-assistant"),
     path("api/translations/request/", TranslationRequestView.as_view(), name="translation-request"),
     path('api/v1/health/', health_check),
     path('api/teams/', include('apps.teams.urls')),

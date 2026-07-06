@@ -251,7 +251,8 @@ export async function requestTranslations(
   chatId: string,
   highPriority: string[],
   mediumPriority: string[],
-  lowPriority: string[]
+  lowPriority: string[],
+  forceRetranslate: boolean = false
 ) {
   return apiRequest('/translations/request/', {
     method: 'POST',
@@ -261,6 +262,7 @@ export async function requestTranslations(
       high_priority: highPriority,
       medium_priority: mediumPriority,
       low_priority: lowPriority,
+      force_retranslate: forceRetranslate,
     }),
   });
 }
@@ -283,5 +285,34 @@ export async function deleteChat(chatId: string) {
   return apiRequest(`/chats/${chatId}/delete/`, {
     method: 'DELETE',
     auth: true,
+  });
+}
+
+export type AIAssistantAction = 'generate' | 'business' | 'friendly';
+
+export type AIAssistantRequest = {
+  action: AIAssistantAction;
+  text: string;
+  context_messages?: Array<{ sender: string; text: string; sent_at: string }>;
+};
+
+export type AIAssistantResponse = {
+  result: string;
+};
+
+export async function callAIAssistant(params: AIAssistantRequest) {
+  const body: Record<string, unknown> = {
+    action: params.action,
+    text: params.text,
+  };
+
+  if (params.context_messages) {
+    body.context_messages = params.context_messages;
+  }
+
+  return apiRequest<AIAssistantResponse>('/messages/assistant/', {
+    method: 'POST',
+    auth: true,
+    body: JSON.stringify(body),
   });
 }

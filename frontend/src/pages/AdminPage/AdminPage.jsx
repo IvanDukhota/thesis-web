@@ -1,9 +1,8 @@
 import './AdminPage.css';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Fragment } from 'react';
 import {
     RiDashboardLine,
     RiFileListLine,
-    RiUserLine,
     RiServerLine,
     RiShieldLine,
     RiLogoutBoxLine,
@@ -16,7 +15,6 @@ import { useNavigate } from 'react-router-dom';
 const NAV_ITEMS = [
     { id: 'metrics',  label: 'Metrics',      icon: <RiDashboardLine size={16} /> },
     { id: 'logs',     label: 'Request Logs', icon: <RiFileListLine size={16} /> },
-    { id: 'users',    label: 'Users',        icon: <RiUserLine size={16} /> },
     { id: 'services', label: 'Services',     icon: <RiServerLine size={16} /> },
 ];
 
@@ -157,6 +155,9 @@ function LogsSection() {
     const [error, setError] = useState(null);
     const [service, setService] = useState('teamhub-backend');
     const [limit, setLimit] = useState(50);
+    const [selectedLog, setSelectedLog] = useState(null);
+
+    const logKey = (log) => `${log.ts}_${log.method}_${log.path}_${log.ip}`;
 
     const fetchLogs = useCallback(() => {
         setLoading(true);
@@ -178,29 +179,20 @@ function LogsSection() {
     }, [fetchLogs]);
 
     const statusClass = (status) => STATUS_CLASS[Math.floor(status / 100)] || '';
+    const formatTime = (ts) => ts ? new Date(ts * 1000).toLocaleTimeString() : '—';
 
-    const formatTime = (ts) => {
-        if (!ts) return '—';
-        return new Date(ts * 1000).toLocaleTimeString();
-    };
+    const toggleSelect = (log) =>
+        setSelectedLog(prev => prev && logKey(prev) === logKey(log) ? null : log);
 
     return (
         <div className="adm-section">
             <div className="adm-logs-toolbar">
                 <h2 className="adm-section-title" style={{ margin: 0 }}>Request Logs</h2>
                 <div className="adm-logs-controls">
-                    <select
-                        className="adm-select"
-                        value={service}
-                        onChange={e => setService(e.target.value)}
-                    >
+                    <select className="adm-select" value={service} onChange={e => setService(e.target.value)}>
                         {SERVICES.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
-                    <select
-                        className="adm-select"
-                        value={limit}
-                        onChange={e => setLimit(Number(e.target.value))}
-                    >
+                    <select className="adm-select" value={limit} onChange={e => setLimit(Number(e.target.value))}>
                         {[25, 50, 100, 200].map(n => <option key={n} value={n}>{n} rows</option>)}
                     </select>
                     <button className="adm-refresh-btn" onClick={fetchLogs} disabled={loading}>
@@ -208,6 +200,42 @@ function LogsSection() {
                     </button>
                 </div>
             </div>
+
+            {selectedLog && (
+                <div className="adm-log-panel">
+                    <div className="adm-log-panel-header">
+                        <div className="adm-log-panel-meta">
+                            {selectedLog.method && (
+                                <span className={`adm-method adm-method--${selectedLog.method.toLowerCase()}`}>
+                                    {selectedLog.method}
+                                </span>
+                            )}
+                            <span className="adm-td-mono" style={{ color: '#d4d4d8' }}>{selectedLog.path || '—'}</span>
+                            {selectedLog.status && (
+                                <span className={`adm-status ${statusClass(selectedLog.status)}`}>{selectedLog.status}</span>
+                            )}
+                            {selectedLog.duration_ms != null && (
+                                <span className="adm-td-mono adm-td-muted">{selectedLog.duration_ms}ms</span>
+                            )}
+                            <span className="adm-td-mono adm-td-muted">{formatTime(selectedLog.ts)}</span>
+                        </div>
+                        <button className="adm-log-panel-close" onClick={() => setSelectedLog(null)}>✕</button>
+                    </div>
+                    {selectedLog.raw
+                        ? <pre className="adm-log-raw">{selectedLog.raw}</pre>
+                        : (
+                            <div className="adm-log-detail-fields">
+                                {Object.entries(selectedLog).filter(([, v]) => v != null).map(([k, v]) => (
+                                    <div key={k} className="adm-log-detail-field">
+                                        <span className="adm-log-detail-key">{k}</span>
+                                        <span className="adm-log-detail-val">{String(v)}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )
+                    }
+                </div>
+            )}
 
             {error && <div className="adm-error">{error}</div>}
 
@@ -233,17 +261,24 @@ function LogsSection() {
                             </tr>
                         </thead>
                         <tbody>
-                            {logs.map((log, i) => (
-                                <tr key={i}>
-                                    <td className="adm-td-mono">{formatTime(log.ts)}</td>
-                                    <td>{log.method ? <span className={`adm-method adm-method--${log.method.toLowerCase()}`}>{log.method}</span> : '—'}</td>
-                                    <td className="adm-td-path adm-td-mono" title={log.path || log.raw}>{log.path || log.raw || '—'}</td>
-                                    <td>{log.status ? <span className={`adm-status ${statusClass(log.status)}`}>{log.status}</span> : '—'}</td>
-                                    <td className="adm-td-mono">{log.duration_ms != null ? `${log.duration_ms}ms` : '—'}</td>
-                                    <td>{log.user || <span className="adm-td-muted">anon</span>}</td>
-                                    <td className="adm-td-mono adm-td-muted">{log.ip || '—'}</td>
-                                </tr>
-                            ))}
+                            {logs.map((log, i) => {
+                                const isSelected = selectedLog && logKey(selectedLog) === logKey(log);
+                                return (
+                                    <tr
+                                        key={i}
+                                        className={`adm-log-row${isSelected ? ' adm-log-row--selected' : ''}`}
+                                        onClick={() => toggleSelect(log)}
+                                    >
+                                        <td className="adm-td-mono">{formatTime(log.ts)}</td>
+                                        <td>{log.method ? <span className={`adm-method adm-method--${log.method.toLowerCase()}`}>{log.method}</span> : '—'}</td>
+                                        <td className="adm-td-path adm-td-mono" title={log.path || log.raw}>{log.path || log.raw || '—'}</td>
+                                        <td>{log.status ? <span className={`adm-status ${statusClass(log.status)}`}>{log.status}</span> : '—'}</td>
+                                        <td className="adm-td-mono">{log.duration_ms != null ? `${log.duration_ms}ms` : '—'}</td>
+                                        <td>{log.user || <span className="adm-td-muted">anon</span>}</td>
+                                        <td className="adm-td-mono adm-td-muted">{log.ip || '—'}</td>
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
                 </div>
@@ -396,7 +431,7 @@ export default function AdminPage() {
             <main className="adm-main">
                 {active === 'metrics' && <MetricsSection />}
                 {active === 'logs' && <LogsSection />}
-                {active === 'users' && <PlaceholderSection label="Users" />}
+
                 {active === 'services' && <ServicesSection />}
             </main>
         </div>

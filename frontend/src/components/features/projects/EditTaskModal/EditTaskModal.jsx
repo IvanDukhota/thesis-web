@@ -60,7 +60,7 @@ const isDocsFile = (name) => {
     return l.endsWith('.md') || l.endsWith('.txt');
 };
 
-function DocsPreviewModal({ file: initialFile, taskTitle, projectId, taskId, readOnly, onClose, onFileUpdated, initialEditMode = false }) {
+function DocsPreviewModal({ file: initialFile, taskTitle, projectId, taskId, readOnly, onClose, onFileUpdated, initialEditMode = false, isNewFile = false, onDeleteNew }) {
     const [currentFile, setCurrentFile] = useState(initialFile);
     const [content, setContent] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -69,6 +69,7 @@ function DocsPreviewModal({ file: initialFile, taskTitle, projectId, taskId, rea
     const [editContent, setEditContent] = useState('');
     const [editName, setEditName] = useState(initialFile.original_name);
     const [saving, setSaving] = useState(false);
+    const [hasSaved, setHasSaved] = useState(false);
     const displayName = editMode ? editName : currentFile.original_name;
     const isMarkdown = displayName.toLowerCase().endsWith('.md');
     const { Icon, color } = getFileIcon(displayName);
@@ -96,8 +97,25 @@ function DocsPreviewModal({ file: initialFile, taskTitle, projectId, taskId, rea
             setEditName(data.original_name);
             onFileUpdated(data);
             setEditMode(false);
+            setHasSaved(true);
         }
         setSaving(false);
+    };
+
+    const handleCancel = () => {
+        if (isNewFile && !hasSaved) {
+            onDeleteNew?.();
+        } else {
+            setEditMode(false);
+        }
+    };
+
+    const handleClose = () => {
+        if (isNewFile && !hasSaved) {
+            onDeleteNew?.();
+        } else {
+            onClose();
+        }
     };
 
     return createPortal(
@@ -138,13 +156,13 @@ function DocsPreviewModal({ file: initialFile, taskTitle, projectId, taskId, rea
                         )}
                         {editMode && (
                             <>
-                                <button className="fpv-edit-cancel" onClick={() => setEditMode(false)} disabled={saving}>Cancel</button>
+                                <button className="fpv-edit-cancel" onClick={handleCancel} disabled={saving}>Cancel</button>
                                 <button className="fpv-edit-save" onClick={handleSave} disabled={saving}>
                                     {saving ? 'Saving...' : 'Save'}
                                 </button>
                             </>
                         )}
-                        <button className="fpv-close" onClick={onClose}>
+                        <button className="fpv-close" onClick={handleClose}>
                             <RiCloseLine size={18} />
                         </button>
                     </div>
@@ -648,7 +666,13 @@ export function EditTaskModal({ task, currentCol, projectId, projectType, onClos
                             taskId={task.id}
                             readOnly={readOnly}
                             initialEditMode={previewAutoEdit}
+                            isNewFile={previewAutoEdit}
                             onClose={() => { setPreviewFile(null); setPreviewAutoEdit(false); }}
+                            onDeleteNew={async () => {
+                                await handleFileRemove(previewFile.id);
+                                setPreviewFile(null);
+                                setPreviewAutoEdit(false);
+                            }}
                             onFileUpdated={(updated) => {
                                 setFiles(prev => prev.map(f => f.id === updated.id ? updated : f));
                                 setPreviewFile(updated);

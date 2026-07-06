@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, Fragment } from "react";
-import { RiAddLine, RiAttachmentLine, RiSendPlaneFill, RiCheckLine, RiArrowDownLine, RiCloseLine, RiTranslate2 } from "react-icons/ri";
+import { RiAddLine, RiAttachmentLine, RiSendPlaneFill, RiCheckLine, RiArrowDownLine, RiCloseLine, RiTranslate2, RiRobot2Line } from "react-icons/ri";
 import { getMe, type User } from "../../shared/api/auth";
 import {
   getChats,
@@ -169,6 +169,9 @@ export default function ChatsPage() {
     return saved ? JSON.parse(saved) : false;
   });
 
+  // Store early translation events that arrive before messages are loaded
+  const pendingTranslationsRef = useRef<Map<string, string>>(new Map());
+
   const [contextMenu, setContextMenu] = useState<{
     x: number;
     y: number;
@@ -183,6 +186,8 @@ export default function ChatsPage() {
   const [forwardingMessage, setForwardingMessage] = useState<LocalMessage | null>(null);
   const [isForwardModalOpen, setIsForwardModalOpen] = useState(false);
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
+  const [isAIAssistantMenuOpen, setIsAIAssistantMenuOpen] = useState(false);
+  const [isAIAssistantLoading, setIsAIAssistantLoading] = useState(false);
 
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
   const floatingDateTimerRef = useRef<number | null>(null);
@@ -346,6 +351,22 @@ export default function ChatsPage() {
           scrollModeRef.current = "bottom";
         }
 
+        // Request translation for incoming message if auto-translate is enabled
+        if (!isSentByMe && autoTranslateEnabled && me?.language) {
+          // Mark message as pending
+          setMessages((prevMessages) =>
+            prevMessages.map((msg) =>
+              msg.id === payload.id
+                ? { ...msg, translation_status: 'pending' }
+                : msg
+            )
+          );
+
+          void requestTranslations(incomingChatId, [payload.id], [], []).catch((error) => {
+            console.error('Failed to request translation for new message:', error);
+          });
+        }
+
         if (isNewChat) {
           void getChat(incomingChatId).then((newChat) => {
             setActiveChatData(newChat);
@@ -374,7 +395,6 @@ export default function ChatsPage() {
       if (event.type === "message.deleted") {
         const messageId = String(event.message_id);
 
-        // Удаляем сообщение из списка
         setMessages((prev) => prev.filter((msg) => msg.id !== messageId));
 
         return;
@@ -383,6 +403,8 @@ export default function ChatsPage() {
       if (event.type === "message.edited") {
         const payload = event.payload as ChatMessageDto;
 
+        const isSentByMe = payload.sender.id === me.id;
+
         setMessages((prev) =>
           prev.map((msg) => {
             if (msg.id === payload.id) {
@@ -390,11 +412,28 @@ export default function ChatsPage() {
                 ...msg,
                 text: payload.text,
                 edited_at: payload.edited_at,
+                translated_text: undefined,
+                translation_status: undefined,
               };
             }
             return msg;
           })
         );
+
+        if (!isSentByMe && autoTranslateEnabled && me?.language && activeChatIdRef.current) {
+          setMessages((prevMessages) =>
+            prevMessages.map((msg) =>
+              msg.id === payload.id
+                ? { ...msg, translation_status: 'pending' }
+                : msg
+            )
+          );
+
+          void requestTranslations(activeChatIdRef.current, [payload.id], [], [], true).catch((error) => {
+            console.error('Failed to request translation for edited message:', error);
+          });
+        }
+
         return;
       }
 
@@ -510,18 +549,30 @@ export default function ChatsPage() {
       if (event.type === "translation.ready") {
         const { message_id, translated_text } = event;
 
-        setMessages((prev) =>
-          prev.map((msg) => {
+        if (typeof message_id !== 'string' || typeof translated_text !== 'string') {
+          return;
+        }
+
+        setMessages((prev) => {
+          let updated = false;
+          const result = prev.map((msg) => {
             if (msg.id === message_id) {
+              updated = true;
               return {
                 ...msg,
-                translated_text: translated_text as string,
+                translated_text: translated_text,
                 translation_status: "ready" as const,
               };
             }
             return msg;
-          })
-        );
+          });
+
+          if (!updated) {
+            pendingTranslationsRef.current.set(message_id, translated_text);
+          }
+
+          return result;
+        });
 
         return;
       }
@@ -934,7 +985,21 @@ export default function ChatsPage() {
           chatData.messages,
           me?.id ?? 0,
           recipientReadPos,
-        ),
+        ).map((msg) => {
+          // Apply pending translations that arrived early
+          if (pendingTranslationsRef.current.has(msg.id)) {
+            const translatedText = pendingTranslationsRef.current.get(msg.id);
+            pendingTranslationsRef.current.delete(msg.id); // Remove after applying
+            if (typeof translatedText === 'string') {
+              return {
+                ...msg,
+                translated_text: translatedText,
+                translation_status: 'ready' as const,
+              };
+            }
+          }
+          return msg;
+        }),
       );
       setHasMoreOlder(chatData.has_more_older);
       setHasMoreNewer(chatData.has_more_newer);
@@ -1167,6 +1232,43 @@ export default function ChatsPage() {
 
   const handleRemoveFile = (index: number) => {
     setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleAIAssistant = async (action: 'generate' | 'business' | 'friendly') => {
+    if (!messageText.trim() || !activeChatId) return;
+
+    setIsAIAssistantLoading(true);
+    setIsAIAssistantMenuOpen(false);
+
+    try {
+      const { callAIAssistant } = await import('../../shared/api/chat');
+
+      let contextMessages: Array<{ sender: string; text: string; sent_at: string }> = [];
+
+      if (action === 'generate') {
+        // Get last 10 messages for context
+        contextMessages = messages
+          .slice(-10)
+          .map(msg => ({
+            sender: msg.sender.full_name,
+            text: msg.text,
+            sent_at: msg.sent_at
+          }));
+      }
+
+      const response = await callAIAssistant({
+        action,
+        text: messageText,
+        context_messages: action === 'generate' ? contextMessages : undefined,
+      });
+
+      setMessageText(response.result);
+    } catch (error) {
+      console.error('AI assistant error:', error);
+      alert('AI assistant failed. Please try again.');
+    } finally {
+      setIsAIAssistantLoading(false);
+    }
   };
 
   const handleAutoTranslateToggle = async (enabled: boolean) => {
@@ -2315,6 +2417,57 @@ export default function ChatsPage() {
                     }
                   }}
                 />
+
+                <div style={{ position: 'relative' }}>
+                  <button
+                    className="chat-main__ai-assistant"
+                    onClick={() => setIsAIAssistantMenuOpen(!isAIAssistantMenuOpen)}
+                    disabled={chatLoading || isUploading || !messageText.trim() || isAIAssistantLoading}
+                    title="AI Assistant"
+                  >
+                    {isAIAssistantLoading ? (
+                      <div className="chat-ai-assistant__spinner" />
+                    ) : (
+                      <RiRobot2Line size={20} />
+                    )}
+                  </button>
+
+                  {isAIAssistantMenuOpen && (
+                    <>
+                      <div
+                        style={{
+                          position: 'fixed',
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          zIndex: 999,
+                        }}
+                        onClick={() => setIsAIAssistantMenuOpen(false)}
+                      />
+                      <div className="chat-ai-assistant-menu">
+                        <button
+                          className="chat-ai-assistant-menu__item"
+                          onClick={() => handleAIAssistant('generate')}
+                        >
+                          Generate from prompt
+                        </button>
+                        <button
+                          className="chat-ai-assistant-menu__item"
+                          onClick={() => handleAIAssistant('business')}
+                        >
+                          Format as business
+                        </button>
+                        <button
+                          className="chat-ai-assistant-menu__item"
+                          onClick={() => handleAIAssistant('friendly')}
+                        >
+                          Format as friendly
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
 
                 <button
                   className="chat-main__send"

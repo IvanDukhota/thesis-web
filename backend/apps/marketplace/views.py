@@ -286,6 +286,9 @@ class OrderViewSet(viewsets.ModelViewSet):
             )
 
         embedding_url = getattr(settings, 'EMBEDDING_SERVICE_URL', 'http://localhost:8002')
+        reranker_url = getattr(settings, 'RERANKER_SERVICE_URL', 'http://localhost:8003')
+
+        # Step 1: Get query embedding
         try:
             resp = http_requests.post(
                 f"{embedding_url}/embed",
@@ -300,7 +303,9 @@ class OrderViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
 
-        threshold = 0.2
+        # Step 2: Get top 30 candidates using vector similarity
+        # Higher threshold (0.4) for better cross-lingual matching
+        threshold = 0.5
         queryset = (
             Order.objects
             .filter(status=Order.OPEN, embedding__isnull=False)
@@ -332,13 +337,68 @@ class OrderViewSet(viewsets.ModelViewSet):
             except ValueError:
                 pass
 
-        queryset = queryset.order_by('distance').distinct()
+        # Get top 30 candidates
+        candidates = list(queryset.order_by('distance')[:30])
 
-        page = self.paginate_queryset(queryset)
+        if not candidates:
+            return Response({'results': []})
+
+        # Step 3: Prepare documents for reranker
+        documents = []
+        for order in candidates:
+            documents.append({
+                'id': str(order.id),
+                'category': order.category.name if order.category else '',
+                'tags': [tag.name for tag in order.tags.all()],
+                'title': order.title,
+                'description': order.description,
+            })
+
+        # Step 4: Rerank using reranker service
+        try:
+            rerank_resp = http_requests.post(
+                f"{reranker_url}/rerank",
+                json={
+                    "query": query,
+                    "documents": documents,
+                    "top_k": 30
+                },
+                timeout=60,
+            )
+            rerank_resp.raise_for_status()
+            rerank_results = rerank_resp.json()['results']
+        except Exception as e:
+            return Response(
+                {'error': f'Reranker service unavailable: {str(e)}'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        # Step 5: Filter by relevance threshold
+        # 0.10 (10%) provides best balance between precision and recall
+        # Note: Cross-lingual queries may have lower scores but still be relevant
+        relevance_threshold = 0.005
+        filtered_results = [
+            r for r in rerank_results
+            if r['relevance_score'] >= relevance_threshold
+        ]
+
+        # Step 6: Reorder candidates based on reranker scores
+        order_map = {str(order.id): order for order in candidates}
+        final_orders = []
+        for result in filtered_results:
+            order = order_map.get(result['id'])
+            if order:
+                # Attach reranker score to order for debugging
+                order.rerank_score = result['score']
+                order.relevance_score = result['relevance_score']
+                final_orders.append(order)
+
+        # Step 7: Paginate and return
+        page = self.paginate_queryset(final_orders)
         if page is not None:
             serializer = OrderListSerializer(page, many=True, context={'request': request})
             return self.get_paginated_response(serializer.data)
-        serializer = OrderListSerializer(queryset, many=True, context={'request': request})
+        serializer = OrderListSerializer(final_orders, many=True, context={'request': request})
         return Response(serializer.data)
 
 

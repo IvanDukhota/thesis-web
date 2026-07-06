@@ -30,10 +30,17 @@ function AdminRoute({ children }) {
     return children;
 }
 
+function RootRedirect() {
+    const { user, loading } = useAuth();
+    if (loading) return null;
+    if (user?.is_staff) return <Navigate to="/admin" replace />;
+    return <MainPage />;
+}
+
 function AppRoutes() {
     return (
         <Routes>
-            <Route path="/" element={<MainPage />} />
+            <Route path="/" element={<RootRedirect />} />
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
             <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />

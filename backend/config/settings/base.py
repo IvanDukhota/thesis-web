@@ -259,12 +259,18 @@ CACHES = {
     }
 }
 
-TRANSLATION_SERVICE_URL = os.getenv(
-    'TRANSLATION_SERVICE_URL',
-    'http://localhost:8001'
-)
 
 EMBEDDING_SERVICE_URL = os.getenv(
     'EMBEDDING_SERVICE_URL',
     'http://localhost:8002'
+)
+
+OLLAMA_SERVICE_URL = os.getenv(
+    'OLLAMA_SERVICE_URL',
+    'http://localhost:11434'
+)
+
+RERANKER_SERVICE_URL = os.getenv(
+    'RERANKER_SERVICE_URL',
+    'http://localhost:8003'
 )

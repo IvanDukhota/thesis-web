@@ -73,8 +73,67 @@
 
 .ts-donut-wrap {
     display: flex;
-    gap: 24px;
+    gap: 28px;
     align-items: center;
+    justify-content: center;
+    padding: 8px 0;
+}
+
+.ts-donut-svg-wrap {
+    position: relative;
+    width: 150px;
+    height: 150px;
+    flex-shrink: 0;
+}
+
+.ts-donut-svg {
+    transform: rotate(-90deg);
+}
+
+@keyframes tsSegDraw {
+    from { stroke-dasharray: 0 1000; }
+    to   { stroke-dasharray: var(--seg-len) var(--seg-gap); }
+}
+
+.ts-donut-seg {
+    animation: tsSegDraw 0.75s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.ts-donut-center {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.ts-donut-pct {
+    font-size: 26px;
+    font-weight: 700;
+    color: #e4e4e7;
+    letter-spacing: -0.04em;
+    line-height: 1;
+}
+
+.ts-donut-sub {
+    font-size: 10px;
+    color: #52525b;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-top: 2px;
+}
+
+.ts-mini-ring {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.ts-mini-ring-val {
+    font-size: 11.5px;
+    font-weight: 600;
 }
 
 .ts-donut-legend {
@@ -184,10 +243,11 @@
 .ts-table-row {
     display: grid;
     grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
-    padding: 8px 8px;
+    padding: 6px 8px;
     font-size: 12.5px;
     color: #71717a;
     border-radius: 6px;
+    align-items: center;
     transition: background 0.15s;
 }
 

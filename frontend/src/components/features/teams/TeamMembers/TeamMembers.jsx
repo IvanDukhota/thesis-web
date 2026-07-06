@@ -6,30 +6,46 @@ import './TeamMembers.css';
 
 function RoleSelect({ roles, value, onChange }) {
     const [open, setOpen] = useState(false);
-    const ref = useRef(null);
+    const [dropdownStyle, setDropdownStyle] = useState({});
+    const triggerRef = useRef(null);
     const selected = roles.find(r => r.id === value);
 
     useEffect(() => {
         if (!open) return;
         const handler = (e) => {
-            if (!ref.current?.contains(e.target)) setOpen(false);
+            if (!triggerRef.current?.contains(e.target)) setOpen(false);
         };
         document.addEventListener('pointerdown', handler);
         return () => document.removeEventListener('pointerdown', handler);
     }, [open]);
 
+    const handleOpen = () => {
+        if (triggerRef.current) {
+            const rect = triggerRef.current.getBoundingClientRect();
+            setDropdownStyle({
+                position: 'fixed',
+                top: rect.bottom + 4,
+                left: rect.left,
+                width: rect.width,
+                zIndex: 999999,
+            });
+        }
+        setOpen(v => !v);
+    };
+
     return (
-        <div className="tmm-role-select" ref={ref}>
+        <div className="tmm-role-select">
             <button
+                ref={triggerRef}
                 className={`tmm-role-trigger ${open ? 'tmm-role-trigger--open' : ''}`}
-                onClick={() => setOpen(v => !v)}
+                onClick={handleOpen}
                 type="button"
             >
                 <span>{selected?.name || 'Select role'}</span>
                 <RiArrowDownSLine size={15} className={`tmm-role-arrow ${open ? 'tmm-role-arrow--up' : ''}`} />
             </button>
-            {open && (
-                <div className="tmm-role-list">
+            {open && createPortal(
+                <div className="tmm-role-list" style={dropdownStyle}>
                     {roles.map(r => (
                         <button
                             key={r.id}
@@ -40,7 +56,8 @@ function RoleSelect({ roles, value, onChange }) {
                             {r.name}
                         </button>
                     ))}
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );
