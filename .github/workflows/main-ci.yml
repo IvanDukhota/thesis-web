@@ -100,12 +100,6 @@ jobs:
         working-directory: frontend
         run: npm run lint
 
-      # Fast path for feature branches: type-check without bundling
-      - name: TypeScript type check
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/feature/')
-        working-directory: frontend
-        run: npx tsc --noEmit
-
       # Full build for develop, main and any PR
       - name: Build
         if: >

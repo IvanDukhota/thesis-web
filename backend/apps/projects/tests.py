@@ -41,7 +41,7 @@ class ProjectCreateTests(TestCase):
         members_res = self.client.get(f'{PROJECTS_URL}{pk}/members/')
         self.assertEqual(members_res.status_code, status.HTTP_200_OK)
         self.assertEqual(len(members_res.data), 1)
-        self.assertTrue(members_res.data[0]['role']['is_owner'])
+        self.assertTrue(members_res.data[0]['is_owner'])
 
     def test_project_list_returns_only_own_projects(self):
         self.client.post(PROJECTS_URL, {'name': 'Mine', 'type': 'solo'})
