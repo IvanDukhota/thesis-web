@@ -71,6 +71,9 @@ jobs:
             apps.users \
             apps.projects \
             apps.tasks \
+            apps.marketplace \
+            apps.messages \
+            apps.chats \
             tests \
             --verbosity=2
 

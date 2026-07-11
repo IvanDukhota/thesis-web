@@ -853,3 +853,78 @@
     word-wrap: break-word;
 }
 
+/* ── Image file items ── */
+
+.etm-img-item {
+    align-items: center;
+}
+
+.etm-img-thumb-btn {
+    position: relative;
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    border: none;
+    padding: 0;
+    background: transparent;
+    cursor: pointer;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.etm-img-thumb {
+    width: 36px;
+    height: 36px;
+    object-fit: cover;
+    border-radius: 5px;
+    display: block;
+}
+
+.etm-img-zoom {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.55);
+    color: #fff;
+    opacity: 0;
+    transition: opacity 0.15s;
+    border-radius: 5px;
+}
+
+.etm-img-thumb-btn:hover .etm-img-zoom {
+    opacity: 1;
+}
+
+/* ── TaskImageModal ── */
+
+.tim-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.88);
+    z-index: 100002;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px;
+    backdrop-filter: blur(4px);
+    animation: fpvIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tim-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    z-index: 1;
+}
+
+.tim-img {
+    max-width: 90vw;
+    max-height: 85vh;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 40px 80px rgba(0, 0, 0, 0.8);
+}
+

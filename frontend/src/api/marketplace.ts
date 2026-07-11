@@ -44,6 +44,9 @@ export type OrderListItem = {
   files_count: number;
   created_at: string;
   similarity_percentage: number | null;
+  translated_title?: string | null;
+  translated_description?: string | null;
+  translation_status?: 'pending' | 'ready' | null;
 };
 
 export type OrderDetail = {
@@ -64,6 +67,9 @@ export type OrderDetail = {
   has_applied: boolean;
   created_at: string;
   updated_at: string;
+  translated_title?: string | null;
+  translated_description?: string | null;
+  translation_status?: 'pending' | 'ready' | null;
 };
 
 export type OrderFilters = {
@@ -73,6 +79,14 @@ export type OrderFilters = {
   min_price?: number;
   max_price?: number;
   sort?: string;
+  page?: number;
+};
+
+export type PaginatedResponse<T> = {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
 };
 
 export async function getCategories() {
@@ -89,7 +103,7 @@ export async function getTags(limit = 20) {
   });
 }
 
-export async function getOrders(filters: OrderFilters = {}): Promise<OrderListItem[]> {
+export async function getOrders(filters: OrderFilters = {}): Promise<PaginatedResponse<OrderListItem>> {
   const params = new URLSearchParams();
 
   if (filters.search) params.set('search', filters.search);
@@ -97,18 +111,19 @@ export async function getOrders(filters: OrderFilters = {}): Promise<OrderListIt
   if (filters.tags) filters.tags.forEach(tag => params.append('tags', tag));
   if (filters.min_price) params.set('min_price', String(filters.min_price));
   if (filters.max_price) params.set('max_price', String(filters.max_price));
+  if (filters.page) params.set('page', String(filters.page));
   params.set('sort', filters.sort ?? '-created_at');
 
   const query = params.toString();
-  const response = await apiRequest<{ results: OrderListItem[] }>(`/marketplace/orders/?${query}`, {
+  return apiRequest<PaginatedResponse<OrderListItem>>(`/marketplace/orders/?${query}`, {
     method: 'GET',
     auth: true,
   });
-  return response.results;
 }
 
-export async function getOrder(slug: string) {
-  return apiRequest<OrderDetail>(`/marketplace/orders/${slug}/`, {
+export async function getOrder(slug: string, translate = false) {
+  const params = translate ? '?translate=true' : '';
+  return apiRequest<OrderDetail>(`/marketplace/orders/${slug}/${params}`, {
     method: 'GET',
     auth: true,
   });
@@ -191,30 +206,29 @@ export async function deleteOrder(slug: string): Promise<void> {
   });
 }
 
-export async function getMyOrders(): Promise<OrderListItem[]> {
-  const response = await apiRequest<{ results: OrderListItem[] }>('/marketplace/orders/my_orders/', {
+export async function getMyOrders(): Promise<PaginatedResponse<OrderListItem>> {
+  return apiRequest<PaginatedResponse<OrderListItem>>('/marketplace/orders/my_orders/', {
     method: 'GET',
     auth: true,
   });
-  return response.results;
 }
 
 export async function aiSearch(
   query: string,
-  filters: Pick<OrderFilters, 'category' | 'tags' | 'min_price' | 'max_price'> = {},
-): Promise<OrderListItem[]> {
+  filters: Pick<OrderFilters, 'category' | 'tags' | 'min_price' | 'max_price' | 'sort'> = {},
+): Promise<PaginatedResponse<OrderListItem>> {
   const params = new URLSearchParams();
   params.set('q', query);
   if (filters.category) params.set('category', filters.category);
   if (filters.tags) filters.tags.forEach(tag => params.append('tags', tag));
   if (filters.min_price) params.set('min_price', String(filters.min_price));
   if (filters.max_price) params.set('max_price', String(filters.max_price));
+  if (filters.sort) params.set('sort', filters.sort);
 
-  const response = await apiRequest<{ results: OrderListItem[] }>(
+  return apiRequest<PaginatedResponse<OrderListItem>>(
     `/marketplace/orders/ai_search/?${params.toString()}`,
     { method: 'GET', auth: false },
   );
-  return response.results;
 }
 
 export type OrderApplication = {
@@ -304,5 +318,13 @@ export async function deleteApplication(id: string): Promise<void> {
   await apiRequest<void>(`/marketplace/applications/${id}/`, {
     method: 'DELETE',
     auth: true,
+  });
+}
+
+export async function requestOrderTranslations(orderIds: string[]): Promise<void> {
+  await apiRequest<{ status: string; count: number }>('/marketplace/orders/request_translations/', {
+    method: 'POST',
+    auth: true,
+    body: JSON.stringify({ order_ids: orderIds }),
   });
 }

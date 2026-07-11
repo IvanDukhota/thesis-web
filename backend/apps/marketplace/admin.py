@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Category, Tag, Order, OrderAttachment, OrderApplication
+from .models import Category, Tag, Order, OrderAttachment, OrderApplication, OrderTranslation
 
 
 @admin.action(description='Re-embed selected orders')
@@ -104,3 +104,24 @@ class OrderAttachmentAdmin(admin.ModelAdmin):
     search_fields = ['order__title']
     raw_id_fields = ['order']
     readonly_fields = ['uploaded_at']
+
+
+@admin.register(OrderTranslation)
+class OrderTranslationAdmin(admin.ModelAdmin):
+    list_display = ['order', 'target_language', 'created_at']
+    list_filter = ['target_language', 'created_at']
+    search_fields = ['order__title', 'translated_title', 'translated_description']
+    raw_id_fields = ['order']
+    readonly_fields = ['created_at']
+
+    fieldsets = (
+        ('Order Information', {
+            'fields': ('order', 'target_language')
+        }),
+        ('Translations', {
+            'fields': ('translated_title', 'translated_description')
+        }),
+        ('Timestamps', {
+            'fields': ('created_at',)
+        }),
+    )

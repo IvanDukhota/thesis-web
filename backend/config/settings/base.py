@@ -242,13 +242,6 @@ CHANNEL_LAYERS = {
     },
 }
 
-# # Для разработки БЕЗ Redis раскомментируйте:
-# CHANNEL_LAYERS = {
-#     "default": {
-#         "BACKEND": "channels.layers.InMemoryChannelLayer"
-#     },
-# }
-
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.redis.RedisCache',
@@ -269,6 +262,10 @@ OLLAMA_SERVICE_URL = os.getenv(
     'OLLAMA_SERVICE_URL',
     'http://localhost:11434'
 )
+
+# Translation API settings
+# Set to True to use MyMemory API (free, no registration), False to use Ollama local model
+USE_TRANSLATION_API = os.getenv('USE_TRANSLATION_API', 'False').lower() == 'true'
 
 RERANKER_SERVICE_URL = os.getenv(
     'RERANKER_SERVICE_URL',

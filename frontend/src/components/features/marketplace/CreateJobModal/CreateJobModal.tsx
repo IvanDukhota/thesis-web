@@ -1,5 +1,10 @@
 import { useState, useEffect, useRef } from "react";
-import { RiCloseLine, RiAttachmentLine, RiAddLine } from "react-icons/ri";
+import { RiCloseLine, RiAttachmentLine, RiAddLine, RiEyeLine, RiEditLine } from "react-icons/ri";
+import ReactMarkdown from "react-markdown";
+import remarkBreaks from "remark-breaks";
+import remarkGfm from "remark-gfm";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { getCategories, getTags, createOrder, type Category, type Tag, type OrderDetail } from "../../../../api/marketplace";
 import TagSelectionModal from "../TagSelectionModal/TagSelectionModal";
 import "./create-job-modal.css";
@@ -29,8 +34,10 @@ export default function CreateProjectModal({
   const [isCreating, setIsCreating] = useState(false);
   const [isTagModalOpen, setIsTagModalOpen] = useState(false);
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
+  const [showMarkdownPreview, setShowMarkdownPreview] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const categoryRef = useRef<HTMLDivElement>(null);
+  const descriptionRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -160,70 +167,25 @@ export default function CreateProjectModal({
           <form className="cjm-body" onSubmit={handleSubmit}>
             <div className="cjm-grid">
 
-              {/* Left column: Title, Description, Tags */}
+              {/* Left column: All fields except Description and Attachments */}
               <div className="cjm-col">
                 <div className="cjm-field">
                   <label className="cjm-label" htmlFor="cjm-title">
                     Title <span className="cjm-required">*</span>
                   </label>
-                  <input
+                  <textarea
                     id="cjm-title"
-                    type="text"
-                    className="cjm-input"
+                    className="cjm-input cjm-input--title"
                     placeholder="e.g., Develop CRM System"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     disabled={isCreating}
                     maxLength={255}
                     required
+                    rows={2}
                   />
                 </div>
 
-                <div className="cjm-field cjm-field--grow">
-                  <label className="cjm-label" htmlFor="cjm-description">
-                    Description <span className="cjm-required">*</span>
-                  </label>
-                  <textarea
-                    id="cjm-description"
-                    className="cjm-textarea cjm-textarea--grow"
-                    placeholder="Describe your project requirements in detail…"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    disabled={isCreating}
-                    required
-                  />
-                </div>
-
-                <div className="cjm-field">
-                  <label className="cjm-label">Technologies & Skills</label>
-                  <div className="cjm-tags-container">
-                    {selectedTags.map((tag) => (
-                      <div key={tag.id} className="cjm-tag">
-                        {tag.name}
-                        <button
-                          type="button"
-                          className="cjm-tag-remove"
-                          onClick={() => handleRemoveTag(tag)}
-                          disabled={isCreating}
-                        >
-                          <RiCloseLine size={13} />
-                        </button>
-                      </div>
-                    ))}
-                    <button
-                      type="button"
-                      className="cjm-tag cjm-tag--add"
-                      onClick={() => setIsTagModalOpen(true)}
-                      disabled={isCreating}
-                    >
-                      <RiAddLine size={13} /> Add Skills
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Right column: Category, Budget, Days, Attachments */}
-              <div className="cjm-col">
                 <div className="cjm-field">
                   <label className="cjm-label" htmlFor="cjm-category">
                     Category <span className="cjm-required">*</span>
@@ -295,6 +257,99 @@ export default function CreateProjectModal({
                     step="1"
                     required
                   />
+                </div>
+
+                <div className="cjm-field">
+                  <label className="cjm-label">Technologies & Skills</label>
+                  <div className="cjm-tags-container">
+                    {selectedTags.map((tag) => (
+                      <div key={tag.id} className="cjm-tag">
+                        {tag.name}
+                        <button
+                          type="button"
+                          className="cjm-tag-remove"
+                          onClick={() => handleRemoveTag(tag)}
+                          disabled={isCreating}
+                        >
+                          <RiCloseLine size={13} />
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      className="cjm-tag cjm-tag--add"
+                      onClick={() => setIsTagModalOpen(true)}
+                      disabled={isCreating}
+                    >
+                      <RiAddLine size={13} /> Add Skills
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right column: Description (with markdown) and Attachments */}
+              <div className="cjm-col cjm-col--right">
+                <div className="cjm-field cjm-field--description">
+                  <div className="cjm-description-header">
+                    <label className="cjm-label">
+                      Description <span className="cjm-required">*</span>
+                      <span className="cjm-label-hint">(Markdown supported)</span>
+                    </label>
+                    <button
+                      type="button"
+                      className="cjm-preview-toggle"
+                      onClick={() => setShowMarkdownPreview(!showMarkdownPreview)}
+                      disabled={isCreating}
+                      title={showMarkdownPreview ? "Edit" : "Preview"}
+                    >
+                      {showMarkdownPreview ? <RiEditLine size={14} /> : <RiEyeLine size={14} />}
+                      {showMarkdownPreview ? "Edit" : "Preview"}
+                    </button>
+                  </div>
+
+                  {showMarkdownPreview ? (
+                    <div className="cjm-markdown-preview">
+                      {description ? (
+                        <ReactMarkdown
+                          remarkPlugins={[remarkBreaks, remarkGfm]}
+                          components={{
+                            code({ node, inline, className, children, ...props }) {
+                              const match = /language-(\w+)/.exec(className || '');
+                              return !inline && match ? (
+                                <SyntaxHighlighter
+                                  style={vscDarkPlus}
+                                  language={match[1]}
+                                  PreTag="div"
+                                  {...props}
+                                >
+                                  {String(children).replace(/\n$/, '')}
+                                </SyntaxHighlighter>
+                              ) : (
+                                <code className={className} {...props}>
+                                  {children}
+                                </code>
+                              );
+                            }
+                          }}
+                        >
+                          {description}
+                        </ReactMarkdown>
+                      ) : (
+                        <p className="cjm-markdown-empty">Nothing to preview yet...</p>
+                      )}
+                    </div>
+                  ) : (
+                    <textarea
+                      ref={descriptionRef}
+                      id="cjm-description"
+                      className="cjm-textarea cjm-textarea--markdown"
+                      placeholder="Describe your project requirements in detail… (Markdown supported)"
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      disabled={isCreating}
+                      required
+                    />
+                  )}
                 </div>
 
                 <div className="cjm-field cjm-field--grow">

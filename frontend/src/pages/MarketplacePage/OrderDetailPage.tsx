@@ -1,7 +1,15 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { RiTranslate2, RiLoader4Line } from "react-icons/ri";
+import ReactMarkdown from "react-markdown";
+import remarkBreaks from "remark-breaks";
+import remarkGfm from "remark-gfm";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { getOrder, deleteOrder, type OrderDetail } from "../../api/marketplace";
 import { apiAddContact } from "../../api/contactsApi";
+import { appWebSocketClient, type AppSocketEvent } from "../../shared/realtime/ws-client";
+import { useRealtime } from "../../providers/RealtimeProvider";
 import Header from "../../components/layout/Header/Header";
 import ImageModal from "../../components/features/chat/ImageModal/ImageModal";
 import EditOrderModal from "../../components/features/marketplace/EditOrderModal/EditOrderModal";
@@ -12,6 +20,9 @@ import "./order-detail.css";
 export default function OrderDetailPage() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { connected } = useRealtime();
+
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -23,11 +34,42 @@ export default function OrderDetailPage() {
   const [isApplyOpen, setIsApplyOpen] = useState(false);
   const [isContacting, setIsContacting] = useState(false);
 
+  // Get translation state from marketplace
+  const marketplaceState = (location.state as any)?.marketplaceState;
+  const [autoTranslateEnabled, setAutoTranslateEnabled] = useState(
+    marketplaceState?.autoTranslateEnabled ?? false
+  );
+
+  // Subscribe to WebSocket translation events
+  useEffect(() => {
+    if (!connected) return;
+
+    const unsubscribe = appWebSocketClient.onEvent((event: AppSocketEvent) => {
+      if (event.type === "translation.order_ready") {
+        const { order_id, translated_title, translated_description } = event;
+
+        if (order?.id === order_id) {
+          setOrder((prev) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              translated_title: translated_title as string,
+              translated_description: translated_description as string,
+              translation_status: 'ready' as const,
+            };
+          });
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, [connected, order?.id]);
+
   useEffect(() => {
     const loadOrder = async () => {
       if (!slug) return;
       try {
-        const data = await getOrder(slug);
+        const data = await getOrder(slug, autoTranslateEnabled);
         setOrder(data);
       } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
@@ -38,7 +80,7 @@ export default function OrderDetailPage() {
       }
     };
     void loadOrder();
-  }, [slug]);
+  }, [slug, autoTranslateEnabled]);
 
   if (loading) {
     return (
@@ -95,7 +137,17 @@ export default function OrderDetailPage() {
     setIsDeleting(true);
     try {
       await deleteOrder(order.slug);
-      navigate("/marketplace");
+      const state = location.state as any;
+      if (state?.fromMarketplace && state?.marketplaceState) {
+        navigate("/marketplace", {
+          state: {
+            fromOrderDetail: true,
+            ...state.marketplaceState
+          }
+        });
+      } else {
+        navigate("/marketplace");
+      }
     } catch {
       alert("Failed to delete order. Please try again.");
       setIsDeleting(false);
@@ -152,7 +204,19 @@ export default function OrderDetailPage() {
       />
 
       <div className="order-detail-container">
-        <button className="order-detail-back" onClick={() => navigate("/marketplace")}>
+        <button className="order-detail-back" onClick={() => {
+          const state = location.state as any;
+          if (state?.fromMarketplace && state?.marketplaceState) {
+            navigate("/marketplace", {
+              state: {
+                fromOrderDetail: true,
+                ...state.marketplaceState
+              }
+            });
+          } else {
+            navigate("/marketplace");
+          }
+        }}>
           ← Back to Marketplace
         </button>
 
@@ -161,7 +225,24 @@ export default function OrderDetailPage() {
           {/* ── Main ── */}
           <div className="order-detail-main">
             <div className="order-detail-main-body">
-              <h1 className="order-detail-title">{order.title}</h1>
+              <div className="order-detail-title-row">
+                <h1 className="order-detail-title">
+                  {autoTranslateEnabled && order.translated_title
+                    ? order.translated_title
+                    : order.title}
+                </h1>
+                <button
+                  className={`order-detail-translate-toggle ${autoTranslateEnabled ? 'order-detail-translate-toggle--active' : ''}`}
+                  onClick={() => setAutoTranslateEnabled(!autoTranslateEnabled)}
+                  title={autoTranslateEnabled ? "Show original" : "Translate"}
+                >
+                  {autoTranslateEnabled && order.translation_status === 'pending' ? (
+                    <RiLoader4Line size={20} className="order-detail-translate-spinner" />
+                  ) : (
+                    <RiTranslate2 size={20} />
+                  )}
+                </button>
+              </div>
 
               <div className="order-detail-meta">
                 <div className="order-detail-buyer">
@@ -192,7 +273,34 @@ export default function OrderDetailPage() {
 
               <div className="order-detail-description">
                 <div className="order-detail-section-label">Description</div>
-                <p>{order.description}</p>
+                <div className="order-detail-description-content">
+                  <ReactMarkdown
+                    remarkPlugins={[remarkBreaks, remarkGfm]}
+                    components={{
+                      code({ node, inline, className, children, ...props }) {
+                        const match = /language-(\w+)/.exec(className || '');
+                        return !inline && match ? (
+                          <SyntaxHighlighter
+                            style={vscDarkPlus}
+                            language={match[1]}
+                            PreTag="div"
+                            {...props}
+                          >
+                            {String(children).replace(/\n$/, '')}
+                          </SyntaxHighlighter>
+                        ) : (
+                          <code className={className} {...props}>
+                            {children}
+                          </code>
+                        );
+                      }
+                    }}
+                  >
+                    {autoTranslateEnabled && order.translated_description
+                      ? order.translated_description
+                      : order.description}
+                  </ReactMarkdown>
+                </div>
               </div>
             </div>
 

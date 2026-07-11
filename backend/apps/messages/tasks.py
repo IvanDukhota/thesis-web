@@ -24,13 +24,10 @@ def has_translatable_text(text: str) -> bool:
     if not text or len(text.strip()) == 0:
         return False
 
-    # Remove URLs
     text_no_urls = re.sub(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', '', text)
 
-    # Remove digits, whitespace, and common punctuation
     text_cleaned = re.sub(r'[\d\s\.,!?;:\-_\(\)\[\]{}"\']', '', text_no_urls)
 
-    # Check if at least 1 letter remains (relaxed from 2)
     if len(text_cleaned) < 2:
         return False
 
@@ -60,8 +57,8 @@ def detect_message_language(text: str) -> str:
             'ar': 'ar',
         }
 
-        # If confidence is too low, mark as unknown and let the model auto-detect
-        if confidence < 0.5:
+        # Lowered confidence threshold from 0.5 to 0.3 for better detection
+        if confidence < 0.3:
             return 'unknown'
 
         return mapping.get(detected, 'en')

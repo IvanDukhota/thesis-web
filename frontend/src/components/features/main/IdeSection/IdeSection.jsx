@@ -1,16 +1,19 @@
 import { useState } from 'react';
 import './IdeSection.css';
 
-const OS_TABS = ["macOS", "Windows", "Linux"];
+const WIN_URL = import.meta.env.VITE_DESKTOP_WIN_URL || 'http://localhost:9000/teamhub-releases/TeamHub-Setup.exe';
+
+const OS_TABS = ["Windows", "macOS", "Linux"];
+const DISABLED_OS = new Set(["macOS", "Linux"]);
 
 const DOWNLOAD_INFO = {
-    macOS:   { label: "Download for macOS",   sub: "Universal Binary · v2.4.1 · 148 MB" },
     Windows: { label: "Download for Windows", sub: "Installer (.exe) · v2.4.1 · 134 MB" },
+    macOS:   { label: "Download for macOS",   sub: "Universal Binary · v2.4.1 · 148 MB" },
     Linux:   { label: "Download for Linux",   sub: "AppImage · v2.4.1 · 127 MB" },
 };
 
 export default function IdeSection() {
-    const [activeOS, setActiveOS] = useState("macOS");
+    const [activeOS, setActiveOS] = useState("Windows");
 
     return (
         <div className='ide-container'>
@@ -35,15 +38,19 @@ export default function IdeSection() {
 
             <div className='ide-right'>
                 <div className='ide-os-tabs'>
-                    {OS_TABS.map((os) => (
-                        <button
-                            key={os}
-                            className={`ide-os-tab ${activeOS === os ? 'ide-os-tab--active' : ''}`}
-                            onClick={() => setActiveOS(os)}
-                        >
-                            {os}
-                        </button>
-                    ))}
+                    {OS_TABS.map((os) => {
+                        const disabled = DISABLED_OS.has(os);
+                        return (
+                            <button
+                                key={os}
+                                className={`ide-os-tab ${activeOS === os ? 'ide-os-tab--active' : ''} ${disabled ? 'ide-os-tab--disabled' : ''}`}
+                                onClick={() => !disabled && setActiveOS(os)}
+                            >
+                                {os}
+                                {disabled && <span className="ide-os-soon">Soon</span>}
+                            </button>
+                        );
+                    })}
                 </div>
 
                 <div className='ide-download-card'>
@@ -60,9 +67,10 @@ export default function IdeSection() {
                     </div>
                 </div>
 
-                <button className='ide-btn-primary'>
-                    {DOWNLOAD_INFO[activeOS].label}
-                </button>
+                {activeOS === 'Windows'
+                    ? <a href={WIN_URL} download className='ide-btn-primary ide-btn-download'>{DOWNLOAD_INFO.Windows.label}</a>
+                    : <button disabled className='ide-btn-primary ide-btn-primary--soon'>Coming Soon</button>
+                }
                 <button className='ide-btn-secondary'>
                     View release notes
                 </button>

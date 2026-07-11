@@ -546,6 +546,90 @@ export default function ChatsPage() {
         return;
       }
 
+      if (event.type === "chat.left") {
+        const leftChatId = String(event.chat_id);
+
+        const leftChat = chats.find((chat) => chat.id === leftChatId);
+        const chatTitle = leftChat?.title || "Chat";
+
+        setChats((prev) => prev.filter((chat) => chat.id !== leftChatId));
+
+        if (activeChatIdRef.current === leftChatId) {
+          setActiveChatId(null);
+          setActiveRecipientId(null);
+          setActiveChatData(null);
+          setMessages([]);
+
+          setAlertModal({
+            isOpen: true,
+            title: "Left chat",
+            message: `You have left the chat "${chatTitle}".`,
+            variant: "info",
+          });
+        }
+
+        return;
+      }
+
+      if (event.type === "member.removed") {
+        const removedUserId = Number(event.user_id);
+        const chatId = String(event.chat_id);
+
+        // Update chat members list locally if this chat is active
+        if (activeChatIdRef.current === chatId) {
+          setActiveChatData((prev) => {
+            if (!prev || !prev.members) return prev;
+            return {
+              ...prev,
+              members: prev.members.filter((m) => m.user !== removedUserId),
+            };
+          });
+        }
+
+        return;
+      }
+
+      if (event.type === "members.added") {
+        const chatId = String(event.chat_id);
+        const newMembers = event.members;
+
+        // Update chat members list locally if this chat is active
+        if (activeChatIdRef.current === chatId && newMembers) {
+          setActiveChatData((prev) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              members: [...(prev.members || []), ...newMembers],
+            };
+          });
+        }
+
+        return;
+      }
+
+      if (event.type === "chat.kicked") {
+        const kickedChatId = String(event.chat_id);
+        const chatTitle = String(event.chat_title || "Chat");
+
+        setChats((prev) => prev.filter((chat) => chat.id !== kickedChatId));
+
+        if (activeChatIdRef.current === kickedChatId) {
+          setActiveChatId(null);
+          setActiveRecipientId(null);
+          setActiveChatData(null);
+          setMessages([]);
+
+          setAlertModal({
+            isOpen: true,
+            title: "Removed from chat",
+            message: `You have been removed from the chat "${chatTitle}".`,
+            variant: "warning",
+          });
+        }
+
+        return;
+      }
+
       if (event.type === "translation.ready") {
         const { message_id, translated_text } = event;
 
@@ -1979,7 +2063,11 @@ export default function ChatsPage() {
                     onClick={() => void openChat(chat.id)}
                   >
                     <div className="chat-contact-card__avatar">
-                      {chat.title.charAt(0).toUpperCase()}
+                      {chat.avatar ? (
+                        <img src={chat.avatar} alt={chat.title} />
+                      ) : (
+                        chat.title.charAt(0).toUpperCase()
+                      )}
                     </div>
 
                     <div className="chat-contact-card__content">
@@ -2021,7 +2109,11 @@ export default function ChatsPage() {
                         onClick={() => void openChatByContact(contact)}
                       >
                         <div className="chat-contact-card__avatar">
-                          {contact.full_name.charAt(0).toUpperCase()}
+                          {contact.avatar ? (
+                            <img src={contact.avatar} alt={contact.full_name} />
+                          ) : (
+                            contact.full_name.charAt(0).toUpperCase()
+                          )}
                         </div>
 
                         <div className="chat-contact-card__content">
@@ -2052,14 +2144,17 @@ export default function ChatsPage() {
                 style={{ cursor: activeChatData ? 'pointer' : 'default' }}
                 title={activeChatData ? "Открыть профиль чата" : undefined}
               >
-                {activeChatId
-                  ? (chats.find((c) => c.id === activeChatId)?.title
-                      || activeChatData?.title
-                      || pendingChatTitle
-                      || "?").charAt(0).toUpperCase()
-                  : activeRecipientId
-                    ? (contactsWithoutChats.find((c) => c.id === activeRecipientId)?.full_name || pendingChatTitle || "?").charAt(0).toUpperCase()
-                    : "?"}
+                {(() => {
+                  const chat = activeChatId ? chats.find((c) => c.id === activeChatId) : null;
+                  const contact = activeRecipientId ? contactsWithoutChats.find((c) => c.id === activeRecipientId) : null;
+                  const avatarUrl = chat?.avatar || activeChatData?.avatar || contact?.avatar;
+                  const title = chat?.title || activeChatData?.title || contact?.full_name || pendingChatTitle || "?";
+
+                  if (avatarUrl) {
+                    return <img src={avatarUrl} alt={title} />;
+                  }
+                  return title.charAt(0).toUpperCase();
+                })()}
               </div>
 
               <div
@@ -2156,7 +2251,11 @@ export default function ChatsPage() {
                       >
                         {isGroupChat && message.sender.id !== me?.id && showAvatar && (
                           <div className="chat-message__avatar">
-                            {message.sender.full_name.charAt(0).toUpperCase()}
+                            {message.sender.avatar ? (
+                              <img src={message.sender.avatar} alt={message.sender.full_name} />
+                            ) : (
+                              message.sender.full_name.charAt(0).toUpperCase()
+                            )}
                           </div>
                         )}
 

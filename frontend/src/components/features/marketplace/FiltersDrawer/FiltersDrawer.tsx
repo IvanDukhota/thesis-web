@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import type { OrderFilters } from "../../../../api/marketplace";
+import type { OrderFilters, Category } from "../../../../api/marketplace";
+import { getCategories } from "../../../../api/marketplace";
 import "./filters-drawer.css";
 
 type FiltersDrawerProps = {
@@ -17,15 +18,6 @@ const SORT_OPTIONS = [
   { value: "recommendations", label: "Recommendations" },
 ];
 
-const CATEGORIES = [
-  { value: "software-development", label: "Software Development" },
-  { value: "design", label: "Design" },
-  { value: "marketing", label: "Marketing" },
-  { value: "ml-ai", label: "ML/AI" },
-  { value: "devops", label: "DevOps" },
-  { value: "translation", label: "Translation" },
-];
-
 export default function FiltersDrawer({
   isOpen,
   onClose,
@@ -33,12 +25,22 @@ export default function FiltersDrawer({
   onFiltersChange,
 }: FiltersDrawerProps) {
   const [localFilters, setLocalFilters] = useState<OrderFilters>(filters);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       setLocalFilters(filters);
+
+      if (categories.length === 0 && !loadingCategories) {
+        setLoadingCategories(true);
+        getCategories()
+          .then(setCategories)
+          .catch((err) => console.error("Failed to load categories:", err))
+          .finally(() => setLoadingCategories(false));
+      }
     }
-  }, [isOpen, filters]);
+  }, [isOpen, filters, categories.length, loadingCategories]);
 
   const handleApply = () => {
     onFiltersChange(localFilters);
@@ -93,28 +95,34 @@ export default function FiltersDrawer({
           <div className="filters-drawer__section">
             <div className="filters-drawer__section-title">Category</div>
             <div className="filters-drawer__options">
-              {CATEGORIES.map((category) => (
-                <label key={category.value} className="filters-drawer__checkbox">
-                  <input
-                    type="radio"
-                    name="category"
-                    checked={localFilters.category === category.value}
-                    onChange={() =>
-                      setLocalFilters((prev) => ({ ...prev, category: category.value }))
-                    }
-                  />
-                  <span className="filters-drawer__checkbox-label">{category.label}</span>
-                </label>
-              ))}
-              <label className="filters-drawer__checkbox">
-                <input
-                  type="radio"
-                  name="category"
-                  checked={localFilters.category === ""}
-                  onChange={() => setLocalFilters((prev) => ({ ...prev, category: "" }))}
-                />
-                <span className="filters-drawer__checkbox-label">All Categories</span>
-              </label>
+              {loadingCategories ? (
+                <div className="filters-drawer__loading">Loading categories...</div>
+              ) : (
+                <>
+                  {categories.map((category) => (
+                    <label key={category.slug} className="filters-drawer__checkbox">
+                      <input
+                        type="radio"
+                        name="category"
+                        checked={localFilters.category === category.slug}
+                        onChange={() =>
+                          setLocalFilters((prev) => ({ ...prev, category: category.slug }))
+                        }
+                      />
+                      <span className="filters-drawer__checkbox-label">{category.name}</span>
+                    </label>
+                  ))}
+                  <label className="filters-drawer__checkbox">
+                    <input
+                      type="radio"
+                      name="category"
+                      checked={localFilters.category === ""}
+                      onChange={() => setLocalFilters((prev) => ({ ...prev, category: "" }))}
+                    />
+                    <span className="filters-drawer__checkbox-label">All Categories</span>
+                  </label>
+                </>
+              )}
             </div>
           </div>
 

@@ -48,17 +48,14 @@ Output ONLY the raw text of the final message. Do not include any introductions,
     generated_text = result["response"].strip()
 
 
-    # Remove quotes if present
     if (generated_text.startswith('"') and generated_text.endswith('"')) or \
        (generated_text.startswith("'") and generated_text.endswith("'")):
         generated_text = generated_text[1:-1]
 
-    # Check for adequacy: Chinese characters or language mixing
     has_chinese = any('一' <= char <= '鿿' for char in generated_text)
     has_cyrillic = any('а' <= char.lower() <= 'я' for char in generated_text)
     has_latin = any('a' <= char.lower() <= 'z' for char in generated_text)
 
-    # Detect conversation language
     conv_language = "Russian"
     if context_messages and len(context_messages) > 0:
         last_msg = context_messages[-1]['text']
@@ -67,7 +64,6 @@ Output ONLY the raw text of the final message. Do not include any introductions,
         elif any('a' <= char.lower() <= 'z' for char in last_msg):
             conv_language = "English"
 
-    # If response is inadequate, regenerate with stricter prompt
     if has_chinese or (has_cyrillic and has_latin and len(generated_text) > 20):
         strict_prompt = f"""Write one short message in {conv_language} that does: "{prompt}"
 
@@ -95,12 +91,10 @@ Just the message text in {conv_language}:"""
         retry_response.raise_for_status()
         generated_text = retry_response.json()["response"].strip()
 
-        # Remove quotes again
         if (generated_text.startswith('"') and generated_text.endswith('"')) or \
            (generated_text.startswith("'") and generated_text.endswith("'")):
             generated_text = generated_text[1:-1]
 
-        # If still has Chinese, cut it off at first Chinese character
         if any('一' <= char <= '鿿' for char in generated_text):
             clean_part = ""
             for char in generated_text:
@@ -115,17 +109,6 @@ Just the message text in {conv_language}:"""
 
 def format_as_business(message: str, context_messages: list[dict] = None, user_nickname: str = "") -> str:
     context_text = ""
-#     if context_messages and len(context_messages) >= 2:
-#         context_text = f"""Chat History:
-# <chat_history>
-# - {context_messages[-2]['sender']}: "{context_messages[-2]['text']}"
-# - {context_messages[-1]['sender']}: "{context_messages[-1]['text']}"
-# </chat_history>"""
-#     elif context_messages and len(context_messages) == 1:
-#         context_text = f"""Chat History:
-# <chat_history>
-# - {context_messages[-1]['sender']}: "{context_messages[-1]['text']}"
-# </chat_history>"""
 
     prompt = f"""You are a multilingual text-transformation engine. Your task is to rewrite the input message into a professional business tone.
 
@@ -171,12 +154,10 @@ Professional Message in the same language as above:"""
     result = response.json()
     result_text = result["response"].strip()
 
-    # Remove quotes if present
     if (result_text.startswith('"') and result_text.endswith('"')) or \
        (result_text.startswith("'") and result_text.endswith("'")):
         result_text = result_text[1:-1]
 
-    # Check if response contains Chinese characters
     if any('一' <= char <= '鿿' for char in result_text):
         return message
 
@@ -250,12 +231,10 @@ Your response (same language, no new facts):"""
     result = response.json()
     result_text = result["response"].strip()
 
-    # Remove quotes if present
     if (result_text.startswith('"') and result_text.endswith('"')) or \
        (result_text.startswith("'") and result_text.endswith("'")):
         result_text = result_text[1:-1]
 
-    # Check if response contains Chinese characters
     if any('一' <= char <= '鿿' for char in result_text):
         return message
 

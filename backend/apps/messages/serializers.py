@@ -31,6 +31,12 @@ class MessageSenderSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     email = serializers.EmailField()
     full_name = serializers.CharField()
+    avatar = serializers.SerializerMethodField()
+
+    def get_avatar(self, obj):
+        if hasattr(obj, 'avatar') and obj.avatar:
+            return obj.avatar.url
+        return None
 
 
 class ReplyToMessageSerializer(serializers.ModelSerializer):
@@ -46,6 +52,7 @@ class ReplyToMessageSerializer(serializers.ModelSerializer):
             "id": obj.sender.id,
             "email": obj.sender.email,
             "full_name": obj.sender.full_name,
+            "avatar": obj.sender.avatar.url if obj.sender.avatar else None,
         }
 
 
@@ -82,6 +89,7 @@ class MessageSerializer(serializers.ModelSerializer):
             "id": obj.sender.id,
             "email": obj.sender.email,
             "full_name": obj.sender.full_name,
+            "avatar": obj.sender.avatar.url if obj.sender.avatar else None,
         }
 
     def get_translated_text(self, obj):

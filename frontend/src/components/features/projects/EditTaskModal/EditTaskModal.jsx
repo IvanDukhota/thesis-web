@@ -2,7 +2,7 @@ import { useRef, useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { RiCloseLine, RiCodeSSlashLine, RiDeleteBinLine, RiCalendarLine, RiUploadLine, RiFileLine, RiFileTextLine, RiFileCodeLine, RiTerminalLine, RiDownloadLine, RiEditLine } from 'react-icons/ri';
+import { RiCloseLine, RiCodeSSlashLine, RiDeleteBinLine, RiCalendarLine, RiUploadLine, RiFileLine, RiFileTextLine, RiFileCodeLine, RiTerminalLine, RiDownloadLine, RiEditLine, RiZoomInLine } from 'react-icons/ri';
 import { SiPython, SiJavascript, SiTypescript, SiReact, SiGo, SiRust, SiPhp, SiCplusplus, SiMarkdown, SiKotlin, SiSwift, SiRuby, SiScala, SiElixir, SiHaskell, SiLua, SiVuedotjs } from 'react-icons/si';
 import { VscChevronDown } from 'react-icons/vsc';
 import { apiUploadTaskFile, apiDeleteTaskFile, apiUpdateTaskFileContent } from '../../../../api/tasksApi';
@@ -59,6 +59,28 @@ const isDocsFile = (name) => {
     const l = name.toLowerCase();
     return l.endsWith('.md') || l.endsWith('.txt');
 };
+
+const IMAGE_EXTS = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico']);
+
+const isImageFile = (name) => {
+    const ext = name.includes('.') ? name.split('.').pop().toLowerCase() : '';
+    return IMAGE_EXTS.has(ext);
+};
+
+function TaskImageModal({ file, onClose }) {
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => { document.body.style.overflow = ''; };
+    }, []);
+
+    return createPortal(
+        <div className="tim-overlay" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
+            <button className="fpv-close tim-close" onClick={onClose}><RiCloseLine size={20} /></button>
+            <img src={file.url} alt={file.original_name} className="tim-img" />
+        </div>,
+        document.body
+    );
+}
 
 function DocsPreviewModal({ file: initialFile, taskTitle, projectId, taskId, readOnly, onClose, onFileUpdated, initialEditMode = false, isNewFile = false, onDeleteNew }) {
     const [currentFile, setCurrentFile] = useState(initialFile);
@@ -570,7 +592,27 @@ export function EditTaskModal({ task, currentCol, projectId, projectType, onClos
 
                         {(() => {
                             const mdFiles = files.filter(f => isDocsFile(f.original_name));
-                            const codeFiles = files.filter(f => !isDocsFile(f.original_name));
+                            const imgFiles = files.filter(f => isImageFile(f.original_name));
+                            const codeFiles = files.filter(f => !isDocsFile(f.original_name) && !isImageFile(f.original_name));
+
+                            const renderFileActions = (f) => confirmDeleteFileId === f.id ? (
+                                <div className="etm-file-confirm">
+                                    <span className="etm-file-confirm-text">Delete?</span>
+                                    <button className="etm-file-confirm-cancel" onClick={() => setConfirmDeleteFileId(null)}>Cancel</button>
+                                    <button className="etm-file-confirm-ok" onClick={() => { setConfirmDeleteFileId(null); handleFileRemove(f.id); }}>Delete</button>
+                                </div>
+                            ) : (
+                                <div className="etm-file-actions">
+                                    <button className="etm-file-action" onClick={() => handleFileDownload(f)} title="Download">
+                                        <RiDownloadLine size={13} />
+                                    </button>
+                                    {!readOnly && (
+                                        <button className="etm-file-action etm-file-remove" onClick={() => setConfirmDeleteFileId(f.id)} title="Remove">
+                                            <RiCloseLine size={13} />
+                                        </button>
+                                    )}
+                                </div>
+                            );
 
                             const renderFileItem = (f) => {
                                 const { Icon, color } = getFileIcon(f.original_name);
@@ -586,27 +628,31 @@ export function EditTaskModal({ task, currentCol, projectId, projectType, onClos
                                         >
                                             {f.original_name}
                                         </button>
-                                        {confirmDeleteFileId === f.id ? (
-                                            <div className="etm-file-confirm">
-                                                <span className="etm-file-confirm-text">Delete?</span>
-                                                <button className="etm-file-confirm-cancel" onClick={() => setConfirmDeleteFileId(null)}>Cancel</button>
-                                                <button className="etm-file-confirm-ok" onClick={() => { setConfirmDeleteFileId(null); handleFileRemove(f.id); }}>Delete</button>
-                                            </div>
-                                        ) : (
-                                            <div className="etm-file-actions">
-                                                <button className="etm-file-action" onClick={() => handleFileDownload(f)} title="Download">
-                                                    <RiDownloadLine size={13} />
-                                                </button>
-                                                {!readOnly && (
-                                                    <button className="etm-file-action etm-file-remove" onClick={() => setConfirmDeleteFileId(f.id)} title="Remove">
-                                                        <RiCloseLine size={13} />
-                                                    </button>
-                                                )}
-                                            </div>
-                                        )}
+                                        {renderFileActions(f)}
                                     </div>
                                 );
                             };
+
+                            const renderImageItem = (f) => (
+                                <div key={f.id} className={`etm-file-item etm-img-item${confirmDeleteFileId === f.id ? ' etm-file-item--confirm' : ''}`}>
+                                    <button
+                                        className="etm-img-thumb-btn"
+                                        onClick={() => confirmDeleteFileId === f.id ? setConfirmDeleteFileId(null) : setPreviewFile(f)}
+                                        title={f.original_name}
+                                    >
+                                        <img src={f.url} alt={f.original_name} className="etm-img-thumb" />
+                                        <span className="etm-img-zoom"><RiZoomInLine size={12} /></span>
+                                    </button>
+                                    <button
+                                        className="etm-file-name"
+                                        title={f.original_name}
+                                        onClick={() => confirmDeleteFileId === f.id ? setConfirmDeleteFileId(null) : setPreviewFile(f)}
+                                    >
+                                        {f.original_name}
+                                    </button>
+                                    {renderFileActions(f)}
+                                </div>
+                            );
 
                             return (
                                 <div className="etm-files-list">
@@ -619,6 +665,12 @@ export function EditTaskModal({ task, currentCol, projectId, projectType, onClos
                                                 )}
                                             </div>
                                             {mdFiles.length > 0 && <div className="etm-files">{mdFiles.map(renderFileItem)}</div>}
+                                        </div>
+                                    )}
+                                    {imgFiles.length > 0 && (
+                                        <div className="etm-file-group">
+                                            <span className="etm-file-group-label">Images</span>
+                                            <div className="etm-files">{imgFiles.map(renderImageItem)}</div>
                                         </div>
                                     )}
                                     {codeFiles.length > 0 && (
@@ -678,7 +730,9 @@ export function EditTaskModal({ task, currentCol, projectId, projectType, onClos
                                 setPreviewFile(updated);
                             }}
                           />
-                        : <FilePreviewModal file={previewFile} taskTitle={task.title} onClose={() => setPreviewFile(null)} />
+                        : isImageFile(previewFile.original_name)
+                            ? <TaskImageModal file={previewFile} onClose={() => setPreviewFile(null)} />
+                            : <FilePreviewModal file={previewFile} taskTitle={task.title} onClose={() => setPreviewFile(null)} />
                 )}
 
                 {confirmDelete && (

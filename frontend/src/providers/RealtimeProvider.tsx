@@ -166,6 +166,12 @@ export function RealtimeProvider({ children }: Props) {
         ]);
         return;
       }
+
+      if (event.type === "chat.left") {
+        // Event is handled in ChatsPage, but we log it here for debugging
+        console.log("User left chat:", event.chat_id);
+        return;
+      }
     });
 
     return () => {

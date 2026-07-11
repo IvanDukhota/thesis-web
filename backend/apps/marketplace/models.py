@@ -159,11 +159,6 @@ class Order(models.Model):
 
     applications_count = models.PositiveIntegerField(default=0)
 
-    # Для semantic search и рекомендаций
-    # Например:
-    # text-embedding-3-small -> 1536
-    # BGE-small -> 384
-    # BGE-base -> 768
     embedding = VectorField(
         dimensions=768,
         null=True,
@@ -307,3 +302,25 @@ class OrderApplication(models.Model):
 
     def __str__(self):
         return f"{self.applicant} -> {self.order.title}"
+
+
+class OrderTranslation(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    order = models.ForeignKey(
+        Order,
+        on_delete=models.CASCADE,
+        related_name='translations'
+    )
+    target_language = models.CharField(max_length=10)
+    translated_title = models.TextField()
+    translated_description = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = [['order', 'target_language']]
+        indexes = [
+            models.Index(fields=['order', 'target_language']),
+        ]
+
+    def __str__(self):
+        return f"Translation of {self.order_id} to {self.target_language}"
