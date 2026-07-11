@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.11.9-slim
 
 RUN apt-get update && apt-get install -y \
     build-essential \
@@ -19,6 +19,9 @@ RUN pip install --no-cache-dir --timeout=1000 \
     pip install --no-cache-dir --timeout=1000 -r requirements.txt
 
 COPY . /app/
+
+RUN useradd -m appuser && chown -R appuser:appuser /app
+USER appuser
 
 EXPOSE 8002
 
