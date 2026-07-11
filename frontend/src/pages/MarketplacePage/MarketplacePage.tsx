@@ -1,7 +1,9 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { RiImageLine, RiVideoLine, RiFileLine, RiArrowRightSLine, RiBriefcase2Line, RiAppsLine, RiFileList3Line, RiSendPlaneLine } from "react-icons/ri";
-import { getOrders, getMyOrders, getReceivedApplications, getSentApplications, getTags, aiSearch, type OrderListItem, type Tag, type OrderFilters, type OrderApplication } from "../../api/marketplace";
+import { RiImageLine, RiVideoLine, RiFileLine, RiArrowRightSLine, RiBriefcase2Line, RiAppsLine, RiFileList3Line, RiSendPlaneLine, RiTranslate2 } from "react-icons/ri";
+import { getOrders, getMyOrders, getReceivedApplications, getSentApplications, getTags, aiSearch, requestOrderTranslations, type OrderListItem, type Tag, type OrderFilters, type OrderApplication } from "../../api/marketplace";
+import { appWebSocketClient, type AppSocketEvent } from "../../shared/realtime/ws-client";
+import { useRealtime } from "../../providers/RealtimeProvider";
 import Header from "../../components/layout/Header/Header";
 import TagSelectionModal from "../../components/features/marketplace/TagSelectionModal/TagSelectionModal";
 import FiltersDrawer from "../../components/features/marketplace/FiltersDrawer/FiltersDrawer";
@@ -9,31 +11,98 @@ import CreateProjectModal from "../../components/features/marketplace/CreateJobM
 import ApplicationCard from "../../components/features/marketplace/ApplicationCard/ApplicationCard";
 import "./marketplace.css";
 
-const PAGE_SIZE = 11;
-
 type TabType = "all" | "my-orders" | "applications";
 
 export default function MarketplacePage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [activeTab, setActiveTab] = useState<TabType>(
-    (location.state as { tab?: TabType } | null)?.tab ?? "all"
-  );
 
+  // Restore state from location or sessionStorage
+  const getInitialState = () => {
+    const locationState = location.state as any;
+    if (locationState?.fromOrderDetail) {
+      return {
+        tab: locationState.tab ?? "all",
+        searchQuery: locationState.searchQuery ?? "",
+        filters: locationState.filters ?? {
+          search: "",
+          category: "",
+          tags: [],
+          min_price: undefined,
+          max_price: undefined,
+          sort: "-created_at",
+        },
+        selectedTags: locationState.selectedTags ?? [],
+        autoTranslateEnabled: locationState.autoTranslateEnabled ?? false,
+        currentPage: locationState.currentPage ?? 1,
+      };
+    }
+
+    // Try sessionStorage as fallback
+    try {
+      const saved = sessionStorage.getItem('marketplaceState');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return {
+          tab: parsed.tab ?? "all",
+          searchQuery: parsed.searchQuery ?? "",
+          filters: parsed.filters ?? {
+            search: "",
+            category: "",
+            tags: [],
+            min_price: undefined,
+            max_price: undefined,
+            sort: "-created_at",
+          },
+          selectedTags: parsed.selectedTags ?? [],
+          autoTranslateEnabled: parsed.autoTranslateEnabled ?? false,
+          currentPage: parsed.currentPage ?? 1,
+        };
+      }
+    } catch (e) {
+      console.error('Failed to parse saved state:', e);
+    }
+
+    return {
+      tab: "all" as TabType,
+      searchQuery: "",
+      filters: {
+        search: "",
+        category: "",
+        tags: [],
+        min_price: undefined,
+        max_price: undefined,
+        sort: "-created_at",
+      },
+      selectedTags: [],
+      autoTranslateEnabled: false,
+      currentPage: 1,
+    };
+  };
+
+  const initialState = getInitialState();
+  const initializedRef = useRef(false);
+
+  const [activeTab, setActiveTab] = useState<TabType>(initialState.tab);
+  const [searchQuery, setSearchQuery] = useState(initialState.searchQuery);
+  const [filters, setFilters] = useState<OrderFilters>(initialState.filters);
+  const [selectedTags, setSelectedTags] = useState<Tag[]>(initialState.selectedTags);
+  const [autoTranslateEnabled, setAutoTranslateEnabled] = useState(initialState.autoTranslateEnabled);
+  const [currentPage, setCurrentPage] = useState(initialState.currentPage);
+
+  // Mark that initial state has been set
   useEffect(() => {
-    const tab = (location.state as { tab?: TabType } | null)?.tab;
-    if (tab) setActiveTab(tab);
-  }, [location.state]);
+    initializedRef.current = true;
+  }, []);
+
   const [orders, setOrders] = useState<OrderListItem[]>([]);
   const [receivedApplications, setReceivedApplications] = useState<OrderApplication[]>([]);
   const [sentApplications, setSentApplications] = useState<OrderApplication[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
-  const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [isAiSearch, setIsAiSearch] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
 
   const [recoError, setRecoError] = useState<'NO_USER_HISTORY' | 'NO_RECOMMENDATIONS_MATCH' | null>(null);
   const [isTagModalOpen, setIsTagModalOpen] = useState(false);
@@ -42,6 +111,19 @@ export default function MarketplacePage() {
   const cardsRef = useRef<(HTMLDivElement | null)[]>([]);
   const tabsRef = useRef<HTMLDivElement>(null);
   const [tabIndicator, setTabIndicator] = useState<{ left: number; width: number } | null>(null);
+
+  // Save state to sessionStorage whenever it changes
+  useEffect(() => {
+    const stateToSave = {
+      tab: activeTab,
+      searchQuery,
+      filters,
+      selectedTags,
+      autoTranslateEnabled,
+      currentPage,
+    };
+    sessionStorage.setItem('marketplaceState', JSON.stringify(stateToSave));
+  }, [activeTab, searchQuery, filters, selectedTags, autoTranslateEnabled, currentPage]);
 
   useEffect(() => {
     if (!tabsRef.current) return;
@@ -54,14 +136,8 @@ export default function MarketplacePage() {
     return () => { document.documentElement.style.overflowY = ''; };
   }, [isFiltersOpen]);
 
-  const [filters, setFilters] = useState<OrderFilters>({
-    search: "",
-    category: "",
-    tags: [],
-    min_price: undefined,
-    max_price: undefined,
-    sort: "-created_at",
-  });
+  // Track which orders have already been requested for translation
+  const requestedTranslationsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     const loadInitialData = async () => {
@@ -75,6 +151,32 @@ export default function MarketplacePage() {
     void loadInitialData();
   }, []);
 
+  // Subscribe to WebSocket events for order translations
+  useEffect(() => {
+    const unsubscribe = appWebSocketClient.onEvent((event: AppSocketEvent) => {
+      if (event.type === "translation.order_ready") {
+        const { order_id, translated_title, translated_description } = event;
+
+        console.log('Translation ready for order:', order_id, translated_title);
+
+        setOrders((prevOrders) =>
+          prevOrders.map((order) =>
+            order.id === order_id
+              ? {
+                  ...order,
+                  translated_title: translated_title as string,
+                  translated_description: translated_description as string,
+                  translation_status: 'ready' as const,
+                }
+              : order
+          )
+        );
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedQuery(searchQuery.trim()), 500);
     return () => clearTimeout(timer);
@@ -84,28 +186,37 @@ export default function MarketplacePage() {
     const loadData = async () => {
       setLoading(true);
       setRecoError(null);
+
+      // Clear requested translations when changing pages
+      requestedTranslationsRef.current.clear();
+
       try {
         if (activeTab === "all") {
           if (debouncedQuery) {
-            const results = await aiSearch(debouncedQuery, {
+            const response = await aiSearch(debouncedQuery, {
               category: filters.category,
               tags: selectedTags.map((tag) => tag.slug),
               min_price: filters.min_price,
               max_price: filters.max_price,
+              sort: filters.sort,
             });
-            setOrders(results);
+            setOrders(response.results);
+            setTotalCount(response.count);
             setIsAiSearch(true);
           } else {
-            const ordersData = await getOrders({
+            const response = await getOrders({
               ...filters,
               tags: selectedTags.map((tag) => tag.slug),
+              page: currentPage,
             });
-            setOrders(ordersData);
+            setOrders(response.results);
+            setTotalCount(response.count);
             setIsAiSearch(false);
           }
         } else if (activeTab === "my-orders") {
-          const myOrdersData = await getMyOrders();
-          setOrders(myOrdersData);
+          const response = await getMyOrders();
+          setOrders(response.results);
+          setTotalCount(response.count);
         } else if (activeTab === "applications") {
           const [received, sent] = await Promise.all([
             getReceivedApplications(),
@@ -121,6 +232,7 @@ export default function MarketplacePage() {
             if (parsed.error === 'NO_USER_HISTORY' || parsed.error === 'NO_RECOMMENDATIONS_MATCH') {
               setRecoError(parsed.error);
               setOrders([]);
+              setTotalCount(0);
             }
           } catch {
             // non-reco error, ignore
@@ -131,7 +243,7 @@ export default function MarketplacePage() {
       }
     };
     void loadData();
-  }, [activeTab, filters, debouncedQuery, selectedTags]);
+  }, [activeTab, filters, debouncedQuery, selectedTags, currentPage]);
 
   const handleRemoveTag = (tagToRemove: Tag) => {
     setSelectedTags((prev) => prev.filter((tag) => tag.id !== tagToRemove.id));
@@ -140,6 +252,83 @@ export default function MarketplacePage() {
   const handleFiltersChange = (newFilters: Partial<OrderFilters>) => {
     setFilters((prev) => ({ ...prev, ...newFilters }));
     setCurrentPage(1);
+  };
+
+  const handleAutoTranslateToggle = async (enabled: boolean) => {
+    setAutoTranslateEnabled(enabled);
+
+    if (enabled && orders.length > 0) {
+      // Request translations for currently visible orders on this page
+      const orderIdsToTranslate = orders
+        .filter(order => !order.translation_status || order.translation_status !== 'ready')
+        .map(order => order.id);
+
+      if (orderIdsToTranslate.length > 0) {
+        // Mark as requested
+        orderIdsToTranslate.forEach(id => requestedTranslationsRef.current.add(id));
+
+        // Mark as pending
+        setOrders((prevOrders) =>
+          prevOrders.map((order) =>
+            orderIdsToTranslate.includes(order.id)
+              ? { ...order, translation_status: 'pending' as const }
+              : order
+          )
+        );
+
+        try {
+          await requestOrderTranslations(orderIdsToTranslate);
+        } catch (error) {
+          console.error('Failed to request translations:', error);
+        }
+      }
+    }
+  };
+
+  // Request translations when page changes and auto-translate is enabled
+  useEffect(() => {
+    if (autoTranslateEnabled && orders.length > 0) {
+      const orderIdsToTranslate = orders
+        .filter(order => {
+          // Skip if already requested or already ready
+          if (requestedTranslationsRef.current.has(order.id)) return false;
+          if (order.translation_status === 'ready') return false;
+          return true;
+        })
+        .map(order => order.id);
+
+      if (orderIdsToTranslate.length > 0) {
+        console.log('Requesting translations for:', orderIdsToTranslate);
+
+        // Mark as requested
+        orderIdsToTranslate.forEach(id => requestedTranslationsRef.current.add(id));
+
+        // Mark as pending immediately (optimistic)
+        setOrders((prevOrders) =>
+          prevOrders.map((order) =>
+            orderIdsToTranslate.includes(order.id)
+              ? { ...order, translation_status: 'pending' as const }
+              : order
+          )
+        );
+
+        // Fire-and-forget: don't wait for response
+        requestOrderTranslations(orderIdsToTranslate).catch((error) => {
+          console.error('Failed to request translations:', error);
+        });
+      }
+    }
+  }, [orders, autoTranslateEnabled]);
+
+  const getOrderTitle = (order: OrderListItem): string => {
+    if (autoTranslateEnabled && order.translation_status === 'ready' && order.translated_title) {
+      return order.translated_title;
+    }
+    return order.title;
+  };
+
+  const isTranslationPending = (order: OrderListItem): boolean => {
+    return autoTranslateEnabled && order.translation_status === 'pending';
   };
 
   const formatDate = (dateString: string) => {
@@ -158,11 +347,7 @@ export default function MarketplacePage() {
     return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   };
 
-  const totalPages = Math.ceil(orders.length / PAGE_SIZE);
-  const paginatedOrders = orders.slice(
-    (currentPage - 1) * PAGE_SIZE,
-    currentPage * PAGE_SIZE
-  );
+  const totalPages = Math.ceil(totalCount / 10); // PAGE_SIZE from backend
 
   useEffect(() => {
     const observers: IntersectionObserver[] = [];
@@ -182,7 +367,7 @@ export default function MarketplacePage() {
       observers.push(observer);
     });
     return () => observers.forEach((o) => o.disconnect());
-  }, [paginatedOrders]);
+  }, [orders]);
 
   const renderPagination = () => {
     if (totalPages <= 1) return null;
@@ -341,6 +526,16 @@ export default function MarketplacePage() {
               />
               {isAiSearch && <span className="marketplace-ai-badge">AI</span>}
             </div>
+            <label className={`auto-translate-toggle${autoTranslateEnabled ? " auto-translate-toggle--active" : ""}`}>
+              <input
+                type="checkbox"
+                checked={autoTranslateEnabled}
+                onChange={(e) => handleAutoTranslateToggle(e.target.checked)}
+              />
+              <RiTranslate2 size={14} className="auto-translate-toggle__icon" />
+              <span className="auto-translate-toggle__label">Auto-translate</span>
+              <span className="auto-translate-toggle__dot" />
+            </label>
             <button
               className="marketplace-create-button"
               onClick={() => setIsCreateModalOpen(true)}
@@ -477,22 +672,39 @@ export default function MarketplacePage() {
                     No open orders match your profile closely enough. Check back later or explore all orders.
                   </div>
                 </div>
-              ) : paginatedOrders.length === 0 ? (
+              ) : orders.length === 0 ? (
                 <div className="marketplace-empty">
                   No jobs found. Try adjusting your filters or post a new job.
                 </div>
               ) : (
                 <>
                   <div className="marketplace-orders">
-                    {paginatedOrders.map((order, idx) => (
+                    {orders.map((order, idx) => (
                       <div
                         key={order.id}
                         className="mp-card"
                         ref={(el) => { cardsRef.current[idx] = el; }}
-                        onClick={() => navigate(`/marketplace/${order.slug}`)}
+                        onClick={() => navigate(`/marketplace/${order.slug}`, {
+                          state: {
+                            fromMarketplace: true,
+                            marketplaceState: {
+                              tab: activeTab,
+                              searchQuery,
+                              filters,
+                              selectedTags,
+                              autoTranslateEnabled,
+                              currentPage,
+                            }
+                          }
+                        })}
                       >
                         <div className="mp-card__head">
-                          <h3 className="mp-card__title">{order.title}</h3>
+                          <h3 className="mp-card__title">
+                            {getOrderTitle(order)}
+                            {isTranslationPending(order) && (
+                              <span className="mp-card__translation-pending" title="Translation in progress...">⏳</span>
+                            )}
+                          </h3>
                           <div className="mp-card__head-right">
                             {filters.sort === 'recommendations' && order.similarity_percentage != null && (
                               <span className="mp-card__match-badge">

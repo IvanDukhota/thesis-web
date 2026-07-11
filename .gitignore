@@ -67,3 +67,6 @@ celerybeat.pid
 pip-log.txt
 pip-delete-this-directory.txt
 .aider*
+
+# --- Claude Code ---
+.claude/

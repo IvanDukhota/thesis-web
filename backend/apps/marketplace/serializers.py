@@ -86,6 +86,9 @@ class OrderListSerializer(serializers.ModelSerializer):
     videos_count = serializers.SerializerMethodField()
     files_count = serializers.SerializerMethodField()
     similarity_percentage = serializers.SerializerMethodField()
+    translated_title = serializers.SerializerMethodField()
+    translated_description = serializers.SerializerMethodField()
+    translation_status = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
@@ -93,7 +96,7 @@ class OrderListSerializer(serializers.ModelSerializer):
             'id', 'slug', 'title', 'price', 'estimated_days',
             'status', 'applications_count', 'views_count', 'buyer',
             'category_name', 'tags', 'images_count', 'videos_count', 'files_count',
-            'created_at', 'similarity_percentage',
+            'created_at', 'similarity_percentage', 'translated_title', 'translated_description', 'translation_status',
         ]
 
     def get_similarity_percentage(self, obj):
@@ -101,6 +104,15 @@ class OrderListSerializer(serializers.ModelSerializer):
         if val is None:
             return None
         return round(float(val), 1)
+
+    def get_translated_title(self, obj):
+        return getattr(obj, '_translated_title', None)
+
+    def get_translated_description(self, obj):
+        return getattr(obj, '_translated_description', None)
+
+    def get_translation_status(self, obj):
+        return getattr(obj, '_translation_status', None)
 
     def get_images_count(self, obj):
         image_extensions = ('.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.svg')
@@ -124,13 +136,17 @@ class OrderDetailSerializer(serializers.ModelSerializer):
     attachments = OrderAttachmentSerializer(many=True, read_only=True)
     is_owner = serializers.SerializerMethodField()
     has_applied = serializers.SerializerMethodField()
+    translated_title = serializers.SerializerMethodField()
+    translated_description = serializers.SerializerMethodField()
+    translation_status = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
         fields = [
             'id', 'slug', 'title', 'description', 'price', 'estimated_days',
             'status', 'applications_count', 'views_count', 'buyer', 'category', 'tags',
-            'attachments', 'is_owner', 'has_applied', 'created_at', 'updated_at'
+            'attachments', 'is_owner', 'has_applied', 'created_at', 'updated_at',
+            'translated_title', 'translated_description', 'translation_status',
         ]
 
     def get_is_owner(self, obj):
@@ -147,6 +163,25 @@ class OrderDetailSerializer(serializers.ModelSerializer):
                 applicant=request.user
             ).exists()
         return False
+
+    def get_translated_title(self, obj):
+        translation = self.context.get('translation')
+        if translation:
+            return translation.translated_title
+        return None
+
+    def get_translated_description(self, obj):
+        translation = self.context.get('translation')
+        if translation:
+            return translation.translated_description
+        return None
+
+    def get_translation_status(self, obj):
+        if self.context.get('translation'):
+            return 'ready'
+        if self.context.get('translation_pending'):
+            return 'pending'
+        return None
 
 
 class OrderCreateUpdateSerializer(serializers.ModelSerializer):
@@ -170,7 +205,6 @@ class OrderCreateUpdateSerializer(serializers.ModelSerializer):
 
         order = Order.objects.create(**validated_data)
 
-        # Создание или получение тегов
         for tag_name in tag_names:
             tag, created = Tag.objects.get_or_create(
                 name=tag_name.strip(),
@@ -181,14 +215,12 @@ class OrderCreateUpdateSerializer(serializers.ModelSerializer):
                 tag.usage_count += 1
                 tag.save()
 
-        # Загрузка вложений
         for attachment_file in attachments:
             OrderAttachment.objects.create(
                 order=order,
                 file=attachment_file
             )
 
-        # Запускаем Celery-задание для расчета embedding асинхронно
         from .tasks import calculate_order_embedding
         calculate_order_embedding.delay(str(order.id))
 
@@ -222,7 +254,6 @@ class OrderCreateUpdateSerializer(serializers.ModelSerializer):
                     file=attachment_file
                 )
 
-        # Запускаем Celery-задание для обновления embedding асинхронно
         from .tasks import calculate_order_embedding
         calculate_order_embedding.delay(str(instance.id))
 
@@ -264,15 +295,12 @@ class OrderApplicationCreateSerializer(serializers.ModelSerializer):
         request = self.context['request']
         order = data['order']
 
-        # Проверка что заказ открыт
         if order.status != Order.OPEN:
             raise serializers.ValidationError("This order is no longer accepting applications.")
 
-        # Проверка что пользователь не владелец заказа
         if order.buyer == request.user:
             raise serializers.ValidationError("You cannot apply to your own order.")
 
-        # Проверка что уже не подавал заявку
         if OrderApplication.objects.filter(order=order, applicant=request.user).exists():
             raise serializers.ValidationError("You have already applied to this order.")
 
@@ -282,7 +310,6 @@ class OrderApplicationCreateSerializer(serializers.ModelSerializer):
         validated_data['applicant'] = self.context['request'].user
         application = OrderApplication.objects.create(**validated_data)
 
-        # Увеличиваем счетчик заявок у заказа
         order = application.order
         order.applications_count += 1
         order.save(update_fields=['applications_count'])

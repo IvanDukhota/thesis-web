@@ -21,7 +21,7 @@ from .serializers import (
 
 
 class StandardResultsSetPagination(PageNumberPagination):
-    page_size = 20
+    page_size = 10
     page_size_query_param = 'page_size'
     max_page_size = 100
 
@@ -182,17 +182,29 @@ class OrderViewSet(viewsets.ModelViewSet):
 
         return queryset.distinct()
 
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            orders = page
+        else:
+            orders = list(queryset)
+
+        serializer = self.get_serializer(orders, many=True)
+
+        if page is not None:
+            return self.get_paginated_response(serializer.data)
+        return Response(serializer.data)
+
     def perform_create(self, serializer):
         serializer.save(buyer=self.request.user)
 
     def create(self, request, *args, **kwargs):
-        # Обработка множественных файлов из FormData
         data = request.data.copy()
 
-        # Получаем все файлы с ключом 'attachments'
         attachments = request.FILES.getlist('attachments')
 
-        # Логирование для отладки
         import logging
         logger = logging.getLogger(__name__)
         logger.info(f"Creating order with {len(attachments)} attachments")
@@ -206,7 +218,6 @@ class OrderViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
 
-        # Возвращаем полные данные через OrderDetailSerializer
         instance = serializer.instance
         detail_serializer = OrderDetailSerializer(instance, context={'request': request})
         headers = self.get_success_headers(detail_serializer.data)
@@ -214,10 +225,33 @@ class OrderViewSet(viewsets.ModelViewSet):
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
-        # Увеличиваем счетчик просмотров
         instance.views_count += 1
         instance.save(update_fields=['views_count'])
-        serializer = self.get_serializer(instance)
+
+        translate = request.query_params.get('translate', 'false').lower() == 'true'
+        serializer_context = {'request': request}
+
+        if translate and request.user.is_authenticated and request.user.language:
+            from .models import OrderTranslation
+            target_language = request.user.language
+
+            try:
+                translation = OrderTranslation.objects.get(
+                    order=instance,
+                    target_language=target_language
+                )
+                if translation.translated_description:
+                    serializer_context['translation'] = translation
+                else:
+                    from .tasks import translate_order_detail_task
+                    translate_order_detail_task.delay(str(instance.id), target_language, request.user.id)
+                    serializer_context['translation_pending'] = True
+            except OrderTranslation.DoesNotExist:
+                from .tasks import translate_order_detail_task
+                translate_order_detail_task.delay(str(instance.id), target_language, request.user.id)
+                serializer_context['translation_pending'] = True
+
+        serializer = self.get_serializer(instance, context=serializer_context)
         return Response(serializer.data)
 
     def update(self, request, *args, **kwargs):
@@ -226,7 +260,11 @@ class OrderViewSet(viewsets.ModelViewSet):
             return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
 
         new_attachments = request.FILES.getlist('attachments')
-        keep_ids = request.data.getlist('keep_attachment_ids')
+        keep_ids = request.data.get('keep_attachment_ids', [])
+        if isinstance(keep_ids, str):
+            keep_ids = [keep_ids]
+        elif not isinstance(keep_ids, list):
+            keep_ids = []
 
         data = request.data.copy()
         if 'attachments' in data:
@@ -240,6 +278,9 @@ class OrderViewSet(viewsets.ModelViewSet):
         instance.attachments.exclude(id__in=keep_ids).delete()
         for attachment_file in new_attachments:
             OrderAttachment.objects.create(order=instance, file=attachment_file)
+
+        from .models import OrderTranslation
+        OrderTranslation.objects.filter(order=instance).delete()
 
         fresh = Order.objects.select_related('buyer', 'category').prefetch_related('tags', 'attachments').get(pk=instance.pk)
         detail_serializer = OrderDetailSerializer(fresh, context={'request': request})
@@ -288,7 +329,6 @@ class OrderViewSet(viewsets.ModelViewSet):
         embedding_url = getattr(settings, 'EMBEDDING_SERVICE_URL', 'http://localhost:8002')
         reranker_url = getattr(settings, 'RERANKER_SERVICE_URL', 'http://localhost:8003')
 
-        # Step 1: Get query embedding
         try:
             resp = http_requests.post(
                 f"{embedding_url}/embed",
@@ -303,8 +343,6 @@ class OrderViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
 
-        # Step 2: Get top 30 candidates using vector similarity
-        # Higher threshold (0.4) for better cross-lingual matching
         threshold = 0.5
         queryset = (
             Order.objects
@@ -337,13 +375,11 @@ class OrderViewSet(viewsets.ModelViewSet):
             except ValueError:
                 pass
 
-        # Get top 30 candidates
         candidates = list(queryset.order_by('distance')[:30])
 
         if not candidates:
             return Response({'results': []})
 
-        # Step 3: Prepare documents for reranker
         documents = []
         for order in candidates:
             documents.append({
@@ -354,7 +390,6 @@ class OrderViewSet(viewsets.ModelViewSet):
                 'description': order.description,
             })
 
-        # Step 4: Rerank using reranker service
         try:
             rerank_resp = http_requests.post(
                 f"{reranker_url}/rerank",
@@ -373,33 +408,66 @@ class OrderViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
 
-        # Step 5: Filter by relevance threshold
-        # 0.10 (10%) provides best balance between precision and recall
-        # Note: Cross-lingual queries may have lower scores but still be relevant
         relevance_threshold = 0.005
         filtered_results = [
             r for r in rerank_results
             if r['relevance_score'] >= relevance_threshold
         ]
 
-        # Step 6: Reorder candidates based on reranker scores
         order_map = {str(order.id): order for order in candidates}
         final_orders = []
         for result in filtered_results:
             order = order_map.get(result['id'])
             if order:
-                # Attach reranker score to order for debugging
                 order.rerank_score = result['score']
                 order.relevance_score = result['relevance_score']
                 final_orders.append(order)
 
-        # Step 7: Paginate and return
+        sort = request.query_params.get('sort')
+        if sort and sort != 'recommendations':
+            order_ids = [str(order.id) for order in final_orders]
+            final_orders_qs = Order.objects.filter(id__in=order_ids).select_related('buyer', 'category').prefetch_related('tags', 'attachments')
+
+            if sort == 'price':
+                final_orders = list(final_orders_qs.order_by('price'))
+            elif sort == '-price':
+                final_orders = list(final_orders_qs.order_by('-price'))
+            elif sort == 'created_at':
+                final_orders = list(final_orders_qs.order_by('created_at'))
+            elif sort == '-created_at':
+                final_orders = list(final_orders_qs.order_by('-created_at'))
+
         page = self.paginate_queryset(final_orders)
         if page is not None:
             serializer = OrderListSerializer(page, many=True, context={'request': request})
             return self.get_paginated_response(serializer.data)
         serializer = OrderListSerializer(final_orders, many=True, context={'request': request})
         return Response(serializer.data)
+
+    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
+    def request_translations(self, request):
+        """Request translations for multiple orders"""
+        from .tasks import translate_order_task
+        from celery import group
+
+        order_ids = request.data.get('order_ids', [])
+
+        if not order_ids:
+            return Response(
+                {'error': 'order_ids is required'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not request.user.language:
+            return Response(
+                {'error': 'User language not set'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        job = group(translate_order_task.s(str(order_id), request.user.id) for order_id in order_ids)
+        job.apply_async()
+
+        return Response({'status': 'translations_requested', 'count': len(order_ids)})
 
 
 class OrderApplicationViewSet(viewsets.ModelViewSet):
@@ -455,17 +523,14 @@ class OrderApplicationViewSet(viewsets.ModelViewSet):
         queryset = super().get_queryset()
         user = self.request.user
 
-        # Пользователь видит только свои заявки или заявки на свои заказы
         queryset = queryset.filter(
             Q(applicant=user) | Q(order__buyer=user)
         )
 
-        # Фильтр по заказу
         order_slug = self.request.query_params.get('order')
         if order_slug:
             queryset = queryset.filter(order__slug=order_slug)
 
-        # Фильтр по статусу
         status_filter = self.request.query_params.get('status')
         if status_filter:
             queryset = queryset.filter(status=status_filter)
@@ -644,7 +709,6 @@ class OrderApplicationViewSet(viewsets.ModelViewSet):
         application.status = OrderApplication.WITHDRAWN
         application.save()
 
-        # Уменьшаем счетчик заявок у заказа
         order = application.order
         order.applications_count = max(0, order.applications_count - 1)
         order.save(update_fields=['applications_count'])

@@ -131,6 +131,13 @@
   font-weight: 800;
   color: white;
   background: linear-gradient(135deg, #5b21b6, #7c3aed);
+  overflow: hidden;
+}
+
+.chat-contact-card__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .chat-contact-card__content {
@@ -211,6 +218,13 @@
   place-items: center;
   font-weight: 800;
   background: linear-gradient(135deg, #5b21b6, #7c3aed);
+  overflow: hidden;
+}
+
+.chat-main__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .chat-main__name {
@@ -328,6 +342,13 @@
   font-size: 14px;
   flex-shrink: 0;
   margin-left: -40px;
+  overflow: hidden;
+}
+
+.chat-message__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .chat-message--no-avatar .chat-message__avatar {

@@ -8,6 +8,15 @@ html {
     to   { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes pulse {
+    0%, 100% {
+        opacity: 0.7;
+    }
+    50% {
+        opacity: 0.3;
+    }
+}
+
 .marketplace-page {
     min-height: 100vh;
     width: 100%;
@@ -737,4 +746,80 @@ html {
     .marketplace-create-button {
         width: 100%;
     }
+}
+
+/* Auto-translate toggle */
+.auto-translate-toggle {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    user-select: none;
+    padding: 4px 10px 4px 8px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.03);
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.auto-translate-toggle:hover {
+    border-color: rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.auto-translate-toggle--active {
+    border-color: rgba(124, 58, 237, 0.45);
+    background: rgba(124, 58, 237, 0.1);
+}
+
+.auto-translate-toggle--active:hover {
+    border-color: rgba(124, 58, 237, 0.6);
+    background: rgba(124, 58, 237, 0.15);
+}
+
+.auto-translate-toggle input[type="checkbox"] {
+    display: none;
+}
+
+.auto-translate-toggle__icon {
+    color: #52525b;
+    transition: color 0.2s;
+    flex-shrink: 0;
+}
+
+.auto-translate-toggle--active .auto-translate-toggle__icon {
+    color: #a78bfa;
+}
+
+.auto-translate-toggle__label {
+    font-size: 12px;
+    color: #71717a;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+.auto-translate-toggle--active .auto-translate-toggle__label {
+    color: #c4b5fd;
+}
+
+.auto-translate-toggle__dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #3f3f46;
+    flex-shrink: 0;
+    transition: background 0.2s;
+}
+
+.auto-translate-toggle--active .auto-translate-toggle__dot {
+    background: #7c3aed;
+    box-shadow: 0 0 4px rgba(124, 58, 237, 0.6);
+}
+
+/* Translation pending indicator */
+.mp-card__translation-pending {
+    margin-left: 6px;
+    font-size: 14px;
+    opacity: 0.7;
+    animation: pulse 1.5s ease-in-out infinite;
 }

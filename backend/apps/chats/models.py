@@ -3,10 +3,12 @@ import uuid
 from django.conf import settings
 from django.db import models
 
+from config.storage import AvatarStorage
+
 
 def chat_avatar_path(instance, filename):
     ext = filename.split('.')[-1]
-    return f'chats/chat_{instance.id}/avatar.{ext}'
+    return f'chat_{instance.id}.{ext}'
 
 
 class Chat(models.Model):
@@ -21,7 +23,7 @@ class Chat(models.Model):
 
     title = models.CharField(max_length=255, blank=True)
     description = models.TextField(blank=True)
-    avatar = models.ImageField(upload_to=chat_avatar_path, blank=True, null=True)
+    avatar = models.ImageField(upload_to=chat_avatar_path, storage=AvatarStorage, blank=True, null=True)
 
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,

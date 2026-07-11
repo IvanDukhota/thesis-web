@@ -207,14 +207,14 @@ class ChatDetailView(APIView):
 
         chat_with_members = Chat.objects.prefetch_related("members", "members__user").get(id=chat.id)
 
-        serializer_context = {}
+        serializer_context = {'request': request}
         if translate and user.language:
             serializer_context['target_language'] = user.language
             serializer_context['user_id'] = user.id
 
         return Response(
             {
-                "chat": ChatSerializer(chat_with_members).data,
+                "chat": ChatSerializer(chat_with_members, context=serializer_context).data,
                 "messages": MessageSerializer(messages, many=True, context=serializer_context).data,
                 "has_more_older": bool(first_position and first_position > 1 and has_more_older),
                 "has_more_newer": has_more_newer,
@@ -248,7 +248,6 @@ class ChatDetailView(APIView):
                 send_translation_ready_event(str(message.id), target_language, message.text or '', user_id)
                 continue
 
-            # Skip translation if source language matches target (but not if source is 'unknown')
             if message.source_language == target_language and message.source_language != 'unknown':
                 print(f"Message {message.id} source language is the same as target language {target_language}, sending original text")
                 send_translation_ready_event(str(message.id), target_language, message.text or '', user_id)
@@ -316,7 +315,7 @@ class GroupChatCreateView(APIView):
 
         title = request.data.get("title", "").strip()
         description = request.data.get("description", "").strip()
-        avatar = request.data.get("avatar", "").strip()
+        avatar_base64 = request.data.get("avatar", "")
         member_ids = request.data.get("member_ids", [])
 
         if not title:
@@ -348,9 +347,24 @@ class GroupChatCreateView(APIView):
             type=Chat.ChatType.GROUP,
             title=title,
             description=description,
-            avatar=avatar,
             created_by=user,
         )
+
+        if avatar_base64 and avatar_base64.startswith('data:image'):
+            import base64
+            import uuid
+            from django.core.files.base import ContentFile
+
+            try:
+                format_str, img_str = avatar_base64.split(';base64,')
+                ext = format_str.split('/')[-1]
+
+                img_data = base64.b64decode(img_str)
+
+                file_name = f"chat_avatar_{chat.id}.{ext}"
+                chat.avatar.save(file_name, ContentFile(img_data), save=True)
+            except Exception as e:
+                print(f"Failed to process avatar: {e}")
 
         ChatMember.objects.create(
             chat=chat,
@@ -496,5 +510,277 @@ class ChatDeleteView(APIView):
 
         return Response(
             {"detail": "Chat deleted successfully."},
+            status=status.HTTP_200_OK,
+        )
+
+
+class ChatLeaveView(APIView):
+    """
+    POST /chats/{chat_id}/leave/ - выход из группового чата
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    @transaction.atomic
+    def post(self, request, chat_id):
+        user = request.user
+
+        try:
+            chat = Chat.objects.get(
+                id=chat_id,
+                members__user=user,
+                members__is_active=True,
+                is_active=True,
+            )
+        except Chat.DoesNotExist:
+            return Response(
+                {"detail": "Chat not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if chat.type != Chat.ChatType.GROUP:
+            return Response(
+                {"detail": "You can only leave group chats."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            member = ChatMember.objects.get(chat=chat, user=user, is_active=True)
+        except ChatMember.DoesNotExist:
+            return Response(
+                {"detail": "You are not a member of this chat."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        if member.role == ChatMember.Role.OWNER:
+            return Response(
+                {"detail": "Owner cannot leave the chat. Delete the chat instead."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        member.delete()
+
+        chat_id_str = str(chat.id)
+
+        from channels.layers import get_channel_layer
+        from asgiref.sync import async_to_sync
+
+        channel_layer = get_channel_layer()
+
+        async_to_sync(channel_layer.group_send)(
+            f"user_{user.id}",
+            {
+                "type": "send_chat_left",
+                "chat_id": chat_id_str,
+            },
+        )
+
+        return Response(
+            {"detail": "Successfully left the chat."},
+            status=status.HTTP_200_OK,
+        )
+
+
+class ChatMemberAddView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    @transaction.atomic
+    def post(self, request, chat_id):
+        admin_user = request.user
+
+        try:
+            chat = Chat.objects.get(
+                id=chat_id,
+                members__user=admin_user,
+                members__is_active=True,
+                is_active=True,
+            )
+        except Chat.DoesNotExist:
+            return Response(
+                {"detail": "Chat not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if chat.type != Chat.ChatType.GROUP:
+            return Response(
+                {"detail": "You can only add members to group chats."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            admin_member = ChatMember.objects.get(chat=chat, user=admin_user, is_active=True)
+        except ChatMember.DoesNotExist:
+            return Response(
+                {"detail": "You are not a member of this chat."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        if admin_member.role not in [ChatMember.Role.OWNER, ChatMember.Role.ADMIN]:
+            return Response(
+                {"detail": "Only owners and admins can add members."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        user_ids = request.data.get("user_ids", [])
+
+        if not isinstance(user_ids, list) or len(user_ids) == 0:
+            return Response(
+                {"detail": "user_ids must be a non-empty list."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        users = User.objects.filter(id__in=user_ids)
+        if users.count() != len(user_ids):
+            return Response(
+                {"detail": "Some users not found."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        existing_member_ids = set(
+            ChatMember.objects.filter(chat=chat, user_id__in=user_ids, is_active=True)
+            .values_list('user_id', flat=True)
+        )
+
+        added_members = []
+        for user in users:
+            if user.id not in existing_member_ids:
+                member = ChatMember.objects.create(
+                    chat=chat,
+                    user=user,
+                    role=ChatMember.Role.MEMBER,
+                )
+                added_members.append(member)
+
+        if len(added_members) == 0:
+            return Response(
+                {"detail": "All users are already members of this chat."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        from channels.layers import get_channel_layer
+        from asgiref.sync import async_to_sync
+        from .serializers import ChatMemberSerializer
+
+        channel_layer = get_channel_layer()
+        chat_id_str = str(chat.id)
+
+        added_members_data = ChatMemberSerializer(added_members, many=True).data
+
+        async_to_sync(channel_layer.group_send)(
+            f"chat_{chat_id_str}",
+            {
+                "type": "chat_message",
+                "payload": {
+                    "type": "members.added",
+                    "chat_id": chat_id_str,
+                    "members": added_members_data,
+                },
+            },
+        )
+
+        return Response(
+            {
+                "detail": f"Successfully added {len(added_members)} member(s).",
+                "added_members": added_members_data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class ChatMemberRemoveView(APIView):
+    """
+    DELETE /chats/{chat_id}/members/{user_id}/ - удаление участника из группового чата (только для админов)
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    @transaction.atomic
+    def delete(self, request, chat_id, user_id):
+        admin_user = request.user
+
+        try:
+            chat = Chat.objects.get(
+                id=chat_id,
+                members__user=admin_user,
+                members__is_active=True,
+                is_active=True,
+            )
+        except Chat.DoesNotExist:
+            return Response(
+                {"detail": "Chat not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if chat.type != Chat.ChatType.GROUP:
+            return Response(
+                {"detail": "You can only remove members from group chats."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            admin_member = ChatMember.objects.get(chat=chat, user=admin_user, is_active=True)
+        except ChatMember.DoesNotExist:
+            return Response(
+                {"detail": "You are not a member of this chat."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        if admin_member.role not in [ChatMember.Role.OWNER, ChatMember.Role.ADMIN]:
+            return Response(
+                {"detail": "Only owners and admins can remove members."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        try:
+            member_to_remove = ChatMember.objects.get(chat=chat, user_id=user_id, is_active=True)
+        except ChatMember.DoesNotExist:
+            return Response(
+                {"detail": "User is not a member of this chat."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if member_to_remove.role == ChatMember.Role.OWNER:
+            return Response(
+                {"detail": "Cannot remove the owner of the chat."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        if member_to_remove.user.id == admin_user.id:
+            return Response(
+                {"detail": "Use leave endpoint to exit the chat."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        removed_user_id = member_to_remove.user.id
+        removed_user_name = member_to_remove.user.full_name
+        chat_id_str = str(chat.id)
+        chat_title = chat.title
+
+        member_to_remove.delete()
+
+        from channels.layers import get_channel_layer
+        from asgiref.sync import async_to_sync
+        import json
+
+        channel_layer = get_channel_layer()
+
+        async_to_sync(channel_layer.group_send)(
+            f"user_{admin_user.id}",
+            {
+                "type": "send_member_removed",
+                "chat_id": chat_id_str,
+                "user_id": removed_user_id,
+            },
+        )
+
+        async_to_sync(channel_layer.group_send)(
+            f"user_{removed_user_id}",
+            {
+                "type": "send_kicked_from_chat",
+                "chat_id": chat_id_str,
+                "chat_title": chat_title,
+            },
+        )
+
+        return Response(
+            {"detail": "Member removed successfully."},
             status=status.HTTP_200_OK,
         )

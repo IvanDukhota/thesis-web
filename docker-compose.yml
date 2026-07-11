@@ -55,6 +55,7 @@ services:
       - OLLAMA_SERVICE_URL=http://ollama:11434
       - EMBEDDING_SERVICE_URL=http://embedding-service:8002
       - RERANKER_SERVICE_URL=http://reranker-service:8003
+      - USE_TRANSLATION_API=true
       - SECRET_KEY=${SECRET_KEY:-django-insecure-change-this-in-production}
       - ALLOWED_HOSTS=localhost,127.0.0.1,backend
       - CORS_ALLOW_ALL_ORIGINS=true
@@ -84,6 +85,7 @@ services:
       - REDIS_PORT=6379
       - OLLAMA_SERVICE_URL=http://ollama:11434
       - EMBEDDING_SERVICE_URL=http://embedding-service:8002
+      - USE_TRANSLATION_API=true
       - USE_S3=true
       - AWS_S3_ENDPOINT_URL=http://minio:9000
       - AWS_ACCESS_KEY_ID=minioadmin
@@ -211,6 +213,7 @@ services:
     environment:
       - VITE_PROXY_TARGET=http://backend:8000
       - VITE_WS_PROXY_TARGET=ws://backend:8000
+      - VITE_DESKTOP_WIN_URL=http://localhost:9000/teamhub-releases/TeamHub-Setup.exe
     command: sh -c "npm install && npm run dev"
     depends_on:
       - backend

@@ -121,11 +121,16 @@ class ContactListView(APIView):
     def get(self, request):
         user = request.user
 
-        contacts = User.objects.filter(
-            id__in=user.contacts.values_list('contact_id', flat=True)
-        ).order_by("username")
+        contact_ids = list(user.contacts.values_list('contact_id', flat=True))
+        logger.debug(f"User {user.id} has contact_ids: {contact_ids}")
 
-        return Response(UserSerializer(contacts, many=True).data)
+        contacts = User.objects.filter(id__in=contact_ids).order_by("username")
+        logger.debug(f"Found {contacts.count()} contacts")
+
+        serialized = UserSerializer(contacts, many=True, context={'request': request}).data
+        logger.debug(f"Serialized data: {serialized}")
+
+        return Response(serialized)
 
 
 class UserSearchView(APIView):

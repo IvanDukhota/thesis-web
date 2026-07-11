@@ -10,9 +10,10 @@ import {
   RiDeleteBin6Line,
   RiUserAddLine,
 } from "react-icons/ri";
-import { type Chat, getChatStats, type ChatStats, deleteChat } from "../../../../shared/api/chat";
+import { type Chat, getChatStats, type ChatStats, deleteChat, leaveChat, removeChatMember } from "../../../../shared/api/chat";
 import { type User } from "../../../../shared/api/auth";
 import ConfirmModal from "../../../shared/ui/ConfirmModal/ConfirmModal";
+import AddMemberModal from "../AddMemberModal/AddMemberModal";
 import "./chatProfileModal.css";
 
 type ChatProfileModalProps = {
@@ -34,11 +35,17 @@ export default function ChatProfileModal({
   const [isLoadingStats, setIsLoadingStats] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isLeaving, setIsLeaving] = useState(false);
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+  const [removingMemberId, setRemovingMemberId] = useState<number | null>(null);
+  const [showAddMemberModal, setShowAddMemberModal] = useState(false);
 
   const isGroupChat = chat.type === "group";
   const currentMember = chat.members?.find((m) => m.user === currentUser.id);
   const isAdmin = currentMember?.role === "admin" || currentMember?.role === "owner";
+  const isOwner = currentMember?.role === "owner";
 
+  // For direct chats, get other member info for email display
   const otherMember = !isGroupChat
     ? chat.members?.find((m) => m.user !== currentUser.id)
     : null;
@@ -77,6 +84,36 @@ export default function ChatProfileModal({
     }
   };
 
+  const handleLeaveChat = async () => {
+    setIsLeaving(true);
+
+    try {
+      await leaveChat(chat.id);
+      onChatDeleted?.(chat.id);
+      setShowLeaveConfirm(false);
+      onClose();
+    } catch (error) {
+      console.error("Failed to leave chat:", error);
+      alert("Failed to leave chat. Please try again.");
+    } finally {
+      setIsLeaving(false);
+    }
+  };
+
+  const handleRemoveMember = async (userId: number) => {
+    setRemovingMemberId(userId);
+
+    try {
+      await removeChatMember(chat.id, userId);
+      // Member will be removed from local state when WebSocket event arrives
+    } catch (error) {
+      console.error("Failed to remove member:", error);
+      alert("Failed to remove member. Please try again.");
+    } finally {
+      setRemovingMemberId(null);
+    }
+  };
+
   return (
     <div className="chat-profile-modal__overlay" onClick={handleOverlayClick}>
       <div className="chat-profile-modal">
@@ -97,7 +134,11 @@ export default function ChatProfileModal({
           {/* Аватар и основная информация */}
           <div className="chat-profile-modal__main-info">
             <div className="chat-profile-modal__avatar">
-              {chat.title.charAt(0).toUpperCase()}
+              {chat.avatar ? (
+                <img src={chat.avatar} alt={chat.title} />
+              ) : (
+                chat.title.charAt(0).toUpperCase()
+              )}
             </div>
             <h3 className="chat-profile-modal__name">{chat.title}</h3>
             {isGroupChat && chat.description && (
@@ -149,7 +190,11 @@ export default function ChatProfileModal({
                 {chat.members.map((member) => (
                   <div key={member.id} className="chat-profile-modal__member">
                     <div className="chat-profile-modal__member-avatar">
-                      {member.user_full_name.charAt(0).toUpperCase()}
+                      {member.user_avatar ? (
+                        <img src={member.user_avatar} alt={member.user_full_name} />
+                      ) : (
+                        member.user_full_name.charAt(0).toUpperCase()
+                      )}
                     </div>
                     <div className="chat-profile-modal__member-info">
                       <div className="chat-profile-modal__member-name">
@@ -162,10 +207,11 @@ export default function ChatProfileModal({
                         {member.role === "member" && "Member"}
                       </div>
                     </div>
-                    {isAdmin && member.user !== currentUser.id && (
+                    {isAdmin && member.user !== currentUser.id && member.role !== "owner" && (
                       <button
                         className="chat-profile-modal__member-remove"
-                        onClick={() => alert("Removing members will be available soon")}
+                        onClick={() => handleRemoveMember(member.user)}
+                        disabled={removingMemberId === member.user}
                         title="Remove member"
                       >
                         <RiCloseLine size={16} />
@@ -177,7 +223,7 @@ export default function ChatProfileModal({
               {isAdmin && (
                 <button
                   className="chat-profile-modal__add-member"
-                  onClick={() => alert("Adding members will be available soon")}
+                  onClick={() => setShowAddMemberModal(true)}
                 >
                   <RiUserAddLine size={16} /> Add member
                 </button>
@@ -194,15 +240,16 @@ export default function ChatProfileModal({
               >
                 <RiNotificationOffLine size={16} /> Mute notifications
               </button>
-              {isGroupChat && !isAdmin && (
+              {isGroupChat && !isOwner && (
                 <button
                   className="chat-profile-modal__action-button chat-profile-modal__action-button--danger"
-                  onClick={() => alert("Leave chat will be available soon")}
+                  onClick={() => setShowLeaveConfirm(true)}
+                  disabled={isLeaving}
                 >
                   <RiDoorOpenLine size={16} /> Leave chat
                 </button>
               )}
-              {(!isGroupChat || isAdmin) && (
+              {(!isGroupChat || isOwner) && (
                 <button
                   className="chat-profile-modal__action-button chat-profile-modal__action-button--danger"
                   onClick={() => setShowDeleteConfirm(true)}
@@ -230,6 +277,28 @@ export default function ChatProfileModal({
         onConfirm={handleDeleteChat}
         onCancel={() => setShowDeleteConfirm(false)}
         isLoading={isDeleting}
+      />
+
+      <ConfirmModal
+        isOpen={showLeaveConfirm}
+        title="Leave chat"
+        message={`Are you sure you want to leave "${chat.title}"?\n\nYou will no longer receive messages from this chat. Only the owner can add you back.`}
+        confirmText="Leave"
+        cancelText="Cancel"
+        variant="danger"
+        onConfirm={handleLeaveChat}
+        onCancel={() => setShowLeaveConfirm(false)}
+        isLoading={isLeaving}
+      />
+
+      <AddMemberModal
+        isOpen={showAddMemberModal}
+        onClose={() => setShowAddMemberModal(false)}
+        chatId={chat.id}
+        existingMemberIds={chat.members?.map((m) => m.user) || []}
+        onMembersAdded={() => {
+          // Chat members will be updated via WebSocket
+        }}
       />
     </div>
   );

@@ -252,7 +252,6 @@ class AppConsumer(AsyncJsonWebsocketConsumer):
             }
         )
 
-    # Под вопросом
     async def send_chat_opened(self, event):
         chat_id = event["chat_id"]
         chat_type = event["chat_type"]
@@ -278,6 +277,40 @@ class AppConsumer(AsyncJsonWebsocketConsumer):
             }
         )
 
+    async def send_chat_left(self, event):
+        chat_id = event["chat_id"]
+
+        await self.send_json(
+            {
+                "type": "chat.left",
+                "chat_id": chat_id,
+            }
+        )
+
+    async def send_member_removed(self, event):
+        chat_id = event["chat_id"]
+        user_id = event["user_id"]
+
+        await self.send_json(
+            {
+                "type": "member.removed",
+                "chat_id": chat_id,
+                "user_id": user_id,
+            }
+        )
+
+    async def send_kicked_from_chat(self, event):
+        chat_id = event["chat_id"]
+        chat_title = event["chat_title"]
+
+        await self.send_json(
+            {
+                "type": "chat.kicked",
+                "chat_id": chat_id,
+                "chat_title": chat_title,
+            }
+        )
+
     async def chat_message(self, event):
         await self.send_json(event["payload"])
 
@@ -289,6 +322,15 @@ class AppConsumer(AsyncJsonWebsocketConsumer):
             "type": "translation.ready",
             "message_id": event["message_id"],
             "translated_text": event["translated_text"],
+            "target_language": event["target_language"],
+        })
+
+    async def translation_order_ready(self, event):
+        await self.send_json({
+            "type": "translation.order_ready",
+            "order_id": event["order_id"],
+            "translated_title": event["translated_title"],
+            "translated_description": event["translated_description"],
             "target_language": event["target_language"],
         })
 

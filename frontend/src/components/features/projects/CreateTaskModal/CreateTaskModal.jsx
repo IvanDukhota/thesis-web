@@ -1,8 +1,8 @@
 import { useRef, useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { RiCloseLine, RiCalendarLine } from 'react-icons/ri';
+import { RiCloseLine, RiCalendarLine, RiFileLine, RiUploadLine } from 'react-icons/ri';
 import { VscChevronDown } from 'react-icons/vsc';
-import { apiCreateTask } from '../../../../api/tasksApi';
+import { apiCreateTask, apiUploadTaskFile } from '../../../../api/tasksApi';
 import './CreateTaskModal.css';
 
 const PRIORITIES = ['high', 'medium', 'low'];
@@ -102,6 +102,8 @@ export function CreateTaskModal({ onClose, onAdd, projectId, projectType, member
     const [column, setColumn] = useState('To Do');
     const [errors, setErrors] = useState({});
     const [saving, setSaving] = useState(false);
+    const [pendingFiles, setPendingFiles] = useState([]);
+    const fileInputRef = useRef(null);
 
     const isTeam = projectType === 'team';
     const assigneeOptions = members.map(m => m.username);
@@ -112,6 +114,26 @@ export function CreateTaskModal({ onClose, onAdd, projectId, projectType, member
         if (!priority) e.priority = 'Priority is required';
         if (isTeam && !assignee) e.assignee = 'Assignee is required';
         return e;
+    };
+
+    const handleFileSelect = (e) => {
+        const selected = Array.from(e.target.files || []);
+        e.target.value = '';
+        if (!selected.length) return;
+        const entries = selected.map(file => ({
+            file,
+            previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : null,
+            id: Math.random().toString(36).slice(2),
+        }));
+        setPendingFiles(prev => [...prev, ...entries]);
+    };
+
+    const handleRemovePending = (id) => {
+        setPendingFiles(prev => {
+            const entry = prev.find(f => f.id === id);
+            if (entry?.previewUrl) URL.revokeObjectURL(entry.previewUrl);
+            return prev.filter(f => f.id !== id);
+        });
     };
 
     const handleAdd = async () => {
@@ -127,11 +149,18 @@ export function CreateTaskModal({ onClose, onAdd, projectId, projectType, member
             tag: tag || '',
         };
         const { ok, data } = await apiCreateTask(projectId, payload);
-        setSaving(false);
-        if (ok) {
-            onAdd(data);
-            onClose();
+        if (!ok) { setSaving(false); return; }
+
+        let task = data;
+        for (const entry of pendingFiles) {
+            const { ok: fOk, data: fData } = await apiUploadTaskFile(projectId, data.id, entry.file);
+            if (fOk) task = { ...task, files: [...(task.files || []), fData] };
+            if (entry.previewUrl) URL.revokeObjectURL(entry.previewUrl);
         }
+
+        setSaving(false);
+        onAdd(task);
+        onClose();
     };
 
     const set = (field, value) => {
@@ -208,6 +237,41 @@ export function CreateTaskModal({ onClose, onAdd, projectId, projectType, member
                     <div className="ctm2-field">
                         <label className="ctm2-label">Tag</label>
                         <SimpleSelect value={tag} onChange={setTag} options={TAGS} placeholder="Select tag" />
+                    </div>
+
+                    <div className="ctm2-field">
+                        <label className="ctm2-label">Attachments</label>
+                        <div className="ctm2-upload-zone" onClick={() => fileInputRef.current?.click()}>
+                            <RiUploadLine size={13} />
+                            <span>Click to attach files</span>
+                        </div>
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            multiple
+                            style={{ display: 'none' }}
+                            onChange={handleFileSelect}
+                        />
+                        {pendingFiles.length > 0 && (
+                            <div className="ctm2-files-list">
+                                {pendingFiles.map(entry => (
+                                    <div key={entry.id} className="ctm2-pending-file">
+                                        {entry.previewUrl
+                                            ? <img src={entry.previewUrl} alt="" className="ctm2-file-thumb" />
+                                            : <RiFileLine size={14} style={{ color: '#52525b', flexShrink: 0 }} />
+                                        }
+                                        <span className="ctm2-pending-filename">{entry.file.name}</span>
+                                        <button
+                                            type="button"
+                                            className="ctm2-pending-remove"
+                                            onClick={() => handleRemovePending(entry.id)}
+                                        >
+                                            <RiCloseLine size={13} />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
 

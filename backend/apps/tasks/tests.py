@@ -67,7 +67,6 @@ class TaskCRUDTests(TestCase):
         task_id = self.client.post(self.url, {'title': 'Del', 'column': 'To Do'}).data['id']
         res = self.client.delete(f'{self.url}{task_id}/')
         self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
-        # Confirm gone
         res = self.client.get(self.url)
         ids = [t['id'] for t in res.data]
         self.assertNotIn(task_id, ids)

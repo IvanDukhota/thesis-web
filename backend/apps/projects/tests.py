@@ -81,7 +81,6 @@ class ProjectPermissionTests(TestCase):
     def test_owner_can_delete_project(self):
         res = self.owner.delete(f'{PROJECTS_URL}{self.project_id}/')
         self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
-        # Confirm it's gone
         res = self.owner.get(f'{PROJECTS_URL}{self.project_id}/')
         self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
 

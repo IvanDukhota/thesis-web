@@ -6,6 +6,7 @@ export type ChatMember = {
   user: number;
   user_email: string;
   user_full_name: string;
+  user_avatar: string | null;
   role: "owner" | "admin" | "member";
   joined_at: string;
   is_active: boolean;
@@ -33,6 +34,7 @@ export type MessageSender = {
   id: number;
   email: string;
   full_name: string;
+  avatar?: string | null;
 };
 
 export type ReplyToMessage = {
@@ -283,6 +285,20 @@ export async function getChatStats(chatId: string) {
 
 export async function deleteChat(chatId: string) {
   return apiRequest(`/chats/${chatId}/delete/`, {
+    method: 'DELETE',
+    auth: true,
+  });
+}
+
+export async function leaveChat(chatId: string) {
+  return apiRequest(`/chats/${chatId}/leave/`, {
+    method: 'POST',
+    auth: true,
+  });
+}
+
+export async function removeChatMember(chatId: string, userId: number) {
+  return apiRequest(`/chats/${chatId}/members/${userId}/`, {
     method: 'DELETE',
     auth: true,
   });
