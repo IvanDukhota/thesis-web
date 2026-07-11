@@ -19,7 +19,8 @@ scrape_configs:
               - teamhub-backend
               - teamhub-celery
               - teamhub-embedding
-              - teamhub-translation
+              - teamhub-reranker
+              - teamhub-ollama
               - teamhub-db
               - teamhub-redis
               - teamhub-minio

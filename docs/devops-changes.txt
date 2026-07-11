@@ -1,0 +1,414 @@
+DEVOPS AUDIT — TEAMHUB
+Дата: 2026-07-11
+Гілка: feature/frontend
+================================================================================
+
+ЗМІСТ
+  1. Безпека
+  2. Docker Compose
+  3. Dockerfiles
+  4. CI/CD Pipeline
+  5. Моніторинг
+  6. Django Settings
+  7. Що залишилось (відкладено або пропущено)
+  8. Гайд запуску
+
+================================================================================
+1. БЕЗПЕКА
+================================================================================
+
+ПРОБЛЕМА 1 — Хардкодені credentials у docker-compose.yml
+  Було: POSTGRES_PASSWORD: password, minioadmin/minioadmin, GF_SECURITY_ADMIN_PASSWORD=admin
+  безпосередньо у файлі, який зберігається в git.
+
+  Зроблено:
+  - Створено .env з реальними значеннями (не потрапляє в git)
+  - Створено .env.example як шаблон для нових розробників
+  - docker-compose.yml тепер читає всі секрети через ${VAR_NAME}
+  - .gitignore вже мав правильне правило .env
+
+  Навіщо: git-історія вічна. Паролі, які потрапили в репо, залишаються
+  доступними назавжди навіть після видалення. .env підхід є галузевим
+  стандартом (12-factor app).
+
+
+ПРОБЛЕМА 2 — Небезпечний fallback для SECRET_KEY
+  Було: SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-^)2p3mz...')
+  Django мовчки стартував з публічним ключем якщо змінна не встановлена.
+
+  Зроблено:
+  - backend/config/settings/base.py: прибрано fallback, тепер кидає
+    виняток при старті якщо SECRET_KEY відсутня
+  - .github/workflows/main-ci.yml: додано SECRET_KEY для CI job
+
+  Навіщо: SECRET_KEY підписує сесії, CSRF-токени, password reset посилання.
+  Тихий fallback на публічний ключ гірше ніж відсутність захисту.
+
+
+ПРОБЛЕМА 3 — CORS_ALLOW_ALL_ORIGINS=true
+  Було: будь-який сайт в інтернеті міг робити авторизовані запити до API
+  від імені залогіненого користувача.
+
+  Зроблено:
+  - base.py: CORS_ALLOW_ALL_ORIGINS = False
+  - .env і .env.example: CORS_ALLOW_ALL_ORIGINS=false
+
+  Навіщо: захист від CSRF-атак через CORS. Дозволено тільки localhost:3000.
+
+
+ПРОБЛЕМА 4 — Відкриті порти db і redis назовні
+  Було: ports 5432:5432 і 6379:6379 — БД і Redis доступні з хоста без auth.
+
+  Зроблено:
+  - Прибрано секцію ports для db і redis в docker-compose.yml
+  - Сервіси досі доступні всередині Docker-мережі teamhub
+
+  Навіщо: зовнішній доступ до БД і Redis не потрібен. Внутрішня комунікація
+  через Docker network залишається повністю робочою.
+
+
+ПРОБЛЕМА 5 — Контейнери запускались від root
+  Було: жоден Dockerfile не мав USER directive, всі процеси root.
+
+  Зроблено:
+  - backend/Dockerfile: додано useradd -m appuser + chown + USER appuser
+  - embedding-service/Dockerfile: те саме
+  - reranker-service/Dockerfile: те саме
+  - frontend/Dockerfile (nginx): не змінювався, nginx сам керує привілеями
+
+  Навіщо: якщо вразливість дозволяє виконання коду в контейнері, зловмисник
+  отримає непривілейований shell замість root.
+
+
+================================================================================
+2. DOCKER COMPOSE
+================================================================================
+
+ЗМІНА 1 — Прибрано version: '3.8'
+  Файл: docker-compose.yml
+  Docker Compose v2 ігнорує це поле і генерує deprecation warning.
+
+
+ЗМІНА 2 — restart: unless-stopped
+  Файл: docker-compose.yml
+  Додано до всіх основних сервісів: db, redis, backend, celery, frontend,
+  minio, embedding-service, reranker-service, prometheus, grafana, loki,
+  promtail, cadvisor, node-exporter, redis-exporter, postgres-exporter.
+  Після краша контейнери піднімаються автоматично.
+
+
+ЗМІНА 3 — Celery depends_on з health conditions
+  Файл: docker-compose.yml
+  Було: depends_on: [db, redis] без умов.
+  Стало: condition: service_healthy для обох.
+  Celery більше не стартує до готовності БД і Redis.
+
+
+ЗМІНА 4 — Прибрано --reload з uvicorn
+  Файл: docker-compose.yml
+  --reload є dev-опцією (відстежує зміни файлів). При DJANGO_SETTINGS_MODULE
+  = config.settings.prod це було невідповідно.
+
+
+ЗМІНА 5 — npm install замінено на npm ci
+  Файл: docker-compose.yml
+  npm ci читає точні версії з package-lock.json і швидше за npm install.
+
+
+ЗМІНА 6 — Виправлено ollama-init sleep
+  Файл: docker-compose.yml
+  Було: sleep 10 (race condition якщо ollama стартує довше)
+  Стало: until ollama list >/dev/null 2>&1; do sleep 2; done
+
+
+ЗМІНА 7 — Ollama в окремому профілі
+  Файл: docker-compose.yml
+  ollama і ollama-init тепер мають profiles: ["ai"].
+  docker compose up запускає все БЕЗ ollama.
+  docker compose --profile ai up запускає все включно з AI.
+  Навіщо: ollama (7B модель) не потрібна для базової розробки і ламала CI.
+
+
+ЗМІНА 8 — Явна Docker-мережа teamhub
+  Файл: docker-compose.yml
+  Всі сервіси тепер явно в мережі teamhub (bridge).
+  Функціонально еквівалентно попередньому default network, але явно і чисто.
+
+
+ЗМІНА 9 — Нові сервіси моніторингу
+  Файл: docker-compose.yml
+  Додано:
+  - node-exporter (prom/node-exporter:v1.8.0) — системні метрики хоста
+  - redis-exporter (oliver006/redis_exporter:v1.62.0) — метрики Redis
+  - postgres-exporter (prometheuscommunity/postgres-exporter:v0.15.0) — метрики PG
+
+
+ЗМІНА 10 — Prometheus retention 30d
+  Файл: docker-compose.yml
+  Було: --storage.tsdb.retention.time=7d
+  Стало: 30d
+
+
+ЗМІНА 11 — Grafana auto-provisioning
+  Файл: docker-compose.yml + grafana/provisioning/datasources/datasources.yml
+  Grafana тепер автоматично підключає Prometheus і Loki при першому старті.
+  Більше не потрібно вручну додавати datasources.
+
+
+ЗМІНА 12 — Production compose файл
+  Файл: docker-compose.prod.yml (новий)
+  Override для production режиму:
+  - frontend: збирається з Dockerfile (nginx), порт 80
+  - backend: без монтування коду, 2 uvicorn workers, healthcheck
+  - celery: без монтування коду
+  Запуск: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+
+
+================================================================================
+3. DOCKERFILES
+================================================================================
+
+ЗМІНА 1 — .dockerignore для всіх сервісів
+  Нові файли: backend/.dockerignore, frontend/.dockerignore,
+              embedding-service/.dockerignore, reranker-service/.dockerignore
+  Виключено: .git, __pycache__, *.pyc, .env, node_modules, dist, *.log
+  Навіщо: без .dockerignore COPY . /app/ копіює git-історію, кеші Python,
+  .env файли в образ. Зменшує розмір образу і час білду.
+
+
+ЗМІНА 2 — Пінування версій базових образів
+  Було:  python:3.12-slim, python:3.11-slim, node:20-alpine
+  Стало: python:3.12.7-slim, python:3.11.9-slim, node:20.18-alpine
+  Навіщо: непіновані теги можуть змінитись між builds що ламає
+  відтворюваність.
+
+
+ЗМІНА 3 — USER directive (non-root)
+  Файли: backend/Dockerfile, embedding-service/Dockerfile,
+         reranker-service/Dockerfile
+  Додано перед CMD:
+    RUN useradd -m appuser && chown -R appuser:appuser /app
+    USER appuser
+  Деталі: chown потрібен бо COPY . /app/ копіює файли від root.
+  frontend/Dockerfile не змінювався (nginx сам керує привілеями worker-ів).
+
+
+================================================================================
+4. CI/CD PIPELINE
+================================================================================
+
+ЗМІНА 1 — Додано SECRET_KEY для unit tests job
+  Файл: .github/workflows/main-ci.yml
+  Після того як SECRET_KEY стала обов'язковою (без fallback), CI job
+  потребував явного значення.
+
+
+ЗМІНА 2 — Security scan job (новий)
+  Файл: .github/workflows/main-ci.yml
+  Новий job security-scan запускається на кожен push і PR:
+  - gitleaks/gitleaks-action: сканування секретів у коді
+  - pip-audit: перевірка Python залежностей на вразливості
+  - npm audit: перевірка Node залежностей на вразливості
+  pip-audit і npm audit мають continue-on-error: true (звітують, не ламають CI).
+
+
+ЗМІНА 3 — Smoke test: генерація .env
+  Файл: .github/workflows/main-ci.yml
+  Smoke test тепер генерує тимчасовий .env перед docker compose up.
+  Без цього всі ${VAR} підстановки були б порожніми рядками.
+
+
+ЗМІНА 4 — Smoke test: тільки core сервіси
+  Файл: .github/workflows/main-ci.yml
+  Було: docker compose up -d --build (всі сервіси включно з AI і моніторингом)
+  Стало: docker compose up -d --build db redis minio minio-init backend frontend
+  Навіщо: embedding-service і reranker-service завантажують ML моделі (~1GB)
+  що призводило до OOM на CI runner. Ollama взагалі не запускається в CI.
+
+
+ЗМІНА 5 — Smoke test: правильне очікування готовності
+  Файл: .github/workflows/main-ci.yml
+  Було: sleep 30 (не детерміністично)
+  Стало: цикл на 30 спроб з curl -sf до /api/v1/health/ + sleep 5
+
+
+ЗМІНА 6 — Docker deploy: SHA теги
+  Файл: .github/workflows/main-ci.yml
+  Було: тільки :latest тег
+  Стало: :latest + :<git-sha>
+  Навіщо: з :latest неможливо зробити rollback до конкретної версії.
+  Тепер: docker pull user/teamhub-backend:abc1234 повертає точну версію.
+
+
+ЗМІНА 7 — Docker build cache
+  Файл: .github/workflows/main-ci.yml
+  Додано docker/setup-buildx-action і cache-from/cache-to type=gha.
+  Навіщо: без кешу кожен CI build завантажує PyTorch (~1.5GB). З кешем
+  після першого build наступні використовують GitHub Actions cache.
+
+
+================================================================================
+5. МОНІТОРИНГ
+================================================================================
+
+ЗМІНА 1 — Виправлено Promtail конфіг
+  Файл: promtail/config.yml
+  Було: teamhub-translation (контейнера з такою назвою не існує)
+  Стало: teamhub-reranker
+  Також додано: teamhub-ollama
+  Навіщо: логи reranker-service не збирались через неправильну назву.
+
+
+ЗМІНА 2 — Prometheus: нові scrape targets
+  Файл: prometheus/prometheus.yml
+  Додано:
+  - node-exporter:9100 (системні метрики)
+  - redis-exporter:9121 (метрики Redis)
+  - postgres-exporter:9187 (метрики PostgreSQL)
+
+
+ЗМІНА 3 — Grafana auto-provisioning datasources
+  Новий файл: grafana/provisioning/datasources/datasources.yml
+  Prometheus і Loki автоматично з'являються як datasources при старті Grafana.
+  Більше не потрібно додавати їх вручну через UI.
+
+
+================================================================================
+6. DJANGO SETTINGS
+================================================================================
+
+ЗМІНА 1 — DEBUG = False в base.py
+  Було: DEBUG = True
+  Навіщо: якщо хтось випадково використає base.py як settings module,
+  debug-режим не буде активним за замовчуванням.
+  dev.py явно встановлює DEBUG = True.
+
+
+ЗМІНА 2 — CORS_ALLOW_ALL_ORIGINS = False в base.py
+  Описано в розділі Безпека, проблема 3.
+
+
+================================================================================
+7. ЩО ЗАЛИШИЛОСЬ (ВІДКЛАДЕНО АБО ПРОПУЩЕНО)
+================================================================================
+
+Не зроблено (потребує додаткового рішення):
+
+  #4  MinIO presigned URLs
+      Повноцінні presigned URLs в Docker вимагають або nginx перед MinIO
+      з однаковим hostname всередині і ззовні, або proxy в Django.
+      Часткове покращення: в production режимі файли йдуть через nginx
+      /storage/ замість прямого порту 9000.
+
+  #6  Auth для Prometheus/Loki/cAdvisor
+      Порти 9090, 9091, 3100 відкриті без авторизації.
+      Для production: nginx з basic auth перед цими сервісами.
+
+  #10 SSL/Cookie security в prod.py
+      SECURE_SSL_REDIRECT, SESSION_COOKIE_SECURE, CSRF_COOKIE_SECURE
+      залишаються False. Потребують HTTPS-сертифіката.
+
+  #14 migrate як окремий init-container
+      Зараз migrate запускається при кожному старті backend.
+      Безпечно для одного інстансу, але не для горизонтального масштабування.
+
+  #19 Пінування minio/ollama тегів
+      minio/minio:latest і ollama/ollama:latest не пінуються.
+      Рекомендується пінувати вручну після перевірки актуальних релізів.
+
+  #20 Resource limits
+      Жодних memory/CPU лімітів на сервісах.
+      Ollama і embedding можуть споживати всю доступну RAM.
+
+  #26 Multi-stage build для backend
+      Одностадійний build включає build-essential у фінальному образі.
+      Multi-stage зменшив би розмір образу ~200MB.
+
+  #34 Пінування GitHub Actions до SHA
+      actions/checkout@v4 і т.д. пінуються до тегів, не до SHA.
+
+  #39 Alerting rules у Prometheus
+      Немає правил для алертів (service down, high error rate, disk full).
+      Потребує AlertManager або Grafana Alerts конфігурації.
+
+  #44 Backup strategy
+      Немає автоматичного backup для postgres_data і minio_data volumes.
+
+
+================================================================================
+8. ГАЙД ЗАПУСКУ
+================================================================================
+
+ПЕРШИЙ ЗАПУСК (нова машина)
+  1. Скопіювати шаблон змінних:
+       cp .env.example .env
+  2. Відкрити .env і заповнити паролі (POSTGRES_PASSWORD, MINIO_ROOT_PASSWORD,
+     SECRET_KEY, GRAFANA_ADMIN_PASSWORD).
+     SECRET_KEY генерується так:
+       python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+  3. Запустити:
+       docker compose up
+
+
+ЗАПУСК ДЛЯ РОЗРОБКИ
+  Без AI (швидше):
+    docker compose up
+
+  З AI (ollama + переклади повідомлень):
+    docker compose --profile ai up
+
+  Тільки окремі сервіси:
+    docker compose up db redis backend frontend
+
+
+ЗАПУСК У PRODUCTION-РЕЖИМІ
+  docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+
+  Відмінності від dev:
+  - Frontend: зібраний build через nginx, порт 80 (не 3000)
+  - Backend: без монтування коду, 2 worker-и
+  - Медіафайли: через nginx /storage/ (не прямо з порту 9000)
+
+
+ОНОВЛЕННЯ ПІСЛЯ ЗМІНИ КОДУ
+  Перебілдити і перезапустити:
+    docker compose up --build
+
+  Тільки один сервіс:
+    docker compose up --build backend
+
+
+КОРИСНІ КОМАНДИ
+  Зупинити все:
+    docker compose down
+
+  Зупинити і видалити volumes (скинути дані):
+    docker compose down -v
+
+  Переглянути логи сервісу:
+    docker compose logs -f backend
+
+  Зайти в контейнер:
+    docker compose exec backend bash
+
+  Статус:
+    docker ps
+
+
+АДРЕСИ СЕРВІСІВ (dev-режим)
+  Застосунок:     http://localhost:3000
+  Backend API:    http://localhost:8000
+  MinIO Console:  http://localhost:9001
+  Grafana:        http://localhost:3200
+  Prometheus:     http://localhost:9090
+  cAdvisor:       http://localhost:9091
+
+
+АДРЕСИ СЕРВІСІВ (production-режим)
+  Застосунок:     http://localhost
+  Backend API:    http://localhost/api/
+  MinIO Console:  http://localhost:9001
+  Grafana:        http://localhost:3200
+
+
+================================================================================
