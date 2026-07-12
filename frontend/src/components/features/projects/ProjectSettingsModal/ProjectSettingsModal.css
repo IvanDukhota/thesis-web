@@ -1,0 +1,430 @@
+.psm-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: psmFade 0.15s ease;
+}
+
+@keyframes psmFade {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.psm-modal {
+    width: 520px;
+    max-height: 88vh;
+    display: flex;
+    flex-direction: column;
+    background: #0d0d0f;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    box-shadow: 0 40px 80px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    animation: psmSlide 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    overflow: hidden;
+}
+
+@keyframes psmSlide {
+    from {
+        opacity: 0;
+        transform: translateY(14px) scale(0.97);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.psm-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    flex-shrink: 0;
+}
+
+.psm-title {
+    font-size: 15px;
+    font-weight: 500;
+    color: #e4e4e7;
+    letter-spacing: -0.01em;
+}
+
+.psm-close {
+    background: none;
+    border: none;
+    color: #52525b;
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    transition: color 0.15s, background 0.15s;
+}
+
+.psm-close:hover {
+    color: #a1a1aa;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.psm-body {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.psm-body::-webkit-scrollbar {
+    width: 3px;
+}
+
+.psm-body::-webkit-scrollbar-thumb {
+    background: #27272a;
+    border-radius: 4px;
+}
+
+.psm-section {
+    padding: 20px 24px;
+}
+
+.psm-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.psm-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 14px;
+}
+
+.psm-field:last-child {
+    margin-bottom: 0;
+}
+
+.psm-label {
+    font-size: 12px;
+    color: #71717a;
+    letter-spacing: 0.02em;
+}
+
+.psm-required {
+    color: #a78bfa;
+    margin-left: 2px;
+}
+
+.psm-input {
+    height: 38px;
+    padding: 0 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 7px;
+    color: #e4e4e7;
+    font-size: 13.5px;
+    outline: none;
+    width: 100%;
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.psm-input:focus {
+    border-color: rgba(109, 40, 217, 0.45);
+    background: rgba(109, 40, 217, 0.04);
+}
+
+.psm-input::placeholder {
+    color: #3f3f46;
+}
+
+.psm-input--error {
+    border-color: rgba(239, 68, 68, 0.45) !important;
+}
+
+.psm-error {
+    font-size: 11.5px;
+    color: #f87171;
+}
+
+.psm-textarea {
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 7px;
+    color: #e4e4e7;
+    font-size: 13.5px;
+    outline: none;
+    width: 100%;
+    resize: none;
+    font-family: inherit;
+    line-height: 1.5;
+    transition: border-color 0.15s;
+}
+
+.psm-textarea:focus {
+    border-color: rgba(109, 40, 217, 0.45);
+}
+
+.psm-textarea::placeholder {
+    color: #3f3f46;
+}
+
+.psm-section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+}
+
+.psm-section-title {
+    font-size: 12px;
+    color: #52525b;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.psm-add-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: none;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 6px;
+    color: #71717a;
+    font-size: 12px;
+    padding: 4px 10px;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.psm-add-btn:hover {
+    color: #a1a1aa;
+    border-color: rgba(255, 255, 255, 0.14);
+}
+
+.psm-roles {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.psm-role-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.psm-role-name {
+    flex: 0 0 130px;
+}
+
+.psm-perms {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    flex: 1;
+}
+
+.psm-perm-chip {
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    background: none;
+    color: #52525b;
+    font-size: 11.5px;
+    cursor: pointer;
+    transition: color 0.13s, border-color 0.13s, background 0.13s;
+}
+
+.psm-perm-chip:hover {
+    color: #a1a1aa;
+}
+
+.psm-perm-chip--on {
+    color: #c4b5fd;
+    border-color: rgba(139, 92, 246, 0.4);
+    background: rgba(109, 40, 217, 0.1);
+}
+
+.psm-remove-btn {
+    background: none;
+    border: none;
+    color: #3f3f46;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    padding: 4px;
+    border-radius: 5px;
+    transition: color 0.15s, background 0.15s;
+}
+
+.psm-remove-btn:hover {
+    color: #f87171;
+    background: rgba(239, 68, 68, 0.08);
+}
+
+.psm-danger-title {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #f87171;
+    opacity: 0.7;
+    margin-bottom: 12px;
+}
+
+.psm-danger-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px;
+    border: 1px solid rgba(239, 68, 68, 0.15);
+    border-radius: 8px;
+    background: rgba(239, 68, 68, 0.04);
+}
+
+.psm-danger-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #d4d4d8;
+    margin-bottom: 3px;
+}
+
+.psm-danger-sub {
+    font-size: 12px;
+    color: #71717a;
+    line-height: 1.5;
+}
+
+.psm-footer {
+    padding: 16px 24px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    flex-shrink: 0;
+}
+
+.psm-btn {
+    height: 38px;
+    padding: 0 20px;
+    border-radius: 8px;
+    font-size: 13.5px;
+    cursor: pointer;
+    transition: opacity 0.15s, color 0.15s;
+}
+
+.psm-btn--cancel {
+    background: none;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    color: #71717a;
+}
+
+.psm-btn--cancel:hover {
+    color: #a1a1aa;
+}
+
+.psm-btn--save {
+    background: linear-gradient(90deg, #4c1d95, #5b21b6);
+    border: 1px solid rgba(139, 92, 246, 0.25);
+    color: rgba(255, 255, 255, 0.88);
+    font-weight: 500;
+}
+
+.psm-btn--save:hover {
+    opacity: 0.85;
+}
+
+.psm-btn--delete {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    color: #f87171;
+    font-weight: 500;
+}
+
+.psm-btn--delete:hover {
+    opacity: 0.8;
+}
+
+.psm-confirm-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 999999;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.psm-confirm {
+    width: 340px;
+    background: #0d0d0f;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    border-radius: 14px;
+    padding: 28px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 10px;
+    box-shadow: 0 32px 64px rgba(0, 0, 0, 0.9);
+}
+
+.psm-confirm-icon {
+    color: #f87171;
+    margin-bottom: 4px;
+}
+
+.psm-confirm-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #e4e4e7;
+    letter-spacing: -0.01em;
+}
+
+.psm-confirm-sub {
+    font-size: 13px;
+    color: #71717a;
+    line-height: 1.6;
+    margin-bottom: 6px;
+}
+
+.psm-confirm-actions {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    margin-top: 4px;
+}
+
+.psm-confirm-actions .psm-btn {
+    flex: 1;
+}
+
+.psm-delete-btn {
+    padding: 0 16px;
+    height: 34px;
+    border-radius: 7px;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    background: rgba(239, 68, 68, 0.08);
+    color: #f87171;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.psm-delete-bth:hover {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.5);
+}

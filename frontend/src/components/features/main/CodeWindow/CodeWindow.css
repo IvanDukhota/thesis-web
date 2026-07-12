@@ -1,0 +1,88 @@
+.cw-root {
+    width: 620px;
+    height: 420px;
+    background: #0d0d0f;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow:
+        0 0 0 1px rgba(255,255,255,0.04),
+        0 40px 80px rgba(0, 0, 0, 0.8);
+    font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+}
+
+.cw-titlebar {
+    height: 40px;
+    background: #111114;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.cw-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+.cw-dot--red    { background: #3a1a1a; }
+.cw-dot--yellow { background: #2e2a14; }
+.cw-dot--green  { background: #152e1a; }
+
+.cw-filename {
+    margin-left: 10px;
+    font-size: 12px;
+    color: #3f3f46;
+    letter-spacing: 0.04em;
+}
+
+.cw-body {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    padding: 20px 0;
+}
+
+.cw-gutter {
+    display: flex;
+    flex-direction: column;
+    padding: 0 16px;
+    border-right: 1px solid rgba(255, 255, 255, 0.04);
+    min-width: 48px;
+    text-align: right;
+}
+
+.cw-lineno {
+    font-size: 12px;
+    line-height: 22px;
+    color: #2d2d35;
+    user-select: none;
+}
+
+.cw-code {
+    padding: 0 20px;
+    flex: 1;
+    overflow: hidden;
+}
+
+.cw-line {
+    font-size: 13px;
+    line-height: 22px;
+    white-space: pre;
+    letter-spacing: 0.01em;
+}
+
+.cw-cursor {
+    display: inline-block;
+    width: 2px;
+    height: 14px;
+    background: rgba(255, 255, 255, 0.5);
+    vertical-align: middle;
+    margin-left: 1px;
+    border-radius: 1px;
+    transition: opacity 0.1s;
+}

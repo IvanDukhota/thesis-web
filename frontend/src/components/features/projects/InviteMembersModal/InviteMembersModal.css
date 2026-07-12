@@ -1,0 +1,209 @@
+.imm-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 300;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: immFade 0.15s ease;
+}
+
+@keyframes immFade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.imm-modal {
+    width: 360px;
+    background: #111115;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 32px 64px rgba(0, 0, 0, 0.9);
+    animation: immSlide 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes immSlide {
+    from { opacity: 0; transform: translateY(12px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.imm-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.imm-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #f4f4f5;
+    letter-spacing: -0.01em;
+}
+
+.imm-close {
+    background: none;
+    border: none;
+    color: #52525b;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    padding: 4px;
+    border-radius: 5px;
+    transition: color 0.15s, background 0.15s;
+}
+
+.imm-close:hover {
+    color: #a1a1aa;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.imm-body {
+    padding: 14px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.imm-label {
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #3f3f46;
+    padding: 0 8px 2px;
+}
+
+.imm-empty {
+    font-size: 13px;
+    color: #52525b;
+    text-align: center;
+    padding: 20px 0;
+}
+
+.imm-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.imm-member {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px;
+    border-radius: 8px;
+    transition: background 0.13s;
+}
+
+.imm-member:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.imm-member--selected {
+    background: rgba(109, 40, 217, 0.06);
+}
+
+.imm-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #1e1b4b, #3730a3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.8);
+    flex-shrink: 0;
+}
+
+.imm-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.imm-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: #d4d4d8;
+}
+
+.imm-role {
+    font-size: 11px;
+    color: #52525b;
+}
+
+.imm-add-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.03);
+    color: #52525b;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.imm-add-btn:hover {
+    border-color: rgba(139, 92, 246, 0.4);
+    color: #a78bfa;
+    background: rgba(109, 40, 217, 0.08);
+}
+
+.imm-add-btn--active {
+    background: rgba(109, 40, 217, 0.15);
+    border-color: rgba(139, 92, 246, 0.4);
+    color: #a78bfa;
+}
+
+.imm-footer {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    padding: 14px 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.imm-btn {
+    height: 36px;
+    padding: 0 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: opacity 0.15s, color 0.15s;
+}
+
+.imm-btn--cancel {
+    background: none;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    color: #71717a;
+}
+
+.imm-btn--cancel:hover {
+    color: #a1a1aa;
+}
+
+.imm-btn--done {
+    background: linear-gradient(90deg, #4c1d95, #5b21b6);
+    border: 1px solid rgba(139, 92, 246, 0.25);
+    color: rgba(255, 255, 255, 0.88);
+    font-weight: 500;
+}
+
+.imm-btn--done:hover {
+    opacity: 0.85;
+}

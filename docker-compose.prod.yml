@@ -1,0 +1,40 @@
+# Production overrides. Запуск:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# Відмінності від dev:
+#   - frontend: збирається з Dockerfile (nginx), не Vite dev server
+#   - frontend: порт 80 замість 3000
+#   - frontend: чекає на healthy backend перед стартом
+#   - backend: без монтування коду з хоста, uvicorn з 2 workers
+#   - media: файли йдуть через nginx /storage/ → minio (не напряму з порту 9000)
+
+services:
+  frontend:
+    build: ./frontend
+    image: teamhub-frontend:latest
+    ports: !reset
+      - "80:80"
+    volumes: !reset []
+    command: ["nginx", "-g", "daemon off;"]
+    environment: !reset {}
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  backend:
+    volumes: !reset []
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    environment:
+      AWS_S3_CUSTOM_DOMAIN: "localhost/storage"
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py collectstatic --noinput &&
+             uvicorn config.asgi:application --workers 2 --host 0.0.0.0 --port 8000"
+
+  celery:
+    volumes: !reset []

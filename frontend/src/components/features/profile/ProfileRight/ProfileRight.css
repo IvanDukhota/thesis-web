@@ -1,0 +1,471 @@
+.pr-root {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.pr-tabs {
+    display: flex;
+    gap: 2px;
+    padding: 16px 20px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    flex-shrink: 0;
+}
+
+.pr-tab {
+    padding: 8px 14px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    font-size: 13.5px;
+    color: #52525b;
+    letter-spacing: 0.01em;
+    margin-bottom: -1px;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.pr-tab:hover {
+    color: #a1a1aa;
+}
+
+.pr-tab--active {
+    color: #d4d4d8;
+    border-bottom-color: #7c3aed;
+}
+
+.pr-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+}
+
+.pr-content::-webkit-scrollbar {
+    width: 3px;
+}
+
+.pr-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.pr-content::-webkit-scrollbar-thumb {
+    background: #27272a;
+    border-radius: 4px;
+}
+
+.pr-panel-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.pr-project-card {
+    padding: 16px 18px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.02);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: border-color 0.2s, background 0.2s;
+    cursor: default;
+}
+
+.pr-project-card:hover {
+    border-color: rgba(124, 58, 237, 0.2);
+    background: rgba(109, 40, 217, 0.03);
+}
+
+.pr-project-card--link {
+    cursor: pointer;
+}
+
+.pr-project-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.pr-project-name {
+    font-size: 13.5px;
+    font-weight: 500;
+    color: #d4d4d8;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+.pr-project-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #52525b;
+}
+
+.pr-project-dot {
+    color: #27272a;
+}
+
+.pr-project-role {
+    color: #71717a;
+}
+
+.pr-project-updated {
+    color: #52525b;
+}
+
+.pr-progress-wrap {
+    height: 3px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.pr-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #4c1d95, #7c3aed);
+    border-radius: 2px;
+    transition: width 0.4s ease;
+}
+
+.pr-project-footer {
+    display: flex;
+}
+
+.pr-project-tasks {
+    font-size: 11.5px;
+    color: #3f3f46;
+}
+
+.pr-order-card {
+    padding: 14px 18px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.02);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    transition: border-color 0.2s;
+}
+
+.pr-order-card:hover {
+    border-color: rgba(124, 58, 237, 0.18);
+}
+
+.pr-order-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.pr-order-title {
+    font-size: 13.5px;
+    font-weight: 500;
+    color: #d4d4d8;
+    line-height: 1.4;
+}
+
+.pr-order-price {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #a78bfa;
+    white-space: nowrap;
+    letter-spacing: -0.01em;
+}
+
+.pr-order-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+}
+
+.pr-order-client {
+    color: #71717a;
+}
+
+.pr-order-date {
+    color: #52525b;
+}
+
+.pr-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+}
+
+.badge--green {
+    background: rgba(34, 197, 94, 0.1);
+    color: #4ade80;
+    border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.badge--purple {
+    background: rgba(124, 58, 237, 0.12);
+    color: #a78bfa;
+    border: 1px solid rgba(124, 58, 237, 0.25);
+}
+
+.badge--gray {
+    background: rgba(255, 255, 255, 0.04);
+    color: #71717a;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.badge--yellow {
+    background: rgba(234, 179, 8, 0.1);
+    color: #facc15;
+    border: 1px solid rgba(234, 179, 8, 0.2);
+}
+
+.pr-team-empty {
+    padding: 16px 0 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    margin-bottom: 20px;
+}
+
+.pr-team-empty-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: #52525b;
+    margin-bottom: 5px;
+}
+
+.pr-team-empty-sub {
+    font-size: 13px;
+    color: #3f3f46;
+    line-height: 1.6;
+}
+
+.pr-stat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.pr-stat-card {
+    padding: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.02);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.pr-stat-value {
+    font-size: 22px;
+    font-weight: 600;
+    color: #d4d4d8;
+    letter-spacing: -0.02em;
+}
+
+.pr-stat-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #71717a;
+}
+
+.pr-stat-sub {
+    font-size: 11.5px;
+    color: #3f3f46;
+    margin-top: 2px;
+}
+
+.pr-stat-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.pr-donut-wrap {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    padding: 8px 0;
+}
+
+.pr-donut-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 1;
+}
+
+.pr-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.pr-legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.pr-legend-label {
+    flex: 1;
+    font-size: 12.5px;
+    color: #71717a;
+}
+
+.pr-legend-val {
+    font-size: 12.5px;
+    font-weight: 500;
+    color: #a1a1aa;
+}
+
+.pr-contacts-root {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    height: 100%;
+}
+
+.pr-contacts-root--empty {
+    align-items: center;
+    justify-content: center;
+}
+
+.pr-contacts-search {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+}
+
+.pr-contacts-input {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 13px;
+    color: #d4d4d8;
+    outline: none;
+    transition: border-color 0.15s;
+}
+
+.pr-contacts-input::placeholder {
+    color: #3f3f46;
+}
+
+.pr-contacts-input:focus {
+    border-color: rgba(124, 58, 237, 0.4);
+}
+
+.pr-contacts-search-btn {
+    padding: 8px 14px;
+    background: rgba(124, 58, 237, 0.15);
+    border: 1px solid rgba(124, 58, 237, 0.3);
+    border-radius: 8px;
+    color: #a78bfa;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.15s;
+    white-space: nowrap;
+}
+
+.pr-contacts-search-btn:hover {
+    background: rgba(124, 58, 237, 0.25);
+}
+
+.pr-contacts-empty-msg {
+    font-size: 13px;
+    color: #3f3f46;
+    text-align: center;
+    margin: 0;
+}
+
+.pr-contacts-result {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border: 1px solid rgba(124, 58, 237, 0.25);
+    border-radius: 8px;
+    background: rgba(124, 58, 237, 0.06);
+}
+
+.pr-contacts-result-name {
+    font-size: 13px;
+    color: #d4d4d8;
+}
+
+.pr-contacts-add-btn {
+    padding: 6px 14px;
+    background: #7c3aed;
+    border: none;
+    border-radius: 6px;
+    color: #fff;
+    font-size: 12.5px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.pr-contacts-add-btn:hover:not(:disabled) {
+    background: #6d28d9;
+}
+
+.pr-contacts-add-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pr-contacts-feedback {
+    font-size: 12.5px;
+    color: #71717a;
+    margin: 0;
+}
+
+.pr-contacts-list {
+    margin-top: 4px;
+}
+
+.pr-contacts-card-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.pr-contacts-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.pr-contacts-avatar--placeholder {
+    background: rgba(124, 58, 237, 0.2);
+    border: 1px solid rgba(124, 58, 237, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 600;
+    color: #a78bfa;
+}
+
+.pr-contacts-card-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.pr-contacts-name {
+    font-size: 13.5px;
+    font-weight: 500;
+    color: #d4d4d8;
+}
+
+.pr-contacts-username {
+    font-size: 12px;
+    color: #52525b;
+}

@@ -1,0 +1,434 @@
+.appc-card {
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  background: #111115;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.35s ease, transform 0.35s ease, border-color 0.18s;
+}
+
+.appc-card--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.appc-card--expanded {
+  border-color: rgba(139, 92, 246, 0.2);
+}
+
+.appc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  cursor: pointer;
+  user-select: none;
+  gap: 12px;
+  transition: background 0.15s;
+}
+
+.appc-header:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.appc-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.appc-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4c1d95, #6d28d9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+  flex-shrink: 0;
+}
+
+.appc-avatar--team {
+  background: linear-gradient(135deg, #1e3a5f, #1d4ed8);
+  border-radius: 10px;
+}
+
+.appc-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.appc-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #d4d4d8;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.appc-team-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(29, 78, 216, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+  letter-spacing: 0.04em;
+}
+
+.appc-order-ref {
+  font-size: 11.5px;
+  color: #52525b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 280px;
+}
+
+.appc-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: #52525b;
+}
+
+.appc-dot {
+  color: #3f3f46;
+}
+
+.appc-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.appc-status {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 5px;
+  letter-spacing: 0.04em;
+  text-transform: capitalize;
+}
+
+.appc-status--pending {
+  background: rgba(234, 179, 8, 0.1);
+  border: 1px solid rgba(234, 179, 8, 0.2);
+  color: #fbbf24;
+}
+
+.appc-status--accepted {
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+}
+
+.appc-status--rejected {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: #f87171;
+}
+
+.appc-status--withdrawn {
+  background: rgba(113, 113, 122, 0.1);
+  border: 1px solid rgba(113, 113, 122, 0.2);
+  color: #71717a;
+}
+
+.appc-delete-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  color: rgba(239, 68, 68, 0.5);
+  display: flex;
+  align-items: center;
+  transition: color 0.15s, background 0.15s;
+}
+
+.appc-delete-btn:hover {
+  color: #f87171;
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.appc-chevron {
+  color: #52525b;
+  display: flex;
+  align-items: center;
+  transition: color 0.15s;
+}
+
+.appc-card--expanded .appc-chevron {
+  color: #a78bfa;
+}
+
+/* ── Expand / Collapse ── */
+.appc-detail {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.26s ease;
+}
+
+.appc-detail--open {
+  grid-template-rows: 1fr;
+}
+
+.appc-detail-inner {
+  overflow: hidden;
+}
+
+.appc-detail-content {
+  padding: 0 16px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.appc-loading {
+  padding: 20px 0;
+  color: #52525b;
+  font-size: 13px;
+  text-align: center;
+}
+
+/* ── Stats ── */
+.appc-stats-section {
+  padding-top: 14px;
+}
+
+.appc-section-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: #52525b;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 8px;
+}
+
+.appc-stat-row {
+  display: flex;
+  gap: 8px;
+}
+
+.appc-stat-box {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 10px 6px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 9px;
+}
+
+.appc-stat-box-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #e4e4e7;
+  line-height: 1;
+}
+
+.appc-stat-box-label {
+  font-size: 10.5px;
+  color: #52525b;
+  font-weight: 500;
+}
+
+/* ── Team header ── */
+.appc-team-header-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 0 10px;
+}
+
+.appc-team-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #e4e4e7;
+}
+
+.appc-team-desc {
+  font-size: 12px;
+  color: #52525b;
+}
+
+/* ── Members ── */
+.appc-members-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.appc-member-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.appc-member-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4c1d95, #5b21b6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.8);
+  flex-shrink: 0;
+}
+
+.appc-member-name {
+  font-size: 12.5px;
+  color: #a1a1aa;
+  flex: 1;
+}
+
+.appc-member-done {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11.5px;
+  color: #4ade80;
+}
+
+/* ── Projects ── */
+.appc-project-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.appc-project-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12.5px;
+  color: #71717a;
+  padding: 4px 0;
+}
+
+.appc-project-item svg {
+  color: #3f3f46;
+  flex-shrink: 0;
+}
+
+.appc-project-type {
+  margin-left: auto;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  color: #52525b;
+  text-transform: capitalize;
+}
+
+.appc-empty-note {
+  font-size: 12px;
+  color: #3f3f46;
+  font-style: italic;
+}
+
+/* ── Message / Cover Letter ── */
+.appc-message-section {
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  margin-top: 14px;
+}
+
+.appc-stats-section + .appc-message-section {
+  margin-top: 14px;
+}
+
+.appc-message-text {
+  font-size: 13px;
+  color: #71717a;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  margin: 0;
+}
+
+/* ── Action buttons ── */
+.appc-actions-bottom {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 12px;
+  margin-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.appc-btn {
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: opacity 0.15s, background 0.15s;
+  white-space: nowrap;
+}
+
+.appc-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.appc-btn--approve {
+  background: rgba(34, 197, 94, 0.1);
+  border-color: rgba(34, 197, 94, 0.25);
+  color: #4ade80;
+}
+
+.appc-btn--approve:not(:disabled):hover {
+  background: rgba(34, 197, 94, 0.18);
+}
+
+.appc-btn--discard {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+}
+
+.appc-btn--discard:not(:disabled):hover {
+  background: rgba(239, 68, 68, 0.15);
+}
+
+.appc-btn--message {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border-color: rgba(255, 255, 255, 0.08);
+  color: #71717a;
+  margin-right: auto;
+}
+
+.appc-btn--message:hover {
+  color: #a1a1aa;
+  border-color: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.04);
+}

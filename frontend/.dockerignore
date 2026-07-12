@@ -1,0 +1,9 @@
+.git
+node_modules
+dist
+dist-ssr
+.eslintcache
+*.log
+.env
+.env.*
+!.env.example

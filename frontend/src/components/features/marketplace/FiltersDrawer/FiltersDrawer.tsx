@@ -1,0 +1,173 @@
+import { useEffect, useState } from "react";
+import type { OrderFilters, Category } from "../../../../api/marketplace";
+import { getCategories } from "../../../../api/marketplace";
+import "./filters-drawer.css";
+
+type FiltersDrawerProps = {
+  isOpen: boolean;
+  onClose: () => void;
+  filters: OrderFilters;
+  onFiltersChange: (filters: Partial<OrderFilters>) => void;
+};
+
+const SORT_OPTIONS = [
+  { value: "-created_at", label: "Newest First" },
+  { value: "created_at",  label: "Oldest First" },
+  { value: "price",       label: "Price: Low to High" },
+  { value: "-price",      label: "Price: High to Low" },
+  { value: "recommendations", label: "Recommendations" },
+];
+
+export default function FiltersDrawer({
+  isOpen,
+  onClose,
+  filters,
+  onFiltersChange,
+}: FiltersDrawerProps) {
+  const [localFilters, setLocalFilters] = useState<OrderFilters>(filters);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setLocalFilters(filters);
+
+      if (categories.length === 0 && !loadingCategories) {
+        setLoadingCategories(true);
+        getCategories()
+          .then(setCategories)
+          .catch((err) => console.error("Failed to load categories:", err))
+          .finally(() => setLoadingCategories(false));
+      }
+    }
+  }, [isOpen, filters, categories.length, loadingCategories]);
+
+  const handleApply = () => {
+    onFiltersChange(localFilters);
+    onClose();
+  };
+
+  const handleReset = () => {
+    const resetFilters: OrderFilters = {
+      search: filters.search,
+      category: "",
+      tags: filters.tags,
+      min_price: undefined,
+      max_price: undefined,
+      sort: "-created_at",
+    };
+    setLocalFilters(resetFilters);
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <>
+      <div className="filters-drawer-overlay" onClick={onClose}></div>
+      <div className="filters-drawer">
+        <div className="filters-drawer__header">
+          <h2 className="filters-drawer__title">Filters</h2>
+          <button className="filters-drawer__close" onClick={onClose}>
+            ×
+          </button>
+        </div>
+
+        <div className="filters-drawer__content">
+          <div className="filters-drawer__section">
+            <div className="filters-drawer__section-title">Sort By</div>
+            <div className="filters-drawer__options">
+              {SORT_OPTIONS.map((option) => (
+                <label key={option.value} className="filters-drawer__checkbox">
+                  <input
+                    type="radio"
+                    name="sort"
+                    checked={localFilters.sort === option.value}
+                    onChange={() =>
+                      setLocalFilters((prev) => ({ ...prev, sort: option.value }))
+                    }
+                  />
+                  <span className="filters-drawer__checkbox-label">{option.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="filters-drawer__section">
+            <div className="filters-drawer__section-title">Category</div>
+            <div className="filters-drawer__options">
+              {loadingCategories ? (
+                <div className="filters-drawer__loading">Loading categories...</div>
+              ) : (
+                <>
+                  {categories.map((category) => (
+                    <label key={category.slug} className="filters-drawer__checkbox">
+                      <input
+                        type="radio"
+                        name="category"
+                        checked={localFilters.category === category.slug}
+                        onChange={() =>
+                          setLocalFilters((prev) => ({ ...prev, category: category.slug }))
+                        }
+                      />
+                      <span className="filters-drawer__checkbox-label">{category.name}</span>
+                    </label>
+                  ))}
+                  <label className="filters-drawer__checkbox">
+                    <input
+                      type="radio"
+                      name="category"
+                      checked={localFilters.category === ""}
+                      onChange={() => setLocalFilters((prev) => ({ ...prev, category: "" }))}
+                    />
+                    <span className="filters-drawer__checkbox-label">All Categories</span>
+                  </label>
+                </>
+              )}
+            </div>
+          </div>
+
+          <div className="filters-drawer__section">
+            <div className="filters-drawer__section-title">Budget</div>
+            <div className="filters-drawer__range">
+              <input
+                type="number"
+                className="filters-drawer__input"
+                placeholder="Min Budget"
+                value={localFilters.min_price || ""}
+                onChange={(e) =>
+                  setLocalFilters((prev) => ({
+                    ...prev,
+                    min_price: e.target.value ? Number(e.target.value) : undefined,
+                  }))
+                }
+              />
+              <span className="filters-drawer__range-separator">—</span>
+              <input
+                type="number"
+                className="filters-drawer__input"
+                placeholder="Max Budget"
+                value={localFilters.max_price || ""}
+                onChange={(e) =>
+                  setLocalFilters((prev) => ({
+                    ...prev,
+                    max_price: e.target.value ? Number(e.target.value) : undefined,
+                  }))
+                }
+              />
+            </div>
+          </div>
+
+        </div>
+
+        <div className="filters-drawer__footer">
+          <button className="filters-drawer__button filters-drawer__button--reset" onClick={handleReset}>
+            Reset
+          </button>
+          <button className="filters-drawer__button filters-drawer__button--apply" onClick={handleApply}>
+            Apply Filters
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
