@@ -12,9 +12,6 @@ on:
       - develop
 
 jobs:
-  # ──────────────────────────────────────────────────────────────
-  # Job 1 — Backend unit tests
-  # ──────────────────────────────────────────────────────────────
   backend-unit:
     name: Backend Unit Tests
     runs-on: ubuntu-latest
@@ -75,9 +72,6 @@ jobs:
             tests \
             --verbosity=2
 
-  # ──────────────────────────────────────────────────────────────
-  # Job 2 — Frontend checks
-  # ──────────────────────────────────────────────────────────────
   frontend-checks:
     name: Frontend Checks
     runs-on: ubuntu-latest
@@ -107,9 +101,6 @@ jobs:
         working-directory: frontend
         run: npm run build
 
-  # ──────────────────────────────────────────────────────────────
-  # Job 3 — Security scan (secrets + dependency audit)
-  # ──────────────────────────────────────────────────────────────
   security-scan:
     name: Security Scan
     runs-on: ubuntu-latest
@@ -155,11 +146,6 @@ jobs:
         continue-on-error: true
         run: npm audit --audit-level=high
 
-  # ──────────────────────────────────────────────────────────────
-  # Job 4 — Docker integration smoke test
-  #   Запускає тільки core-сервіси (без ML/AI та моніторингу).
-  #   Runs on develop, main and PRs targeting those branches.
-  # ──────────────────────────────────────────────────────────────
   integration-smoke-test:
     name: Integration Smoke Test
     needs: [backend-unit, frontend-checks]
@@ -206,8 +192,18 @@ jobs:
 
       - name: Health check — frontend
         run: |
-          curl -f http://localhost:3000 \
-            || (docker compose logs frontend && exit 1)
+          echo "Waiting for frontend..."
+          for i in $(seq 1 24); do
+            if curl -sf http://localhost:3000; then
+              echo "Frontend is ready!"
+              exit 0
+            fi
+            echo "Attempt $i/24..."
+            sleep 5
+          done
+          echo "Frontend did not become ready in time"
+          docker compose logs frontend
+          exit 1
 
       - name: Health check — backend API
         run: |
@@ -221,11 +217,6 @@ jobs:
         if: always()
         run: docker compose down
 
-  # ──────────────────────────────────────────────────────────────
-  # Job 5 — Docker Hub publish
-  #   Runs only on direct pushes to main (not on PRs).
-  #   Tags image with both :latest and :<git-sha> for rollback.
-  # ──────────────────────────────────────────────────────────────
   docker-deploy:
     name: Push to Docker Hub
     needs: integration-smoke-test
