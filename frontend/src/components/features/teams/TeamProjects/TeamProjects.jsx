@@ -68,9 +68,9 @@ export function TeamProjects({ projects, onAddProject, canAddProject }) {
                                     <span className={`tp-card-status tp-card-status--${p.status}`}>{p.status}</span>
                                 </div>
                                 <div className="tp-card-stats">
-                                    <span className="tp-stat">0 tasks</span>
+                                    <span className="tp-stat">{p.task_count ?? 0} tasks</span>
                                     <span className="tp-stat-dot" />
-                                    <span className="tp-stat">0 done</span>
+                                    <span className="tp-stat">{p.done_count ?? 0} done</span>
                                     <span className="tp-stat-dot" />
                                     <span className="tp-stat">{p.project_members?.length || 0} members</span>
                                 </div>

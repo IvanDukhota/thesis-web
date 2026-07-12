@@ -231,7 +231,7 @@ export default function TeamsPage() {
     const handleAddProject = (proj) => setProjects(prev => [...prev, proj]);
 
     const handleLeaveTeam = async () => {
-        const currentMember = members.find(m => m.name === user?.username);
+        const currentMember = members.find(m => m.userId === user?.id);
         if (!currentMember) return;
         setLeaving(true);
         const { ok } = await apiRemoveMember(teamId, currentMember.id);
@@ -248,7 +248,7 @@ export default function TeamsPage() {
         }
     };
 
-    const currentMember = members.find(m => m.name === user?.username);
+    const currentMember = members.find(m => m.userId === user?.id);
     const currentRole = currentMember ? roles.find(r => r.name === currentMember.role) : null;
     const canManageSettings = currentMember?.is_admin || currentRole?.can_manage_settings || false;
     const canEditTeam = currentMember?.is_admin || currentRole?.can_edit_team || false;

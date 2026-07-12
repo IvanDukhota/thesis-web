@@ -168,8 +168,8 @@ export function TeamMembers({ teamId, members, roles, currentUsername, canEditTe
             </div>
 
             <div className="tm-list">
-                {members.map((m, i) => (
-                    <div key={i} className="tm-member">
+                {members.map((m) => (
+                    <div key={m.id} className="tm-member">
                         <div className="tm-avatar">{m.name[0].toUpperCase()}</div>
                         <div className="tm-member-info">
                             <div className="tm-member-name">
