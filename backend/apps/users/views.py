@@ -61,14 +61,7 @@ class UserDirectoryView(APIView):
         )
 
         contacts = User.objects.filter(id__in=contact_ids).order_by("username")
-        others = User.objects.exclude(id=current_user.id).exclude(id__in=contact_ids).order_by(
-            "first_name", "last_name", "email"
-        )
-
-        contacts_data = UserSerializer(
-            [{**UserSerializer(user).data, "is_contact": True} for user in contacts],
-            many=True,
-        ).data if False else None
+        others = User.objects.exclude(id=current_user.id).exclude(id__in=contact_ids).order_by("username")
 
         contacts_serialized = []
         for user in contacts:
@@ -106,7 +99,6 @@ class ContactCreateView(generics.CreateAPIView):
             logger.error(f"Validation errors: {serializer.errors}")
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        serializer.is_valid(raise_exception=True)
         contact = serializer.save()
 
         user_data = UserSerializer(contact.contact).data
