@@ -388,7 +388,7 @@ services:
       - BACKUP_KEEP_MONTHS=6
       - HEALTHCHECK_PORT=8080
     volumes:
-      - ./backups:/backups
+      - backups_data:/backups
     depends_on:
       db:
         condition: service_healthy
@@ -407,3 +407,4 @@ volumes:
   grafana_data:
   prometheus_data:
   ollama_data:
+  backups_data:
