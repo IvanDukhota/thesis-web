@@ -11,7 +11,7 @@
 services:
   frontend:
     build: ./frontend
-    image: teamhub-frontend:latest
+    image: ${DOCKERHUB_USERNAME}/teamhub-frontend:latest
     ports: !reset
       - "80:80"
     volumes: !reset []
@@ -22,6 +22,7 @@ services:
         condition: service_healthy
 
   backend:
+    image: ${DOCKERHUB_USERNAME}/teamhub-backend:latest
     volumes: !reset []
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health/"]
@@ -37,4 +38,18 @@ services:
              uvicorn config.asgi:application --workers 2 --host 0.0.0.0 --port 8000"
 
   celery:
+    image: ${DOCKERHUB_USERNAME}/teamhub-backend:latest
     volumes: !reset []
+
+  # Watchtower — автооновлення backend/frontend при новому push до Docker Hub
+  watchtower:
+    image: containrrr/watchtower:1.7.1
+    container_name: teamhub-watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_INCLUDE_STOPPED=false
+      - WATCHTOWER_POLL_INTERVAL=86400
+    restart: unless-stopped
+    networks: [teamhub]

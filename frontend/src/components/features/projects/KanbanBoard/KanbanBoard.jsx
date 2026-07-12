@@ -85,12 +85,12 @@ export const KanbanBoard = forwardRef(function KanbanBoard({ projectId, projectT
     if (loading) return null;
 
     const handleEditSave = (updatedTask, newCol) => {
+        const srcCol = editingTask.col;
+        const payload = { title: updatedTask.title, description: updatedTask.description || '', priority: updatedTask.priority || '', column: newCol, assignee: updatedTask.assignee || '', deadline: updatedTask.deadline || null, tag: updatedTask.tag || '' };
+        apiUpdateTask(projectId, updatedTask.id, payload);
         setTasks(prev => {
-            const srcCol = editingTask.col;
-            const payload = { title: updatedTask.title, description: updatedTask.description || '', priority: updatedTask.priority || '', column: newCol, assignee: updatedTask.assignee || '', deadline: updatedTask.deadline || null, tag: updatedTask.tag || '' };
-            apiUpdateTask(projectId, updatedTask.id, payload);
             if (srcCol === newCol) {
-                return { ...prev, [srcCol]: prev[srcCol].map(t => t.id === updatedTask.id ? { ...t, ...updatedTask } : t) };
+                return { ...prev, [srcCol]: prev[srcCol].map(t => t.id === updatedTask.id ? { ...t, ...updatedTask, column: newCol } : t) };
             }
             return {
                 ...prev,
@@ -132,10 +132,10 @@ export const KanbanBoard = forwardRef(function KanbanBoard({ projectId, projectT
         if (!canEdit || !dragId || !dragColRef.current) return;
         const srcCol = dragColRef.current;
         if (srcCol !== targetCol) {
+            apiUpdateTask(projectId, dragId, { column: targetCol });
             setTasks(prev => {
                 const task = prev[srcCol].find(t => t.id === dragId);
                 if (!task) return prev;
-                apiUpdateTask(projectId, dragId, { column: targetCol });
                 return {
                     ...prev,
                     [srcCol]: prev[srcCol].filter(t => t.id !== dragId),

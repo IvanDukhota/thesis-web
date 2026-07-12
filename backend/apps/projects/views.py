@@ -116,9 +116,9 @@ class ProjectDetailView(APIView):
         return Response(data)
 
     def patch(self, request, pk):
-        project, _ = self._get(request, pk)
+        project, err = self._get(request, pk)
         if not project:
-            return Response(status=status.HTTP_404_NOT_FOUND)
+            return Response(status=err)
         my = self._my(project, request.user)
         if not my or not my.role or not (my.role.is_owner or my.role.can_edit):
             return Response({'detail': 'Permission denied.'}, status=status.HTTP_403_FORBIDDEN)
@@ -132,9 +132,9 @@ class ProjectDetailView(APIView):
         return Response(data)
 
     def delete(self, request, pk):
-        project, _ = self._get(request, pk)
+        project, err = self._get(request, pk)
         if not project:
-            return Response(status=status.HTTP_404_NOT_FOUND)
+            return Response(status=err)
         my = self._my(project, request.user)
         if not my or not my.role or not my.role.is_owner:
             return Response({'detail': 'Permission denied.'}, status=status.HTTP_403_FORBIDDEN)
@@ -175,6 +175,9 @@ class ProjectMemberListView(APIView):
             user = User.objects.get(pk=user_id)
         except User.DoesNotExist:
             return Response({'detail': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+        if project.type == Project.TEAM and project.team_id:
+            if not TeamMember.objects.filter(team_id=project.team_id, user=user).exists():
+                return Response({'detail': 'User is not a member of this team.'}, status=status.HTTP_400_BAD_REQUEST)
         developer_role = ProjectRole.objects.filter(project=project, name='Developer').first()
         pm, created = ProjectMember.objects.get_or_create(
             project=project, user=user, defaults={'role': developer_role}
@@ -281,8 +284,11 @@ class ProjectAbandonView(APIView):
         except Project.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
-        if not ProjectMember.objects.filter(project=project, user=request.user).exists():
+        member = ProjectMember.objects.select_related('role').filter(project=project, user=request.user).first()
+        if not member:
             return Response(status=status.HTTP_403_FORBIDDEN)
+        if not member.role or not member.role.is_owner:
+            return Response({'detail': 'Only the project owner can abandon this project.'}, status=status.HTTP_403_FORBIDDEN)
 
         if not project.order:
             return Response({'error': 'Not a marketplace project'}, status=status.HTTP_400_BAD_REQUEST)
